@@ -1,0 +1,30 @@
+@import "../global";
+
+// If you want to override variables do it here
+@import "variables";
+
+// Import styles
+@import "~@coreui/coreui/scss/coreui";
+@import "~datatables/media/css/jquery.dataTables.min.css";
+
+// Fix inaccessible dropdown in .table-responsive dropdown buttons
+.table-responsive {
+    overflow-x: inherit;
+    td:not(.btn-td) {
+        text-overflow: ellipsis;
+        //white-space: nowrap;
+        overflow: hidden;
+        max-width: 200px;
+    }
+    .nowrap{
+        white-space: normal !important;
+    }
+}
+
+// Fix mobile footer
+.app-footer {
+    flex: 0 0;
+    padding-top: map-get($spacers, 3);
+    padding-bottom: map-get($spacers, 3);
+}
+

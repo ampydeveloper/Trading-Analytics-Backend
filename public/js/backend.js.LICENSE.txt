@@ -1,0 +1,10 @@
+/*!
+ * perfect-scrollbar v1.5.0
+ * Copyright 2020 Hyunje Jun, MDBootstrap and Contributors
+ * Licensed under MIT
+ */
+
+/*!
+ DataTables 1.10.18
+ ©2008-2018 SpryMedia Ltd - datatables.net/license
+*/
