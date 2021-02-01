@@ -23,5 +23,7 @@ class EbayItemSellerInfo extends Model
         'positiveFeedbackPercent',
         'feedbackRatingStar',
         'topRatedSeller',
+        'seller_contact_link',
+        'seller_store_link'
     ];
 }

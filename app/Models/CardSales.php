@@ -21,7 +21,8 @@ class CardSales extends Model
         'timestamp',
         'quantity',
         'cost',
-        'source'
+        'source',
+        'type',
     ];
 
 //    protected $hidden = [

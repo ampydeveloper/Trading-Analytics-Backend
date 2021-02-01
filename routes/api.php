@@ -17,6 +17,10 @@ use Illuminate\Http\Request;
     return $request->user();
 });*/
 
+
+Route::post('upload-slab-excel1', 'Api\CardController@uploadSlabForExcelImport');
+
+
 Route::group([
     'namespace' => 'Api\Auth',
 ], function () {
@@ -64,7 +68,9 @@ Route::group([
     Route::get('get-card-data/{id}', 'CardController@getCardDetails');
     Route::get('get-card-graph/{card_id}/{days?}', 'CardController@getCardGraphData');
     Route::get('get-stoxticker-data', 'CardController@getStoxtickerData');
-    Route::get('get-dashboard-graph/{days?}', 'CardController@getDashboardGraphData');
+    Route::get('get-dashboard-graph/{days?}/{card_id?}', 'CardController@getDashboardGraphData');
+    Route::get('get-edit-card/{card_id}', 'CardController@getEditCard');
+    Route::post('card-edit', 'CardController@editCard');
 
     Route::get('get-cards-list', 'CardController@getCardList');
     Route::post('get-cards-list-for-admin', 'CardController@getCardListForAdmin');
@@ -83,6 +89,10 @@ Route::group([
     Route::post('add-see-problem', 'Ebay\EbayController@addSeeProblem');
     Route::post('get-see-problem', 'Ebay\EbayController@getSeeProblemForAdmin');
     Route::post('sales-create', 'CardController@createSales');
+    Route::post('get-sales-list', 'CardController@getSalesList');
+    Route::get('get-edit-sales/{sale_id}', 'CardController@getSalesEdit');
+    Route::post('edit-sales-data', 'CardController@editSalesData');
+    Route::get('get-edit-listing/{listing_id}', 'Ebay\EbayController@getListingEdit');
 Route::post('upload-slab-excel', 'CardController@uploadSlabForExcelImport');
 Route::post('create-new-item-from-admin', 'Ebay\EbayController@createEbayItemForAdmin');
 });

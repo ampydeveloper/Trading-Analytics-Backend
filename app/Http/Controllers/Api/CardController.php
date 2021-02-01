@@ -20,6 +20,8 @@ use App\Models\RequestSlab;
 use Carbon\Carbon;
 use Excel;
 use Validator;
+use Illuminate\Support\Facades\Storage;
+use ZipArchive;
 
 class CardController extends Controller
 {
@@ -131,7 +133,8 @@ class CardController extends Controller
             return response()->json($e->getMessage(),500);
         }
     }
-
+    
+  
 
     public static function getDataFromEbay()
     {
@@ -422,6 +425,48 @@ class CardController extends Controller
             return response()->json($e->getMessage(), 500);
         }
     }
+    
+    public function getEditCard($card_id)
+    {
+        try {
+            $data = Card::where('id', $card_id)->first();
+            return response()->json(['status' => 200, 'data' => $data], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+    public function editCard(Request $request)
+    {
+        try {
+            
+            
+//             Card::where('id', $request->input('id'))->update(array('is_featured'=>$is_featured));
+             
+            Card::where('id', $request->input('id'))->update([
+                'sport'=> $request->input('sport'),
+                'player'=> $request->input('player'),
+                'year'=> $request->input('year'),
+                'brand'=> $request->input('brand'),
+                'card'=> $request->input('card'),
+                'rc'=> $request->input('rc'),
+                'variation'=> $request->input('variation'),
+                'grade'=> $request->input('grade'),
+                'qualifiers'=> $request->input('qualifiers'),
+                'qualifiers2'=> $request->input('qualifiers2'),
+                'qualifiers3'=> $request->input('qualifiers3'),
+                'qualifiers4'=> $request->input('qualifiers4'),
+                'qualifiers5'=> $request->input('qualifiers5'),
+                'qualifiers6'=> $request->input('qualifiers6'),
+                'qualifiers7'=> $request->input('qualifiers7'),
+                'qualifiers8'=> $request->input('qualifiers8'),
+                'is_featured' => ((bool) $request->input('is_featured')),
+            ]);
+//            $data = Card::where('id', $request->input('card_id'))->update($updated_array);
+            return response()->json(['status' => 200, 'message' => 'Card Updated'], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
     public function createSales(Request $request)
     {
         try {
@@ -433,8 +478,43 @@ class CardController extends Controller
                 'quantity'=> $request->input('quantity'),
                 'cost'=> $request->input('cost'),
                 'source'=> $request->input('source'),
+                'type'=> $request->input('type'),
             ]);
             return response()->json(['status' => 200, 'message' => 'Sales data added.'], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+    public function getSalesList(Request $request){
+        try {
+            $data = CardSales::where('card_id', $request->input('card_id'))->get();
+            return response()->json(['status' => 200, 'data' => $data], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+    public function getSalesEdit($sale_id){
+        try {
+            $data = CardSales::where('id', $sale_id)->first();
+            return response()->json(['status' => 200, 'data' => $data], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+    public function editSalesData(Request $request)
+    {
+        try {
+//            $data = Card::where('sport', $request->input('sport'))->orderBy('updated_at', 'desc')->first();
+            
+            CardSales::where('id', $request->input('id'))->update([
+//                'card_id'=> $request->input('card_id'),
+                'timestamp'=> Carbon::create($request->input('timestamp'))->format('Y-m-d h:i:s'),
+                'quantity'=> $request->input('quantity'),
+                'cost'=> $request->input('cost'),
+                'source'=> $request->input('source'),
+                'type'=> $request->input('type'),
+            ]);
+            return response()->json(['status' => 200, 'message' => 'Sales data edited.'], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -465,12 +545,11 @@ class CardController extends Controller
         }
     }
 
-    public function getDashboardGraphData(Request $request,$days=2){
+    public function getDashboardGraphData($days=2, $card_id=0){
         try {
             $data = ['values' => [], 'labels' => []];
-            $card_id = ($request->input('card_id')?$request->input('card_id'):1);
             $cvs = CardSales::where('card_id', $card_id)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
-            $data['values'] = $cvs->pluck('quantity')->toArray();
+            $data['values'] = $cvs->pluck('cost')->toArray();
             $data['labels'] = $cvs->pluck('timestamp')->toArray();
             
 //            $cvs = CardValues::select('date', 'avg_value')->groupBy('date')->orderBy('date', 'DESC')->limit($days);
@@ -615,16 +694,45 @@ class CardController extends Controller
     public function uploadSlabForExcelImport(Request $request)
     {
         try {
-            if($request->input('for') == 'baseball') {
-                Excel::import(new BaseballCardsImport,request()->file('file'));
-            }else if ($request->input('for') == 'basketball') {
-                Excel::import(new BasketballCardsImport,request()->file('file'));
-            }else if ($request->input('for') == 'football') {
-                Excel::import(new FootballCardsImport,request()->file('file'));
-            }else if ($request->input('for') == 'soccer') {
-                Excel::import(new SoccerCardsImport,request()->file('file'));
+            if($request->input('imageType') != 0) {
+                $filename = $request->file->getClientOriginalName();
+                if (Storage::disk('public')->put($filename, file_get_contents($request->file->getRealPath()))) {
+
+                    $zip = new ZipArchive;
+                    $res = $zip->open(public_path("storage/".$filename));
+                    if ($res === TRUE) {
+                    if ($request->input('for') == 'baseball') {
+                        $zip->extractTo(public_path("storage/baseball"));
+                        $zip->close();
+                    } else if ($request->input('for') == 'basketball') {
+                        $zip->extractTo(public_path("storage/basketball"));
+                        $zip->close();
+                    } else if ($request->input('for') == 'football') {
+                        $zip->extractTo(public_path("storage/football"));
+                        $zip->close();
+                    } else if ($request->input('for') == 'soccer') {
+                        $zip->extractTo(public_path("storage/soccer"));
+                        $zip->close();
+                    }
+                    return response()->json(['message' => $filename], 200);
+
+                } else {
+                        return response()->json(['message' => 'Error while extracting the files'], 500);
+                    }
+                }
+                return response()->json(['message' => 'File uploaded unsuccessfully'], 500);
+            } else {
+                if ($request->input('for') == 'baseball') {
+                    Excel::import(new BaseballCardsImport, request()->file('file'));
+                } else if ($request->input('for') == 'basketball') {
+                    Excel::import(new BasketballCardsImport, request()->file('file'));
+                } else if ($request->input('for') == 'football') {
+                    Excel::import(new FootballCardsImport, request()->file('file'));
+                } else if ($request->input('for') == 'soccer') {
+                    Excel::import(new SoccerCardsImport, request()->file('file'));
+                }
+                return response()->json(['message' => 'Card imported successfully'], 200);
             }
-            return response()->json(['message' =>'Card imported successfully' ], 200);
         } catch (\Exception $e) {
             \Log::error($e);
             return response()->json($e->getMessage(), 500);
