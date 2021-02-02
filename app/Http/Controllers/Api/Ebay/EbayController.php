@@ -417,15 +417,16 @@ class EbayController extends Controller {
             } else if ($galleryURL == null) {
                 $galleryURL = env('APP_URL') . '/img/default-image.jpg';
             }
+              $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
             return [
                 'id' => $item->id,
                 'title' => $item->title,
                 'galleryURL' => $galleryURL,
-                'price' => $item->sellingStatus->price,
+                'price' => ($item->sellingStatus ? $item->sellingStatus->price : 0),
                 'itemId' => $item->itemId,
                 'viewItemURL' => $item->viewItemURL,
                 'listing_ending_at' => $item->listing_ending_at,
-                'showBuyNow' => ($item->listingInfo->listingType != 'Auction') ? true : false,
+                'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
                 'data' => $item,
             ];
         });
@@ -507,14 +508,10 @@ class EbayController extends Controller {
         try {
             \DB::beginTransaction();
             $data = $request->all();
-//            dump($data);
             $data['card_id'] = ($data['card_id'] == "null" ? null : $data['card_id']);
             $item = EbayItems::where('card_id', $data['card_id'])->where('itemId', $data['itemId'])->first();
-//            dump($item);
             if ($item == null) {
-//                dd('in');
                 $cat_id = EbayItemCategories::where('categoryId', $data['details']['PrimaryCategoryID'])->first()['id'];
-//                dd($cat_id);
                 if(isset($data['details']['PictureURL'])){
                     if(is_array($data['details']['PictureURL']) && count($data['details']['PictureURL']) > 0){
                      $pictureURLLarge =   $data['details']['PictureURL'][0];
@@ -567,7 +564,26 @@ class EbayController extends Controller {
 
                 return response()->json(['status' => 200, 'data' => ['message' => 'Added successfully.']], 200);
             } else {
-                \DB::rollBack();
+                EbayItems::where('id', $data['listing_Id'])->update([
+                    'title' => $data['title'],
+                    'viewItemURL' => $data['web_link'],
+                    'location' => $data['location'],
+                    'returnsAccepted' => $data['ReturnPolicy'],
+                    'pictureURLLarge' => $data['image'],
+                    'listing_ending_at' => $data['time_left'],
+                ]);
+                EbayItemSellerInfo::where('id', $data['seller_id'])->update([
+                    'sellerUserName' => $data['seller_name'],
+                    'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
+                    'seller_contact_link' => $data['seller_contact_link'],
+                    'seller_store_link' => $data['seller_store_link']
+                ]);
+                foreach($data['specifics'] as $speci){
+                    EbayItemSpecific::where('id',$speci['id'])->update([
+                        'value' => $speci['value']
+                    ]);
+                }
+                \DB::commit();
                 return response()->json(['status' => 200, 'data' => ['message' => 'Updated successfully.']], 200);
             }
         } catch (\Exception $e) {
@@ -648,15 +664,16 @@ class EbayController extends Controller {
             } else if ($galleryURL == null) {
                 $galleryURL = env('APP_URL') . '/img/default-image.jpg';
             }
+            $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
             return [
                 'id' => $item->id,
                 'title' => $item->title,
                 'galleryURL' => $galleryURL,
-                'price' => $item->sellingStatus->price,
+                'price' => ($item->sellingStatus ? $item->sellingStatus->price : 0),
                 'itemId' => $item->itemId,
                 'viewItemURL' => $item->viewItemURL,
                 'listing_ending_at' => $item->listing_ending_at,
-                'showBuyNow' => ($item->listingInfo->listingType != 'Auction') ? true : false,
+                'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
                 'data' => $item,
             ];
         });
@@ -740,15 +757,17 @@ class EbayController extends Controller {
                 } else if ($galleryURL == null) {
                     $galleryURL = env('APP_URL') . '/img/default-image.jpg';
                 }
+                $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
+                
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
                     'galleryURL' => $galleryURL,
-                    'price' => $item->sellingStatus->price,
+                    'price' => ($item->sellingStatus ? $item->sellingStatus->price : 0),
                     'itemId' => $item->itemId,
                     'viewItemURL' => $item->viewItemURL,
                     'listing_ending_at' => $item->listing_ending_at,
-                    'showBuyNow' => ($item->listingInfo->listingType != 'Auction') ? true : false,
+                    'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
                     'data' => $item,
                 ];
             });
@@ -853,15 +872,16 @@ class EbayController extends Controller {
                 } else if ($galleryURL == null) {
                     $galleryURL = env('APP_URL') . '/img/default-image.jpg';
                 }
+                $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
                     'galleryURL' => $galleryURL,
-                    'price' => $item->sellingStatus->price,
+                    'price' => ($item->sellingStatus ? $item->sellingStatus->price : 0),
                     'itemId' => $item->itemId,
                     'viewItemURL' => $item->viewItemURL,
                     'listing_ending_at' => $item->listing_ending_at,
-                    'showBuyNow' => ($item->listingInfo->listingType != 'Auction') ? true : false,
+                    'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
                     'data' => $item,
                 ];
             });
@@ -928,15 +948,16 @@ class EbayController extends Controller {
                 } else if ($galleryURL == null) {
                     $galleryURL = env('APP_URL') . '/img/default-image.jpg';
                 }
+                $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
                     'galleryURL' => $galleryURL,
-                    'price' => $item->sellingStatus->price,
+                    'price' => ($item->sellingStatus?$item->sellingStatus->price:null),
                     'itemId' => $item->itemId,
                     'viewItemURL' => $item->viewItemURL,
                     'listing_ending_at' => $item->listing_ending_at,
-                    'showBuyNow' => ($item->listingInfo->listingType != 'Auction') ? true : false,
+                    'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
                     'data' => $item,
                 ];
             });
@@ -975,7 +996,7 @@ class EbayController extends Controller {
                     'itemId' => $item->itemId,
                     'viewItemURL' => $item->viewItemURL,
                     'listing_ending_at' => $item->listing_ending_at,
-                    'showBuyNow' => ($item->listingInfo->listingType != 'Auction') ? true : false,
+                    'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
                     'data' => $item,
                 ];
             });
@@ -1001,15 +1022,16 @@ class EbayController extends Controller {
                 } else if ($galleryURL == null) {
                     $galleryURL = env('APP_URL') . '/img/default-image.jpg';
                 }
+                $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
                     'galleryURL' => $galleryURL,
-                    'price' => $item->sellingStatus->price,
+                    'price' => ($item->sellingStatus ? $item->sellingStatus->price : 0),
                     'itemId' => $item->itemId,
                     'viewItemURL' => $item->viewItemURL,
                     'listing_ending_at' => $item->listing_ending_at,
-                    'showBuyNow' => ($item->listingInfo->listingType != 'Auction') ? true : false,
+                    'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
                     'data' => $item,
                 ];
             });

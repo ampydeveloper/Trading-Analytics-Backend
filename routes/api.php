@@ -17,9 +17,10 @@ use Illuminate\Http\Request;
     return $request->user();
 });*/
 
-
-Route::post('upload-slab-excel1', 'Api\CardController@uploadSlabForExcelImport');
-
+//header('Access-Control-Allow-Origin: *');
+//header( 'Access-Control-Allow-Headers: Authorization, Content-Type' );
+//Route::post('create-new-item-from-admin1', 'Api\Ebay\EbayController@createEbayItemForAdmin');
+//Route::post('get-cards-list-for-admin', 'Api\CardController@getCardListForAdmin');
 
 Route::group([
     'namespace' => 'Api\Auth',

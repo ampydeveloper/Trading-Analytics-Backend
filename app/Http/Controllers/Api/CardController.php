@@ -66,6 +66,7 @@ class CardController extends Controller
                 }
             })->get();
             $cards = $cards->skip($skip)->take($take);
+//            die('sd');
             $data = [];
             foreach ($cards as $card) {
                 $data[] = [
@@ -86,7 +87,7 @@ class CardController extends Controller
             $sportsList = Card::select('sport')->distinct()->pluck('sport');
             return response()->json(['status'=>200, 'data' => $data, 'next' => ($page + 1), 'sportsList' => $sportsList], 200);
         } catch (\Exception $e) {
-            return response()->json($e->getMessage(),500);
+            return response()->json(['status'=>500, 'error' => $e->getMessage()],500);
         }
     }
 
@@ -570,6 +571,17 @@ class CardController extends Controller
                 $data['values'] = array_reverse($data['values']);
                 $data['labels'] = array_reverse($data['labels']);
             }
+            $sales_diff = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->take(2)->get();
+            if(isset($sales_diff[1])){
+            $data['doller_diff'] = $sales_diff[1]->cost - $sales_diff[0]->cost;
+            $data['perc_diff'] = $sales_diff[1]->cost/$sales_diff[0]->cost*100;
+            $data['last_timestamp'] = Carbon::create($sales_diff[1]->timestamp)->format('F d Y \- h:i:s A');
+            }else{
+                $data['doller_diff'] = 0;
+                        $data['perc_diff'] = 0;
+                        $data['last_timestamp'] = '';
+            }
+            $data['total_sales'] = CardSales::where('card_id', $card_id)->sum('cost');
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -694,45 +706,75 @@ class CardController extends Controller
     public function uploadSlabForExcelImport(Request $request)
     {
         try {
-            if($request->input('imageType') != 0) {
-                $filename = $request->file->getClientOriginalName();
-                if (Storage::disk('public')->put($filename, file_get_contents($request->file->getRealPath()))) {
 
-                    $zip = new ZipArchive;
-                    $res = $zip->open(public_path("storage/".$filename));
-                    if ($res === TRUE) {
-                    if ($request->input('for') == 'baseball') {
-                        $zip->extractTo(public_path("storage/baseball"));
-                        $zip->close();
-                    } else if ($request->input('for') == 'basketball') {
-                        $zip->extractTo(public_path("storage/basketball"));
-                        $zip->close();
-                    } else if ($request->input('for') == 'football') {
-                        $zip->extractTo(public_path("storage/football"));
-                        $zip->close();
-                    } else if ($request->input('for') == 'soccer') {
-                        $zip->extractTo(public_path("storage/soccer"));
-                        $zip->close();
+//            if (isset($request->input('card_id'))) {
+//                if ($request->input('imageType') != 0) {
+//                    $filename = $request->file->getClientOriginalName();
+//                    if (Storage::disk('public')->put($filename, file_get_contents($request->file->getRealPath()))) {
+//
+//                        $zip = new ZipArchive;
+//                        $res = $zip->open(public_path("storage/" . $filename));
+//                        if ($res === TRUE) {
+//                            $zip->extractTo(public_path("storage/listing"));
+//                            $zip->close();
+//                            return response()->json(['message' => $filename], 200);
+//                        } else {
+//                            return response()->json(['message' => 'Error while extracting the files'], 500);
+//                        }
+//                    }
+//                    return response()->json(['message' => 'File uploaded unsuccessfully'], 500);
+//                } else {
+//                    if ($request->input('for') == 'baseball') {
+//                        Excel::import(new BaseballCardsImport, request()->file('file'));
+//                    } else if ($request->input('for') == 'basketball') {
+//                        Excel::import(new BasketballCardsImport, request()->file('file'));
+//                    } else if ($request->input('for') == 'football') {
+//                        Excel::import(new FootballCardsImport, request()->file('file'));
+//                    } else if ($request->input('for') == 'soccer') {
+//                        Excel::import(new SoccerCardsImport, request()->file('file'));
+//                    }
+//                    return response()->json(['message' => 'Card imported successfully'], 200);
+//                }
+//            } else {
+                if ($request->input('imageType') != 0) {
+                    $filename = $request->file->getClientOriginalName();
+                    if (Storage::disk('public')->put($filename, file_get_contents($request->file->getRealPath()))) {
+
+                        $zip = new ZipArchive;
+                        $res = $zip->open(public_path("storage/" . $filename));
+                        if ($res === TRUE) {
+                            if ($request->input('for') == 'baseball') {
+                                $zip->extractTo(public_path("storage/baseball"));
+                                $zip->close();
+                            } else if ($request->input('for') == 'basketball') {
+                                $zip->extractTo(public_path("storage/basketball"));
+                                $zip->close();
+                            } else if ($request->input('for') == 'football') {
+                                $zip->extractTo(public_path("storage/football"));
+                                $zip->close();
+                            } else if ($request->input('for') == 'soccer') {
+                                $zip->extractTo(public_path("storage/soccer"));
+                                $zip->close();
+                            }
+                            return response()->json(['message' => $filename], 200);
+                        } else {
+                            return response()->json(['message' => 'Error while extracting the files'], 500);
+                        }
                     }
-                    return response()->json(['message' => $filename], 200);
-
+                    return response()->json(['message' => 'File uploaded unsuccessfully'], 500);
                 } else {
-                        return response()->json(['message' => 'Error while extracting the files'], 500);
+                    if ($request->input('for') == 'baseball') {
+                        Excel::import(new BaseballCardsImport, request()->file('file'));
+                    } else if ($request->input('for') == 'basketball') {
+                        Excel::import(new BasketballCardsImport, request()->file('file'));
+                    } else if ($request->input('for') == 'football') {
+                        Excel::import(new FootballCardsImport, request()->file('file'));
+                    } else if ($request->input('for') == 'soccer') {
+                        Excel::import(new SoccerCardsImport, request()->file('file'));
                     }
+                    return response()->json(['message' => 'Card imported successfully'], 200);
                 }
-                return response()->json(['message' => 'File uploaded unsuccessfully'], 500);
-            } else {
-                if ($request->input('for') == 'baseball') {
-                    Excel::import(new BaseballCardsImport, request()->file('file'));
-                } else if ($request->input('for') == 'basketball') {
-                    Excel::import(new BasketballCardsImport, request()->file('file'));
-                } else if ($request->input('for') == 'football') {
-                    Excel::import(new FootballCardsImport, request()->file('file'));
-                } else if ($request->input('for') == 'soccer') {
-                    Excel::import(new SoccerCardsImport, request()->file('file'));
-                }
-                return response()->json(['message' => 'Card imported successfully'], 200);
-            }
+//            }
         } catch (\Exception $e) {
             \Log::error($e);
             return response()->json($e->getMessage(), 500);
