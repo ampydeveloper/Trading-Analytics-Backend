@@ -449,7 +449,7 @@ class CardController extends Controller {
                 'variation' => $request->input('variation'),
                 'title' => $request->input('title'),
                 'grade' => $request->input('grade'),
-                'active' => 0,
+                'active' => 1,
                 'qualifiers' => $request->input('qualifiers'),
                 'qualifiers2' => $request->input('qualifiers2'),
                 'qualifiers3' => $request->input('qualifiers3'),
