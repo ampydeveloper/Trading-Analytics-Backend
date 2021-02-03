@@ -22,6 +22,10 @@ use Illuminate\Http\Request;
 //Route::post('create-new-item-from-admin1', 'Api\Ebay\EbayController@createEbayItemForAdmin');
 //Route::post('get-cards-list-for-admin', 'Api\CardController@getCardListForAdmin');
 
+
+
+Route::post('get-ebay-list1', 'Api\Ebay\EbayController@getItemsListForAdmin');
+
 Route::group([
     'namespace' => 'Api\Auth',
 ], function () {
@@ -80,6 +84,7 @@ Route::group([
     Route::post('set-card-status', 'CardController@setStatus');
     Route::post('set-card-sx', 'CardController@setSx');
     Route::post('card-create', 'CardController@create');
+    Route::post('inactive-slab', 'CardController@inactiveSlab');
     Route::post('get-ebay-list', 'Ebay\EbayController@getItemsListForAdmin');
     Route::post('get-ebay-list-sold', 'Ebay\EbayController@getItemsListSoldAdmin');
     Route::post('get-ebay-specific-list', 'Ebay\EbayController@getSpecificListForAdmin');
@@ -128,6 +133,7 @@ Route::group([
     'middleware' => 'jwt.verify'
 ], function () {
     Route::post('get-card-list', 'Ebay\EbayController@getItemsList');
+    Route::post('get-recent-auction-list', 'Ebay\EbayController@getRecentAuctionList');
     Route::post('get-internal-card-list', 'Ebay\EbayController@getInternalItemsList');
     Route::post('head-to-head', 'Ebay\EbayController@getItemsList');
     Route::post('recent-listing', 'Ebay\EbayController@getRecentList');
@@ -135,6 +141,7 @@ Route::group([
     Route::post('sample-my-listing', 'Ebay\EbayController@sampleMyListing');
     
     
+    Route::post('featured-listing', 'CardController@getFeaturedList');
     Route::post('slab-listing', 'CardController@getRecentList');
     Route::post('get-smart-keyword', 'CardController@getSmartKeyword');
     Route::post('get-smart-keyword-with-data', 'CardController@getSmartKeywordWithData');

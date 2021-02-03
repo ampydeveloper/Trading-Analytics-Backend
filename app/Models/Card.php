@@ -37,6 +37,7 @@ class Card extends Model
         'readyforcron',
         'is_featured',
         'active',
+        'image',
     ];
 
     protected $appends = [

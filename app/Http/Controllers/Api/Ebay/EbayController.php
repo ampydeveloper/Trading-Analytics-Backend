@@ -280,6 +280,109 @@ class EbayController extends Controller {
             return response()->json($e->getMessage() . ' - ' . $e->getLine(), 500);
         }
     }
+    public function getRecentAuctionList(Request $request) {
+        try {
+//            $filter = $request->input('filter', null);
+//            $searchCard = $request->input('searchCard', null);
+//            if ($filter != null && $this->checkForAdvanceSearch($filter)) {
+//                $items = $this->_advanceSearch($request);
+//            } else {
+//                $items = $this->_basicSearch($request);
+//            }
+
+//            if ($searchCard != null) {
+//                $cards = Card::where('id', $searchCard)->with('details')->get();
+//            } else {
+//                $cards = Card::whereIn('id', $items['cards'])->with('details')->get();
+//            }
+//            foreach ($cards as $ind => $card) {
+//                $cardValues = CardValues::where('card_id', $card->id)->orderBy('date', 'DESC')->limit(2)->get('avg_value');
+//                $sx = 0;
+//                $sx_icon = 'up';
+//                if (count($cardValues) == 2) {
+//                    foreach ($cardValues as $cv) {
+//                        if ($sx == 0) {
+//                            $sx = $cv['avg_value'];
+//                        } else {
+//                            $sx = $sx - $cv['avg_value'];
+//                        }
+//                    }
+//                }
+//                if ($sx < 0) {
+//                    $sx = abs($sx);
+//                    $sx_icon = 'down';
+//                }
+//                $cards[$ind]['sx_value'] = number_format((float) $sx, 2, '.', '');
+//                $cards[$ind]['sx_icon'] = $sx_icon;
+//                $cards[$ind]['price'] = 0;
+//                if (isset($card->details->currentPrice)) {
+//                    $cards[$ind]['price'] = $card->details->currentPrice;
+//                }
+//            }
+            
+//            $cardsIds = [];
+//        $search = $request->input('search', null);
+//        $page = $request->input('page', 1);
+        $take = $request->input('take', 30);
+//        $searchCard = $request->input('searchCard', null);
+//        $filterBy = $request->input('filterBy', null);
+//        $skip = $take * $page;
+//        $skip = $skip - $take;
+//        $cardsId = null;
+//        if ($search != null && $search != '') {
+//            $cardsId = Card::where(function($q) use ($search) {
+//                        $search = explode(' ', $search);
+//                        foreach ($search as $key => $keyword) {
+//                            $q->orWhere('title', 'like', '%' . $keyword . '%');
+//                        }
+//                    })->pluck('id');
+//        }
+        $items = EbayItems::with(['category', 'card', 'card.value', 'details', 'playerDetails', 'condition', 'sellerInfo', 'listingInfo', 'sellingStatus', 'shippingInfo', 'specifications'])
+                ->where('status', 0)->orderBy('created_at', 'desc')->take($take)->get();
+//        if ($filterBy == 'ending_soon') {
+//            $date_one = Carbon::now()->addDay();
+//            $date_one->setTimezone('UTC');
+//            // $date_two = Carbon::now()->setTimezone('UTC');
+//            $items = $items->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one);
+//            $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
+//        } else {
+//            $items = $items->where('status', 0)->orderBy('updated_at', 'desc')->get();
+//        }
+//        if ($filterBy == 'price_low_to_high') {
+//            $items = $items->sortBy(function($query) {
+//                return $query->sellingStatus->currentPrice;
+//            });
+//        }
+        $items = $items->map(function($item, $key){
+//            $cardsIds[] = $item->card_id;
+            $galleryURL = $item->galleryURL;
+            if ($item->pictureURLLarge != null) {
+                $galleryURL = $item->pictureURLLarge;
+            } else if ($item->pictureURLSuperSize != null) {
+                $galleryURL = $item->pictureURLSuperSize;
+            } else if ($galleryURL == null) {
+                $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+            }
+            $listingTypeval = ($item->listingInfo ? $item->listingInfo->listingType : '');
+            return [
+                'id' => $item->id,
+                'title' => $item->title,
+                'galleryURL' => $galleryURL,
+                'price' => ($item->sellingStatus ? $item->sellingStatus->price : 0),
+                'itemId' => $item->itemId,
+                'viewItemURL' => $item->viewItemURL,
+                'listing_ending_at' => $item->listing_ending_at,
+                'showBuyNow' => ($listingTypeval != 'Auction') ? true : false,
+                'data' => $item,
+            ];
+        });
+//        return ['data' => $items, 'next' => ($page + 1), 'cards' => $cardsIds];
+
+            return response()->json(['status' => 200, 'items' => $items], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage() . ' - ' . $e->getLine(), 500);
+        }
+    }
 
     public function checkForAdvanceSearch($filter) {
         $flag = false;
