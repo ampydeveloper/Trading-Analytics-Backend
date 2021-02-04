@@ -19,6 +19,8 @@ use App\Models\Ebay\EbayItemCategories;
 class EbayController extends Controller {
 
     public function getItemsListForAdmin(Request $request) {
+//        dump(Carbon::now()->toDateTimeString());
+//        dump($request->all());
         $page = $request->input('page', 1);
         $take = $request->input('take', 30);
         $search = $request->input('search', null);
@@ -26,7 +28,8 @@ class EbayController extends Controller {
         $skip = $skip - $take;
         try {
             $itemsSpecsIds = EbayItemSpecific::where('value', 'like', '%' . $search . '%')->groupBy('itemId')->pluck('itemId');
-            $items = EbayItems::with(['sellingStatus', 'card', 'listingInfo'])->where(function ($q) use ($itemsSpecsIds, $search) {
+//            dump($itemsSpecsIds);
+            $items = EbayItems::with(['sellingStatus', 'card', 'listingInfo'])->where(function ($q) use ($itemsSpecsIds, $search, $request) {
                         if ($search != null) {
                             if (count($itemsSpecsIds) > 0) {
                                 $q->whereIn('itemId', $itemsSpecsIds);
@@ -34,8 +37,16 @@ class EbayController extends Controller {
                                 $q->where('title', 'like', '%' . $search . '%');
                             }
                         }
-                    })->orderBy('updated_at', 'desc')->get();
+                        if($request->input('sport') == 'random_bin') {
+                            $q->orWhere('is_random_bin', 2);
+                        }
+                        
+                        if($request->input('filter_by') == 'ending_soon') {
+                            $q->orWhere('listing_ending_at', '>' ,Carbon::now()->toDateTimeString());
+                        }
+                    })->where('sold_price','')->orderBy('updated_at', 'desc')->get();
             $items = $items->skip($skip)->take($take);
+//            dd($items->toArray());
             $data = [];
             foreach ($items as $key => $item) {
                 $galleryURL = $item->galleryURL;
@@ -663,6 +674,11 @@ class EbayController extends Controller {
                         ]);
                     }
                 }
+                EbayItemListingInfo::create([
+                    'itemId' => $data['itemId'],
+                    'startTime' => $data['auction_start_time'],
+                    'endTime' => $data['auction_end_time'],
+                ]);
                 \DB::commit();
 
                 return response()->json(['status' => 200, 'data' => ['message' => 'Added successfully.']], 200);
@@ -686,6 +702,11 @@ class EbayController extends Controller {
                         'value' => $speci['value']
                     ]);
                 }
+                EbayItemListingInfo::where('id', $data['auction_start_end_id'])->update([
+                    'startTime' => $data['auction_start_time'],
+                    'endTime' => $data['auction_end_time'],
+                ]);
+                
                 \DB::commit();
                 return response()->json(['status' => 200, 'data' => ['message' => 'Updated successfully.']], 200);
             }
