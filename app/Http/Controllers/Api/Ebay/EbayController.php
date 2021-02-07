@@ -35,16 +35,17 @@ class EbayController extends Controller {
                                 $q->whereIn('itemId', $itemsSpecsIds);
                             } else {
                                 $q->where('title', 'like', '%' . $search . '%');
+                                $q->where('id',$search);
                             }
                         }
-                        if($request->input('sport') == 'random_bin') {
+                        if ($request->input('sport') == 'random_bin') {
                             $q->orWhere('is_random_bin', 2);
                         }
-                        
-                        if($request->input('filter_by') == 'ending_soon') {
-                            $q->orWhere('listing_ending_at', '>' ,Carbon::now()->toDateTimeString());
+
+                        if ($request->input('filter_by') == 'ending_soon') {
+                            $q->orWhere('listing_ending_at', '>', Carbon::now()->toDateTimeString());
                         }
-                    })->where('sold_price','')->orderBy('updated_at', 'desc')->get();
+                    })->where('sold_price', '')->orderBy('updated_at', 'desc')->get();
             $items = $items->skip($skip)->take($take);
 //            dd($items->toArray());
             $data = [];
@@ -74,13 +75,14 @@ class EbayController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
+
     public function getListingEdit($listing_id) {
         try {
 //            $data = CardSales::where('id', $sale_id)->first();
             $items = EbayItems::where('id', $listing_id)->with(['sellingStatus', 'card', 'listingInfo'])->first();
             $itemsSpecsIds = EbayItemSpecific::where('itemId', $items->itemId)->get();
             $itemSellerInfo = EbayItemSellerInfo::where('itemId', $items->itemId)->first();
-            
+
 //            $items = $items->skip($skip)->take($take);
 //            $data = [];
 //            foreach ($items as $key => $item) {
@@ -105,10 +107,10 @@ class EbayController extends Controller {
 //            }
 //            $sportsList = Card::select('sport')->distinct()->pluck('sport');
             $data = [
-                    'items' => $items,
-                    'itemsSpecs' => $itemsSpecsIds,
-                    'itemSellerInfo' => $itemSellerInfo,
-                ];
+                'items' => $items,
+                'itemsSpecs' => $itemsSpecsIds,
+                'itemSellerInfo' => $itemSellerInfo,
+            ];
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -209,22 +211,47 @@ class EbayController extends Controller {
     }
 
     public function changeEbayStatusAdmin(Request $request) {
-        $validator = Validator::make($request->all(), [
-                    'id' => 'required',
-                    'status' => 'required',
-        ]);
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+//        $validator = Validator::make($request->all(), [
+//                    'id' => 'required',
+//                    'status' => 'required',
+//        ]);
+//        if ($validator->fails()) {
+//            return response()->json($validator->errors(), 422);
+//        }
+        $idArr = $request->input('id');
+        if (is_array($idArr)) {
+            $idArr = $request->input('id');
+            foreach ($idArr as $id) {
+                EbayItems::where('id', $id)->update(['status' => $request->input('status')]);
+            }
+        } else {
+            $idArr = $request->input('id');
+            EbayItems::where('id', $idArr)->update(['status' => $request->input('status')]);
         }
 
-        try {
-            if (EbayItems::where('id', $request->input('id'))->update(['status' => $request->input('status')])) {
-                return response()->json(['status' => 200, 'message' => 'Status Chnaged successfully'], 200);
+        return response()->json(['status' => 200, 'message' => 'Status Changed successfully'], 200);
+    }
+    
+    public function changeCardStatusAdmin(Request $request) {
+//        $validator = Validator::make($request->all(), [
+//                    'id' => 'required',
+//                    'status' => 'required',
+//        ]);
+//        if ($validator->fails()) {
+//            return response()->json($validator->errors(), 422);
+//        }
+        $idArr = $request->input('id');
+        if (is_array($idArr)) {
+            $idArr = $request->input('id');
+            foreach ($idArr as $id) {
+                Card::where('id', $id)->update(['status' => $request->input('status')]);
             }
-            return response()->json(['status' => 400, 'message' => 'Status change failed'], 400);
-        } catch (\Exception $e) {
-            return response()->json($e->getMessage(), 500);
+        } else {
+            $idArr = $request->input('id');
+            Card::where('id', $idArr)->update(['status' => $request->input('status')]);
         }
+
+        return response()->json(['status' => 200, 'message' => 'Status Changed successfully'], 200);
     }
 
     public function saveSoldPriceAdmin(Request $request) {
@@ -237,7 +264,7 @@ class EbayController extends Controller {
 //        }
 
         try {
-            if (EbayItems::where('id', $request->input('id'))->update(['sold_price' => $request->input('sold_price')])) {
+            if (EbayItems::where('id', $request->input('id'))->update(['sold_price' => $request->input('sold_price'), 'status' => 2])) {
                 return response()->json(['status' => 200, 'message' => 'Sold price Chnaged successfully'], 200);
             }
             return response()->json(['status' => 400, 'message' => 'Status change failed'], 400);
@@ -291,6 +318,7 @@ class EbayController extends Controller {
             return response()->json($e->getMessage() . ' - ' . $e->getLine(), 500);
         }
     }
+
     public function getRecentAuctionList(Request $request) {
         try {
 //            $filter = $request->input('filter', null);
@@ -300,7 +328,6 @@ class EbayController extends Controller {
 //            } else {
 //                $items = $this->_basicSearch($request);
 //            }
-
 //            if ($searchCard != null) {
 //                $cards = Card::where('id', $searchCard)->with('details')->get();
 //            } else {
@@ -330,11 +357,10 @@ class EbayController extends Controller {
 //                    $cards[$ind]['price'] = $card->details->currentPrice;
 //                }
 //            }
-            
 //            $cardsIds = [];
 //        $search = $request->input('search', null);
 //        $page = $request->input('page', 1);
-        $take = $request->input('take', 30);
+            $take = $request->input('take', 30);
 //        $searchCard = $request->input('searchCard', null);
 //        $filterBy = $request->input('filterBy', null);
 //        $skip = $take * $page;
@@ -348,8 +374,8 @@ class EbayController extends Controller {
 //                        }
 //                    })->pluck('id');
 //        }
-        $items = EbayItems::with(['category', 'card', 'card.value', 'details', 'playerDetails', 'condition', 'sellerInfo', 'listingInfo', 'sellingStatus', 'shippingInfo', 'specifications'])
-                ->where('status', 0)->orderBy('created_at', 'desc')->take($take)->get();
+            $items = EbayItems::with(['category', 'card', 'card.value', 'details', 'playerDetails', 'condition', 'sellerInfo', 'listingInfo', 'sellingStatus', 'shippingInfo', 'specifications'])
+                            ->where('status', 0)->orderBy('created_at', 'desc')->take($take)->get();
 //        if ($filterBy == 'ending_soon') {
 //            $date_one = Carbon::now()->addDay();
 //            $date_one->setTimezone('UTC');
@@ -364,29 +390,29 @@ class EbayController extends Controller {
 //                return $query->sellingStatus->currentPrice;
 //            });
 //        }
-        $items = $items->map(function($item, $key){
+            $items = $items->map(function($item, $key) {
 //            $cardsIds[] = $item->card_id;
-            $galleryURL = $item->galleryURL;
-            if ($item->pictureURLLarge != null) {
-                $galleryURL = $item->pictureURLLarge;
-            } else if ($item->pictureURLSuperSize != null) {
-                $galleryURL = $item->pictureURLSuperSize;
-            } else if ($galleryURL == null) {
-                $galleryURL = env('APP_URL') . '/img/default-image.jpg';
-            }
-            $listingTypeval = ($item->listingInfo ? $item->listingInfo->listingType : '');
-            return [
-                'id' => $item->id,
-                'title' => $item->title,
-                'galleryURL' => $galleryURL,
-                'price' => ($item->sellingStatus ? $item->sellingStatus->price : 0),
-                'itemId' => $item->itemId,
-                'viewItemURL' => $item->viewItemURL,
-                'listing_ending_at' => $item->listing_ending_at,
-                'showBuyNow' => ($listingTypeval != 'Auction') ? true : false,
-                'data' => $item,
-            ];
-        });
+                $galleryURL = $item->galleryURL;
+                if ($item->pictureURLLarge != null) {
+                    $galleryURL = $item->pictureURLLarge;
+                } else if ($item->pictureURLSuperSize != null) {
+                    $galleryURL = $item->pictureURLSuperSize;
+                } else if ($galleryURL == null) {
+                    $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                }
+                $listingTypeval = ($item->listingInfo ? $item->listingInfo->listingType : '');
+                return [
+                    'id' => $item->id,
+                    'title' => $item->title,
+                    'galleryURL' => $galleryURL,
+                    'price' => ($item->sellingStatus ? $item->sellingStatus->price : 0),
+                    'itemId' => $item->itemId,
+                    'viewItemURL' => $item->viewItemURL,
+                    'listing_ending_at' => $item->listing_ending_at,
+                    'showBuyNow' => ($listingTypeval != 'Auction') ? true : false,
+                    'data' => $item,
+                ];
+            });
 //        return ['data' => $items, 'next' => ($page + 1), 'cards' => $cardsIds];
 
             return response()->json(['status' => 200, 'items' => $items], 200);
@@ -531,7 +557,7 @@ class EbayController extends Controller {
             } else if ($galleryURL == null) {
                 $galleryURL = env('APP_URL') . '/img/default-image.jpg';
             }
-              $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
+            $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
             return [
                 'id' => $item->id,
                 'title' => $item->title,
@@ -626,19 +652,19 @@ class EbayController extends Controller {
             $item = EbayItems::where('card_id', $data['card_id'])->where('itemId', $data['itemId'])->first();
             if ($item == null) {
                 $cat_id = EbayItemCategories::where('categoryId', $data['details']['PrimaryCategoryID'])->first()['id'];
-                if(isset($data['details']['PictureURL'])){
-                    if(is_array($data['details']['PictureURL']) && count($data['details']['PictureURL']) > 0){
-                     $pictureURLLarge =   $data['details']['PictureURL'][0];
-                     $pictureURLSuperSize =   $data['details']['PictureURL'][count($data['details']['PictureURL']) - 1];
-                    }else{
-                      $pictureURLLarge =  $data['details']['PictureURL'];
-                      $pictureURLSuperSize =  $data['details']['PictureURL'];
+                if (isset($data['details']['PictureURL'])) {
+                    if (is_array($data['details']['PictureURL']) && count($data['details']['PictureURL']) > 0) {
+                        $pictureURLLarge = $data['details']['PictureURL'][0];
+                        $pictureURLSuperSize = $data['details']['PictureURL'][count($data['details']['PictureURL']) - 1];
+                    } else {
+                        $pictureURLLarge = $data['details']['PictureURL'];
+                        $pictureURLSuperSize = $data['details']['PictureURL'];
                     }
-                }else{
+                } else {
                     $pictureURLLarge = null;
-                            $pictureURLSuperSize = null;
+                    $pictureURLSuperSize = null;
                 }
-                
+
                 EbayItems::create([
                     'card_id' => $data['card_id'],
                     'itemId' => $data['itemId'],
@@ -665,7 +691,7 @@ class EbayController extends Controller {
                     'seller_contact_link' => $data['seller_contact_link'],
                     'seller_store_link' => $data['seller_store_link']
                 ]);
-                foreach($data['specifics'] as $speci){
+                foreach ($data['specifics'] as $speci) {
                     if ($speci['Value'] != "N/A") {
                         EbayItemSpecific::create([
                             'itemId' => $data['itemId'],
@@ -697,8 +723,8 @@ class EbayController extends Controller {
                     'seller_contact_link' => $data['seller_contact_link'],
                     'seller_store_link' => $data['seller_store_link']
                 ]);
-                foreach($data['specifics'] as $speci){
-                    EbayItemSpecific::where('id',$speci['id'])->update([
+                foreach ($data['specifics'] as $speci) {
+                    EbayItemSpecific::where('id', $speci['id'])->update([
                         'value' => $speci['value']
                     ]);
                 }
@@ -706,7 +732,7 @@ class EbayController extends Controller {
                     'startTime' => $data['auction_start_time'],
                     'endTime' => $data['auction_end_time'],
                 ]);
-                
+
                 \DB::commit();
                 return response()->json(['status' => 200, 'data' => ['message' => 'Updated successfully.']], 200);
             }
@@ -882,7 +908,7 @@ class EbayController extends Controller {
                     $galleryURL = env('APP_URL') . '/img/default-image.jpg';
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
-                
+
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
@@ -1077,7 +1103,7 @@ class EbayController extends Controller {
                     'id' => $item->id,
                     'title' => $item->title,
                     'galleryURL' => $galleryURL,
-                    'price' => ($item->sellingStatus?$item->sellingStatus->price:null),
+                    'price' => ($item->sellingStatus ? $item->sellingStatus->price : null),
                     'itemId' => $item->itemId,
                     'viewItemURL' => $item->viewItemURL,
                     'listing_ending_at' => $item->listing_ending_at,
@@ -1125,6 +1151,45 @@ class EbayController extends Controller {
                 ];
             });
             return response()->json(['status' => 200, 'data' => $items, 'next' => ($page + 1)], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+    public function getEndedList(Request $request) {
+//        $page = $request->input('page', 1);
+//        $take = $request->input('take', 30);
+//        $skip = $take * $page;
+//        $skip = $skip - $take;
+        try {
+//            $date_one = Carbon::now()->addDay();
+            $date_one = Carbon::now();
+            $date_one->setTimezone('UTC');
+            // $date_two = Carbon::now()->setTimezone('UTC');
+            $items = EbayItems::where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one)
+            $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
+//            $items = $items->map(function($item, $key) {
+//                $galleryURL = $item->galleryURL;
+//                if ($item->pictureURLLarge != null) {
+//                    $galleryURL = $item->pictureURLLarge;
+//                } else if ($item->pictureURLSuperSize != null) {
+//                    $galleryURL = $item->pictureURLSuperSize;
+//                } else if ($galleryURL == null) {
+//                    $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+//                }
+//                $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
+//                return [
+//                    'id' => $item->id,
+//                    'title' => $item->title,
+//                    'galleryURL' => $galleryURL,
+//                    'price' => ($item->sellingStatus ? $item->sellingStatus->price : 0),
+//                    'itemId' => $item->itemId,
+//                    'viewItemURL' => $item->viewItemURL,
+//                    'listing_ending_at' => $item->listing_ending_at,
+//                    'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
+//                    'data' => $item,
+//                ];
+//            });
+            return response()->json(['status' => 200, 'data' => $items], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }

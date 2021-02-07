@@ -89,6 +89,7 @@ Route::group([
     Route::post('get-ebay-list-sold', 'Ebay\EbayController@getItemsListSoldAdmin');
     Route::post('get-ebay-specific-list', 'Ebay\EbayController@getSpecificListForAdmin');
     Route::post('change-ebay-status', 'Ebay\EbayController@changeEbayStatusAdmin');
+    Route::post('change-card-status', 'Ebay\EbayController@changeCardStatusAdmin');
     Route::post('save-sold-price', 'Ebay\EbayController@saveSoldPriceAdmin');
     Route::post('generate-image', 'UserController@generateImageUsingBase');
     Route::post('generate-graph-image', 'UserController@generateImageUsingBase');
@@ -139,6 +140,7 @@ Route::group([
     Route::post('recent-listing', 'Ebay\EbayController@getRecentList');
     Route::post('ending-soon-listing', 'Ebay\EbayController@getEndingSoonList');
     Route::post('sample-my-listing', 'Ebay\EbayController@sampleMyListing');
+    Route::post('ended-listing', 'Ebay\EbayController@getEndedList');
     
     
     Route::post('featured-listing', 'CardController@getFeaturedList');

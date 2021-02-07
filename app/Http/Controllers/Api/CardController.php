@@ -597,24 +597,30 @@ class CardController extends Controller {
             $cvs = CardSales::where('card_id', $card_id)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
             $data['values'] = $cvs->pluck('cost')->toArray();
             $data['labels'] = $cvs->pluck('timestamp')->toArray();
+            $data['qty'] = $cvs->pluck('quantity')->toArray();
 
 //            $cvs = CardValues::select('date', 'avg_value')->groupBy('date')->orderBy('date', 'DESC')->limit($days);
 //            $data['values'] = $cvs->pluck('avg_value')->toArray();
 //            $data['labels'] = $cvs->pluck('date')->toArray();
 
             $data = $this->__groupGraphData($days, $data);
+            $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
             if ($days == 2) {
                 $labels = [];
                 $values = [];
+                $qty = [];
                 for ($i = 0; $i <= 23; $i++) {
                     $labels[] = ($i < 10) ? '0' . $i . ':00' : $i . ':00';
                     $values[] = (count($data['values']) > 0 ) ? $data['values'][0] : 0;
+                    $qty[] = (count($data['qty']) > 0 ) ? $data['qty'][0] : 0;
                 }
                 $data['labels'] = $labels;
                 $data['values'] = $values;
+                $data['qty'] = $qty;
             } else {
                 $data['values'] = array_reverse($data['values']);
                 $data['labels'] = array_reverse($data['labels']);
+                $data['qty'] = array_reverse($data['qty']);
             }
             $sales_diff = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->take(2)->get();
             if (isset($sales_diff[1])) {
