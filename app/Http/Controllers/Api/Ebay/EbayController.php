@@ -20,7 +20,7 @@ class EbayController extends Controller {
 
     public function getItemsListForAdmin(Request $request) {
 //        dump(Carbon::now()->toDateTimeString());
-        dump($request->all());
+//        dump($request->all());
         $page = $request->input('page', 1);
         $take = $request->input('take', 30);
         $search = $request->input('search', null);
