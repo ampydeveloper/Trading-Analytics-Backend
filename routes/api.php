@@ -86,6 +86,7 @@ Route::group([
     Route::post('card-create', 'CardController@create');
     Route::post('inactive-slab', 'CardController@inactiveSlab');
     Route::post('get-ebay-list', 'Ebay\EbayController@getItemsListForAdmin');
+    Route::post('get-ebay-list-for-sport', 'Ebay\EbayController@getItemsListForAdminForSport');
     Route::post('get-ebay-list-sold', 'Ebay\EbayController@getItemsListSoldAdmin');
     Route::post('get-ebay-specific-list', 'Ebay\EbayController@getSpecificListForAdmin');
     Route::post('change-ebay-status', 'Ebay\EbayController@changeEbayStatusAdmin');
