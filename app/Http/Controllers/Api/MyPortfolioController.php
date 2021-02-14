@@ -13,6 +13,7 @@ use App\Models\PortfolioUserValues;
 use Exception;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use App\Models\WatchList;
 
 class MyPortfolioController extends Controller {
 
@@ -154,7 +155,7 @@ class MyPortfolioController extends Controller {
         $skip = $skip - $take;
         try {
             $this->user_id = auth()->user()->id;
-            $card_ids = MyPortfolio::where("user_id", $this->user_id)->pluck('card_id');
+//            $card_ids = MyPortfolio::where("user_id", $this->user_id)->pluck('card_id');
             $cards = Card::where(function ($q) use ($filter) {
                         if ($filter['player'] != '') {
                             $q->where('player', 'like', '%' . $filter['player'] . '%');
@@ -180,7 +181,8 @@ class MyPortfolioController extends Controller {
                         if ($filter['grade'] != '') {
                             $q->where('grade', $filter['grade']);
                         }
-                    })->whereNotIn('id', $card_ids)->get();
+                    })->get();
+//                    })->whereNotIn('id', $card_ids)->get();
             $cards = $cards->skip($skip)->take($take);
             return response()->json(['status' => 200, 'data' => $cards, 'next' => ($page + 1)], 200);
         } catch (\Exception $e) {
@@ -212,18 +214,49 @@ class MyPortfolioController extends Controller {
                 $diff_icon = 'down';
             }
 
+            
+
+            
+            //Calculate SX value
+            $card_ids = WatchList::where('user_id', $this->user_id)->pluck('card_id');
+            $cards = Card::whereIn('id', $card_ids)->with('details')->get();
+            $sx_data = [];
+            foreach ($cards as $key => $card) {
+                $cardValues = CardValues::where('card_id', $card->id)->orderBy('date', 'DESC')->limit(2)->get('avg_value');
+                $sx = 0;
+                $sx_icon = 'up';
+                foreach ($cardValues as $i => $cv) {
+                    if ($sx == 0) {
+                        $sx = $cv->avg_value;
+                    } else {
+                        $sx = $sx - $cv->avg_value;
+                    }
+                }
+                if ($sx < 0) {
+                    $sx = abs($sx);
+                    $sx_icon = 'down';
+                }
+
+                $sx_data[] = [
+                    'sx_value' => $sx,
+                ];
+            }
+            $total_sx_value = array_sum($sx_data);
+            
+            
             $total_purchases = (isset($purchaseVal[0]) ? $purchaseVal[0] : 0);
-            $diff = ((float) $user->slab_value) - ((float) $total_purchases);
+            $diff = ((float) $total_sx_value) - ((float) $total_purchases);
             $diff_icon = (($diff < 0) ? 'down' : 'up');
             $diff = abs($diff);
             $diff = number_format($diff, 2, '.', '');
-            $percent_diff = (100 * ($diff / ((((float) $user->slab_value) + ((float) $total_purchases)) / 2)));
+            $percent_diff = (100 * ($diff / ((((float) $total_sx_value) + ((float) $total_purchases)) / 2)));
             $percent_diff_icon = (($percent_diff < 0) ? 'down' : 'up');
             $percent_diff = number_format($percent_diff, 2, '.', '');
-
+            
+            
             return response()->json([
                         'status' => 200,
-                        'value' => $user->slab_value,
+                        'value' =>  $total_sx_value, //$user->slab_value, 
                         'rank' => $user->overall_rank,
                         'diff_value' => $diff,
                         'diff_icon' => $diff_icon,

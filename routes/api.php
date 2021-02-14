@@ -127,6 +127,14 @@ Route::group([
     Route::post('remove', 'WatchListController@removeToWatchList');
     Route::post('search', 'WatchListController@getEbayList');
 });
+Route::group([
+    // Prefixed with /auth
+    'namespace' => 'Api',
+    'prefix' => 'watchlist',
+//    'middleware' => 'jwt.verify'
+], function () {
+    Route::post('search', 'WatchListController@getEbayList');
+});
 
 Route::group([
     // Prefixed with /auth
