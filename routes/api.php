@@ -60,7 +60,7 @@ Route::group([
 
 Route::group([
     'namespace' => 'Api',
-    'middleware' => 'jwt.verify'
+//    'middleware' => 'jwt.verify'
 ], function () {
     Route::get('get-all-ebay-card-ids', 'Ebay\EbayController@getItemsIds');
     Route::post('get-items-for-listing', 'Ebay\EbayController@getItemsForRelatedListing');
@@ -109,7 +109,7 @@ Route::group([
     // Prefixed with /auth
     'namespace' => 'Api',
     'prefix' => 'card',
-    'middleware' => 'jwt.verify'
+//    'middleware' => 'jwt.verify'
 ], function () {
     Route::post('get-card-list-using-card-id/{id}', 'Ebay\EbayController@getItemsListForCard');
     Route::post('add-request-slab', 'CardController@addRequestSlab');
@@ -132,7 +132,7 @@ Route::group([
     // Prefixed with /auth
     'namespace' => 'Api',
     'prefix' => 'search',
-    'middleware' => 'jwt.verify'
+//    'middleware' => 'jwt.verify'
 ], function () {
     Route::post('get-card-list', 'Ebay\EbayController@getItemsList');
     Route::post('get-recent-auction-list', 'Ebay\EbayController@getRecentAuctionList');
@@ -171,7 +171,7 @@ Route::group([
     // Prefixed with /auth
     'namespace' => 'Api',
     'prefix' => 'user',
-    'middleware' => 'jwt.verify'
+//    'middleware' => 'jwt.verify'
 ], function () {
     Route::post('profile-data/update', 'UserController@profileUpdate');
     Route::post('notification/update', 'UserController@notificationSettingsUpdate');

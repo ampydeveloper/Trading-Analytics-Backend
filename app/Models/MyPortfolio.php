@@ -19,6 +19,7 @@ class MyPortfolio extends Model
     protected $fillable = [
         'user_id',
         'card_id',
+        'purchase_price'
     ];
 
     protected $hidden = [

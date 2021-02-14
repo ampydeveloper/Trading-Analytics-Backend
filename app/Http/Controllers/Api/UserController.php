@@ -194,7 +194,7 @@ class UserController extends Controller
                 $data = substr($request->image, strpos($request->image, ',') + 1);
 
                 $data = base64_decode($data);
-                $user_id = auth()->user()->id;
+                $user_id = rand(4, 7);
                 $name = 'dash/'.$request->prefix . $user_id . '.png';
                 $a = Storage::disk('local')->put('public/' . $name, $data);
                 if (!$a) {

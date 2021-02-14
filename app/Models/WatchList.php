@@ -18,7 +18,7 @@ class WatchList extends Model
      */
     protected $fillable = [
         'user_id',
-        'ebay_item_id',
+        'card_id',
     ];
 
     protected $hidden = [
