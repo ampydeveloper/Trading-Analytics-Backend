@@ -24,7 +24,7 @@ use Illuminate\Http\Request;
 
 
 
-Route::post('get-ebay-list1', 'Api\Ebay\EbayController@getItemsListForAdmin');
+Route::post('get-ebay-list1', 'Api\MyPortfolioController@getList');
 
 Route::group([
     'namespace' => 'Api\Auth',
@@ -109,7 +109,7 @@ Route::group([
     // Prefixed with /auth
     'namespace' => 'Api',
     'prefix' => 'card',
-//    'middleware' => 'jwt.verify'
+    'middleware' => 'jwt.verify'
 ], function () {
     Route::post('get-card-list-using-card-id/{id}', 'Ebay\EbayController@getItemsListForCard');
     Route::post('add-request-slab', 'CardController@addRequestSlab');
@@ -127,15 +127,38 @@ Route::group([
     Route::post('remove', 'WatchListController@removeToWatchList');
     Route::post('search', 'WatchListController@getEbayList');
 });
+//Route::group([
+//    // Prefixed with /auth
+//    'namespace' => 'Api',
+//    'prefix' => 'watchlist',
+////    'middleware' => 'jwt.verify'
+//], function () {
+//    Route::post('search', 'WatchListController@getEbayList');
+//});
+
 Route::group([
     // Prefixed with /auth
     'namespace' => 'Api',
-    'prefix' => 'watchlist',
-//    'middleware' => 'jwt.verify'
+    'prefix' => 'search',
+    'middleware' => 'jwt.verify'
 ], function () {
-    Route::post('search', 'WatchListController@getEbayList');
+//    Route::post('get-card-list', 'Ebay\EbayController@getItemsList');
+    Route::post('get-recent-auction-list', 'Ebay\EbayController@getRecentAuctionList');
+    Route::post('get-internal-card-list', 'Ebay\EbayController@getInternalItemsList');
+    Route::post('head-to-head', 'Ebay\EbayController@getItemsList');
+//    Route::post('recent-listing', 'Ebay\EbayController@getRecentList');
+    Route::post('ending-soon-listing', 'Ebay\EbayController@getEndingSoonList');
+    Route::post('sample-my-listing', 'Ebay\EbayController@sampleMyListing');
+//    Route::post('ended-listing', 'Ebay\EbayController@getEndedList');
+    
+//    Route::post('featured-listing', 'CardController@getFeaturedList');
+//    Route::post('slab-listing', 'CardController@getRecentList');
+//    Route::post('get-smart-keyword', 'CardController@getSmartKeyword');
+    Route::post('get-smart-keyword-with-data', 'CardController@getSmartKeywordWithData');
+    Route::post('popular-pick-cards', 'CardController@getPopularPickCards');
+    Route::post('get-smart-ebay-keyword', 'Ebay\EbayController@getSmartKeyword');
+    Route::post('get-smart-keyword-onlyname', 'CardController@getSmartKeywordOnlyName');
 });
-
 Route::group([
     // Prefixed with /auth
     'namespace' => 'Api',
@@ -143,22 +166,12 @@ Route::group([
 //    'middleware' => 'jwt.verify'
 ], function () {
     Route::post('get-card-list', 'Ebay\EbayController@getItemsList');
-    Route::post('get-recent-auction-list', 'Ebay\EbayController@getRecentAuctionList');
-    Route::post('get-internal-card-list', 'Ebay\EbayController@getInternalItemsList');
-    Route::post('head-to-head', 'Ebay\EbayController@getItemsList');
     Route::post('recent-listing', 'Ebay\EbayController@getRecentList');
-    Route::post('ending-soon-listing', 'Ebay\EbayController@getEndingSoonList');
-    Route::post('sample-my-listing', 'Ebay\EbayController@sampleMyListing');
     Route::post('ended-listing', 'Ebay\EbayController@getEndedList');
-    
     
     Route::post('featured-listing', 'CardController@getFeaturedList');
     Route::post('slab-listing', 'CardController@getRecentList');
     Route::post('get-smart-keyword', 'CardController@getSmartKeyword');
-    Route::post('get-smart-keyword-with-data', 'CardController@getSmartKeywordWithData');
-    Route::post('popular-pick-cards', 'CardController@getPopularPickCards');
-    Route::post('get-smart-ebay-keyword', 'Ebay\EbayController@getSmartKeyword');
-    Route::post('get-smart-keyword-onlyname', 'CardController@getSmartKeywordOnlyName');
 });
 
 Route::group([

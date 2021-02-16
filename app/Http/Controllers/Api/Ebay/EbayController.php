@@ -27,7 +27,7 @@ class EbayController extends Controller {
         $skip = $take * $page;
         $skip = $skip - $take;
         try {
-            
+
             $itemsSpecsIds = EbayItemSpecific::where('value', 'like', '%' . $search . '%')->groupBy('itemId')->pluck('itemId');
             $items = EbayItems::with(['sellingStatus', 'card', 'listingInfo'])->where(function ($q) use ($itemsSpecsIds, $search, $request) {
                         if ($search != null) {
@@ -35,7 +35,7 @@ class EbayController extends Controller {
                                 $q->whereIn('itemId', $itemsSpecsIds);
                             } else {
                                 $q->where('title', 'like', '%' . $search . '%');
-                                $q->orWhere('id',$search);
+                                $q->orWhere('id', $search);
                             }
                         }
                         if ($request->input('sport') == 'random_bin') {
@@ -75,7 +75,7 @@ class EbayController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
-    
+
     public function getItemsListForAdminForSport(Request $request) {
 //        dump(Carbon::now()->toDateTimeString());
 //        dump($request->all());
@@ -84,7 +84,7 @@ class EbayController extends Controller {
         $skip = $take * $page;
         $skip = $skip - $take;
         try {
-            if($request->input('sport') == 'random_bin') {
+            if ($request->input('sport') == 'random_bin') {
                 $items = EbayItems::with(['sellingStatus', 'card', 'listingInfo'])->where(function ($q) use ($request) {
                             $q->where('is_random_bin', 2);
                             if ($request->input('filter_by') == 'ending_soon') {
@@ -284,40 +284,24 @@ class EbayController extends Controller {
 
         return response()->json(['status' => 200, 'message' => 'Status Changed successfully'], 200);
     }
-    
+
     public function changeCardStatusAdmin(Request $request) {
-//        $validator = Validator::make($request->all(), [
-//                    'id' => 'required',
-//                    'status' => 'required',
-//        ]);
-//        if ($validator->fails()) {
-//            return response()->json($validator->errors(), 422);
-//        }
         $idArr = $request->input('id');
-//        Card::where('id', $idArr)->update(['status' => $request->input('status')]);
-//        return response()->json(['status' => 200, 'message' => 'Status Changed successfully'], 200);
-        if (is_array($idArr)) {
-//            $idArr = $request->input('id');
-            foreach ($idArr as $id) {
-                Card::where('id', $id)->update(['active' => $request->input('status')]);
+        if ($request->input('status') != 4) {
+            if (is_array($idArr)) {
+                foreach ($idArr as $id) {
+                    Card::where('id', $id)->update(['active' => $request->input('status')]);
+                }
+            } else {
+                Card::where('id', $idArr)->update(['active' => $request->input('status')]);
             }
         } else {
-//            $idArr = $request->input('id');
-            Card::where('id', $idArr)->update(['active' => $request->input('status')]);
+            Card::where('id', $idArr)->delete();
         }
-
         return response()->json(['status' => 200, 'message' => 'Status Changed successfully'], 200);
     }
 
     public function saveSoldPriceAdmin(Request $request) {
-//        $validator = Validator::make($request->all(), [
-//            'id' => 'required',
-//            'status' => 'required',
-//        ]);
-//        if ($validator->fails()) {
-//            return response()->json($validator->errors(), 422);
-//        }
-
         try {
             if (EbayItems::where('id', $request->input('id'))->update(['sold_price' => $request->input('sold_price'), 'status' => 2])) {
                 return response()->json(['status' => 200, 'message' => 'Sold price Chnaged successfully'], 200);
@@ -1210,7 +1194,7 @@ class EbayController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
-    
+
     public function getEndedList(Request $request) {
 //        dump(Carbon::now()->toDateTimeString());
 //        dump($request->all());
@@ -1249,8 +1233,6 @@ class EbayController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
-    
-    
 
     public function sampleMyListing(Request $request) {
         $page = $request->input('page', 1);

@@ -64,7 +64,7 @@ class MyPortfolioController extends Controller {
         }
     }
 
-    public function getList(Request $request) {
+    public function getListNavneet(Request $request) {
         $page = $request->input('page', 1);
         $take = $request->input('take', 30);
         $filterBy = $request->input('filterBy', null);
@@ -101,7 +101,6 @@ class MyPortfolioController extends Controller {
                     $sx = abs($sx);
                     $sx_icon = 'down';
                 }
-
                 $purchase_price = (isset($ptempcards[$card->id]) ? $ptempcards[$card->id]->purchase_price : 0);
                 $purchase_quantity = (isset($ptempcards[$card->id]) ? $ptempcards[$card->id]->purchase_quantity : 1);
                 $portfolio_id = (isset($ptempcards[$card->id]) ? $ptempcards[$card->id]->id : 0);
@@ -119,6 +118,65 @@ class MyPortfolioController extends Controller {
                     'portfolio_id' => $portfolio_id,
                     'purchase_quantity' => $purchase_quantity
                 ];
+            }
+
+            usort($data, function($a, $b) {
+                return $a['purchase_price'] <=> $b['purchase_price'];
+            });
+
+            return response()->json(['status' => 200, 'data' => $data, 'next' => ($page + 1)], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+    
+    public function getList(Request $request) {
+        $page = $request->input('page', 1);
+        $take = $request->input('take', 30);
+        $filterBy = $request->input('filterBy', null);
+        $skip = $take * $page;
+        $skip = $skip - $take;
+        try {
+            $this->user_id = auth()->user()->id;
+            $ptempcards = MyPortfolio::where("user_id", $this->user_id)->get()->groupBy('card_id');
+            $cards = Card::whereIn('id', array_keys($ptempcards->toArray()))->where(function ($q) use ($filterBy) {
+                        if ($filterBy != 'price_low_to_high' && $filterBy != null) {
+                            $q->where('sport', $filterBy);
+                        }
+                    })->with(['sales' => function($q) {
+                        $q->orderBy('timestamp', 'DESC')->limit(3)->select('id', 'card_id', 'cost')->get();
+                    }])->with('details')->get();
+            $cards = $cards->skip($skip)->take($take);
+            $data = [];
+            foreach ($cards as $key => $card) {
+                $value = 0;
+                $count = count($card->sales);
+                if($count == 0) {
+                    $sx = 0;
+                } else {
+                    foreach($card->sales as $sale) {
+                    $value += $sale->cost;
+                }
+                $sx = $value/$count;
+                }
+                foreach($ptempcards[$card->id] as $ptempcard) {
+                    $purchase_price = (isset($ptempcard) ? $ptempcard->purchase_price : 0);
+                    $portfolio_id = (isset($ptempcard) ? $ptempcard->id : 0);
+                    $differ = number_format((float) ($sx - $purchase_price), 2, '.', '');
+                    $sx_icon = (($differ < 0) ? 'down' : 'up');
+                    $data[] = [
+                        'id' => $card->id,
+                        'title' => $card->title,
+                        'cardImage' => $card->cardImage,
+                        'sx_value' => $sx,
+                        'sx_icon' => $sx_icon,
+                        'price' => $card->details->currentPrice,
+                        'purchase_price' => $purchase_price,
+                        'differ' => $differ,
+                        'portfolio_id' => $portfolio_id,
+                    ];
+                }
+                
             }
 
             usort($data, function($a, $b) {
