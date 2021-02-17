@@ -12,6 +12,7 @@ use App\Models\CardDetails;
 use App\Models\CardValues;
 use App\Models\Ebay\EbayItemSpecific;
 use App\Models\SeeProblem;
+use App\Models\UserSearch;
 use Carbon\Carbon;
 use Validator;
 use App\Models\Ebay\EbayItemCategories;
@@ -324,6 +325,7 @@ class EbayController extends Controller {
 
             if ($searchCard != null) {
                 $cards = Card::where('id', $searchCard)->with('details')->get();
+                UserSearch::create(['card_id' => $searchCard]);
             } else {
                 $cards = Card::whereIn('id', $items['cards'])->with('details')->get();
             }
@@ -779,6 +781,16 @@ class EbayController extends Controller {
 //            dd($e);
             \Log::error($e);
             \DB::rollBack();
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+    
+    public function searchedCardsByUserForAdmin() {
+        try {
+            $card_ids = UserSearch::pluck('card_id');
+            $data = Card::whereIn('id', $card_ids)->get();
+            return response()->json(['status' => 200, 'data' => $data], 200);
+        } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
     }

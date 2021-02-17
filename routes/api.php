@@ -24,7 +24,7 @@ use Illuminate\Http\Request;
 
 
 
-Route::post('get-ebay-list1', 'Api\MyPortfolioController@getList');
+Route::post('get-ebay-list1', 'Api\Ebay\EbayController@getItemsList');
 
 Route::group([
     'namespace' => 'Api\Auth',
@@ -103,6 +103,7 @@ Route::group([
     Route::get('get-edit-listing/{listing_id}', 'Ebay\EbayController@getListingEdit');
 Route::post('upload-slab-excel', 'CardController@uploadSlabForExcelImport');
 Route::post('create-new-item-from-admin', 'Ebay\EbayController@createEbayItemForAdmin');
+Route::get('searched-cards', 'Ebay\EbayController@searchedCardsByUserForAdmin');
 });
 
 Route::group([
@@ -192,7 +193,7 @@ Route::group([
     // Prefixed with /auth
     'namespace' => 'Api',
     'prefix' => 'user',
-//    'middleware' => 'jwt.verify'
+    'middleware' => 'jwt.verify'
 ], function () {
     Route::post('profile-data/update', 'UserController@profileUpdate');
     Route::post('notification/update', 'UserController@notificationSettingsUpdate');
@@ -200,4 +201,18 @@ Route::group([
     Route::post('add-social-accounts/{provider}', 'UserController@addSocialAccounts');
     Route::post('remove-social-accounts', 'UserController@removeSocialAccounts');
     Route::post('update-profile', 'UserController@updateProfileImage');
+});
+Route::group([
+    // Prefixed with /auth
+    'namespace' => 'Api',
+    'prefix' => 'stoxticker',
+//    'middleware' => 'jwt.verify'
+], function () {
+//    Route::post('ended-listing', 'Ebay\EbayController@getEndedList');
+//    
+//    Route::post('featured-listing', 'CardController@getFeaturedList');
+//    Route::post('slab-listing', 'CardController@getRecentList');
+    Route::post('slab-search', 'StoxtickerController@slabSearch');
+    Route::post('create-board', 'StoxtickerController@createBoard');
+    Route::post('search-board', 'StoxtickerController@searchBoard');
 });
