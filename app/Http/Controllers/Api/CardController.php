@@ -339,17 +339,7 @@ class CardController extends Controller {
 
     public function getPopularPickCards(Request $request) {
         try {
-            $data = Card::with(['details'])->where(function($q) use ($request) {
-                        // $search = explode(' ', $request->input('search'));
-                        $search = $request->input('search');
-                        // $q->orWhere('title', 'like', '%' . $search . '%');
-                        // foreach ($search as $key => $keyword) {
-                        // }
-                    })->orderBy('updated_at', 'desc')->get()->take($request->input('take', 10))->map(function($item, $key) {
-                $temp = $item;
-                $temp['rank'] = 0;
-                return $temp;
-            });
+            $data = Card::with(['details'])->orderBy('updated_at', 'desc')->get()->take($request->input('take', 10));
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage() . ' ' . $e->getLine(), 500);
@@ -641,42 +631,59 @@ class CardController extends Controller {
 
     public function getCardGraphData($card_id, $days = 2) {
         try {
-            $data = ['values' => [], 'labels' => []];
-
             $cids = explode('|', (string) $card_id);
-            if (count($cids) > 1) {
-                $datas = ['values1' => [], 'labels' => [], 'values2' => []];
-                foreach ($cids as $ind => $cid) {
-                    $cvs = CardValues::where('card_id', $cid)->orderBy('date', 'DESC')->limit($days);
-                    $data['values'] = $cvs->pluck('avg_value')->toArray();
-                    $data['labels'] = $cvs->pluck('date')->toArray();
+//            $cids[0] = 10;
+//            $cids[1] = 12;
+            foreach ($cids as $ind => $cid) {
 
-                    $data = $this->__groupGraphData($days, $data);
-
-                    if (count($datas['labels']) == 0) {
-                        $datas['labels'] = $data['labels'];
-                    }
-                    $datas['values' . ++$ind] = $data['values'];
-                }
-                unset($data['values']);
-                $data['labels'] = array_reverse($datas['labels']);
-                $data['values1'] = array_reverse($datas['values1']);
-                $data['values2'] = array_reverse($datas['values2']);
-                $data['rank1'] = $this->getCardRank($cids[0]);
-                $data['rank2'] = $this->getCardRank($cids[1]);
-            } else {
-                $cvs = CardValues::where('card_id', $card_id)->orderBy('date', 'DESC')->limit($days);
-                $data['values'] = $cvs->pluck('avg_value')->toArray();
-                $data['labels'] = $cvs->pluck('date')->toArray();
+                $cvs = CardSales::where('card_id', $cid)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
+                $data['values'] = $cvs->pluck('cost')->toArray();
+                $data['labels'] = $cvs->pluck('timestamp')->toArray();
+                $data['qty'] = $cvs->pluck('quantity')->toArray();
+//                dump($data);
 
                 $data = $this->__groupGraphData($days, $data);
+                $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
+                if ($days == 2) {
+                    $labels = [];
+                    $values = [];
+                    $qty = [];
+                    for ($i = 0; $i <= 23; $i++) {
+                        $labels[] = ($i < 10) ? '0' . $i . ':00' : $i . ':00';
+                        $values[] = (count($data['values']) > 0 ) ? $data['values'][0] : 0;
+                        $qty[] = (count($data['qty']) > 0 ) ? $data['qty'][0] : 0;
+                    }
+                    $data['labels'] = $labels;
+                    $data['values'] = $values;
+                    $data['qty'] = $qty;
+                } else {
+                    $data['values'] = array_reverse($data['values']);
+                    $data['labels'] = array_reverse($data['labels']);
+                    $data['qty'] = array_reverse($data['qty']);
+                }
 
-                $data['values'] = array_reverse($data['values']);
-                $data['labels'] = array_reverse($data['labels']);
-                $data['rank'] = $this->getCardRank($card_id);
+                $temData[$ind] = $data;
             }
+//                dd($temData);
+//            dump($temData);
+//            $labels = array_diff($temData[1]['labels'],$temData[0]['labels']);
+//            foreach($labels as $key => $value) {
+//                $key = array_search ($value, $labels);
+//                dd($key);
+//            }
+            $finalData['values1'] = $temData[0]['values'];
+            $finalData['lable1'] = $temData[0]['labels'];
+            $finalData['qty1'] = $temData[0]['qty'];
+            $finalData['values2'] = $temData[1]['values'];
+//            dd('inn');
+            $finalData['labels2'] = $temData[1]['labels'];
+            $finalData['qty2'] = $temData[1]['qty'];
+            $finalData['rank1'] = $this->getCardRank($cids[0]);
+            $finalData['rank2'] = $this->getCardRank($cids[1]);
+            
+//            $finalData['labels'] = array_merge($temData[0]['labels'],$labels);
 
-            return response()->json(['status' => 200, 'data' => $data], 200);
+            return response()->json(['status' => 200, 'data' => $finalData], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }

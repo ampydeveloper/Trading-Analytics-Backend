@@ -9,6 +9,7 @@ use App\Models\Card;
 use App\Models\CardDetails;
 use App\Models\MyPortfolio;
 use App\Models\CardValues;
+use App\Models\CardSales;
 use App\Models\PortfolioUserValues;
 use Exception;
 use Illuminate\Http\Request;
@@ -143,22 +144,12 @@ class MyPortfolioController extends Controller {
                         if ($filterBy != 'price_low_to_high' && $filterBy != null) {
                             $q->where('sport', $filterBy);
                         }
-                    })->with(['sales' => function($q) {
-                        $q->orderBy('timestamp', 'DESC')->limit(3)->select('id', 'card_id', 'cost')->get();
-                    }])->with('details')->get();
+                    })->with('details')->get();
             $cards = $cards->skip($skip)->take($take);
             $data = [];
             foreach ($cards as $key => $card) {
-                $value = 0;
-                $count = count($card->sales);
-                if($count == 0) {
-                    $sx = 0;
-                } else {
-                    foreach($card->sales as $sale) {
-                    $value += $sale->cost;
-                }
-                $sx = $value/$count;
-                }
+                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $sx = ($sx == null) ? 0 : $sx;
                 foreach($ptempcards[$card->id] as $ptempcard) {
                     $purchase_price = (isset($ptempcard) ? $ptempcard->purchase_price : 0);
                     $portfolio_id = (isset($ptempcard) ? $ptempcard->id : 0);
@@ -178,11 +169,9 @@ class MyPortfolioController extends Controller {
                 }
                 
             }
-
             usort($data, function($a, $b) {
                 return $a['purchase_price'] <=> $b['purchase_price'];
             });
-
             return response()->json(['status' => 200, 'data' => $data, 'next' => ($page + 1)], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -254,67 +243,32 @@ class MyPortfolioController extends Controller {
             $this->user_id = auth()->user()->id;
             $user = User::where("id", $this->user_id)->first();
 
-            $diff = 0;
-            $diff_icon = 'up';
-            $updated = '';
             $purchaseVal = MyPortfolio::where("user_id", $this->user_id)->selectRaw('sum(purchase_price) as total_purchases')->pluck('total_purchases');
-            $myPortfolioValues = PortfolioUserValues::where('user_id', $this->user_id)->orderBy('date', 'DESC')->limit(2)->get()->toArray();
-            foreach ($myPortfolioValues as $pv) {
-                if ($diff == 0) {
-                    $updated = Carbon::create($pv['updated_at'])->format('F d Y \- h:i:s A');
-                    $diff = $pv['value'];
-                } else {
-                    $diff = $diff - $pv['value'];
-                }
-            }
-            if ($diff < 0) {
-                $diff = abs($diff);
-                $diff_icon = 'down';
-            }
-
-            
-
+            $myPortfolioValues = PortfolioUserValues::where('user_id', $this->user_id)->orderBy('date', 'DESC')->limit(2)->get();
+            $updated = $myPortfolioValues[0]->updated_at;
             
             //Calculate SX value
             $card_ids = WatchList::where('user_id', $this->user_id)->pluck('card_id');
-            $cards = Card::whereIn('id', $card_ids)->with('details')->get();
-            $sx_data = [];
-            foreach ($cards as $key => $card) {
-                $cardValues = CardValues::where('card_id', $card->id)->orderBy('date', 'DESC')->limit(2)->get('avg_value');
-                $sx = 0;
-                $sx_icon = 'up';
-                foreach ($cardValues as $i => $cv) {
-                    if ($sx == 0) {
-                        $sx = $cv->avg_value;
-                    } else {
-                        $sx = $sx - $cv->avg_value;
-                    }
-                }
-                if ($sx < 0) {
-                    $sx = abs($sx);
-                    $sx_icon = 'down';
-                }
-
-                $sx_data[] = [
-                    'sx_value' => $sx,
-                ];
+            $total_sx_value = 0;
+            foreach($card_ids as $card_id) {
+                $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $total_sx_value += $sx;
             }
-            $total_sx_value = array_sum($sx_data);
-            
             
             $total_purchases = (isset($purchaseVal[0]) ? $purchaseVal[0] : 0);
             $diff = ((float) $total_sx_value) - ((float) $total_purchases);
             $diff_icon = (($diff < 0) ? 'down' : 'up');
+            $percent_diff = (100 * ($diff / ((((float) $total_sx_value) + ((float) $total_purchases)) / 2)));
             $diff = abs($diff);
             $diff = number_format($diff, 2, '.', '');
-            $percent_diff = (100 * ($diff / ((((float) $total_sx_value) + ((float) $total_purchases)) / 2)));
             $percent_diff_icon = (($percent_diff < 0) ? 'down' : 'up');
+            $percent_diff = abs($percent_diff);
             $percent_diff = number_format($percent_diff, 2, '.', '');
             
             
             return response()->json([
                         'status' => 200,
-                        'value' =>  $total_sx_value, //$user->slab_value, 
+                        'value' =>  number_format($total_sx_value, 2, '.', ''), //$user->slab_value, 
                         'rank' => $user->overall_rank,
                         'diff_value' => $diff,
                         'diff_icon' => $diff_icon,

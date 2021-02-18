@@ -24,7 +24,7 @@ use Illuminate\Http\Request;
 
 
 
-Route::post('get-ebay-list1', 'Api\Ebay\EbayController@getItemsList');
+Route::post('get-ebay-list1/{days?}/{card_id?}', 'Api\CardController@getCardGraphData');
 
 Route::group([
     'namespace' => 'Api\Auth',
