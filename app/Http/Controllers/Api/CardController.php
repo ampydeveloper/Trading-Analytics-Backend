@@ -236,7 +236,7 @@ class CardController extends Controller {
                 ;
                 $data['sx_icon'] = $sx_icon;
                 $data['price'] = 0;
-                if ($card->details->currentPrice) {
+                if (isset($card->details->currentPrice)) {
                     $data['price'] = $card->details->currentPrice;
                 }
                 return $data;
@@ -248,7 +248,6 @@ class CardController extends Controller {
 
             return response()->json(['status' => 200, 'data' => $cards, 'next' => ($page + 1)], 200);
         } catch (\Exception $e) {
-            dump($e);
             return response()->json($e->getMessage(), 500);
         }
     }

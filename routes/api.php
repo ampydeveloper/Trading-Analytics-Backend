@@ -184,6 +184,7 @@ Route::group([
 ], function () {
     Route::post('add', 'MyPortfolioController@add');
     Route::post('listing', 'MyPortfolioController@getList');
+    Route::post('dashboard-listing', 'MyPortfolioController@getDashboardList');
     Route::get('filters', 'MyPortfolioController@getFiltersData');
     Route::post('search', 'MyPortfolioController@search');
     Route::post('portfolio-value', 'MyPortfolioController@portfolioValue');

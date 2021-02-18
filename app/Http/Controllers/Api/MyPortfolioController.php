@@ -177,6 +177,35 @@ class MyPortfolioController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
+    
+    public function getDashboardList(Request $request) {
+//        $page = $request->input('page', 1);
+        $take = $request->input('take', 6);
+//        $filterBy = $request->input('filterBy', null);
+//        $skip = $take * $page;
+//        $skip = $skip - $take;
+        try {
+            $this->user_id = auth()->user()->id;
+            $ptempcards = MyPortfolio::where("user_id", $this->user_id)->get()->groupBy('card_id');
+            $cards = Card::whereIn('id', array_keys($ptempcards->toArray()))->with('details')->get();
+            $cards = $cards->take($take);
+            $data = [];
+            foreach ($cards as $key => $card) {
+                    $data[] = [
+                        'id' => $card->id,
+                        'title' => $card->title,
+                        'price' => $card->details->currentPrice,
+                    ];
+                
+            }
+//            usort($data, function($a, $b) {
+//                return $a['purchase_price'] <=> $b['purchase_price'];
+//            });
+            return response()->json(['status' => 200, 'data' => $data], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
 
     public function getFiltersData(Request $request) {
         try {
