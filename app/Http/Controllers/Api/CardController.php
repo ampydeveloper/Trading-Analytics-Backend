@@ -680,6 +680,72 @@ class CardController extends Controller {
             $finalData['qty2'] = $temData[1]['qty'];
             $finalData['rank1'] = $this->getCardRank($cids[0]);
             $finalData['rank2'] = $this->getCardRank($cids[1]);
+            $finalData['last_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('timestamp', 'DESC')->first();
+            $finalData['last_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('timestamp', 'DESC')->first();
+            $finalData['high_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('cost', 'DESC')->first();
+            $finalData['high_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('cost', 'DESC')->first();
+            $finalData['low_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('cost', 'ASC')->first();
+            $finalData['low_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('cost', 'ASC')->first();
+            
+//            $finalData['labels'] = array_merge($temData[0]['labels'],$labels);
+
+            return response()->json(['status' => 200, 'data' => $finalData], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+    
+    public function getSingleCardGraphData($card_id, $days = 2) {
+        try {
+//            $cids = explode('|', (string) $card_id);
+//            $cids[0] = 10;
+//            $cids[1] = 12;
+//            foreach ($cids as $ind => $cid) {
+
+                $cvs = CardSales::where('card_id', $card_id)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
+                $data['values'] = $cvs->pluck('cost')->toArray();
+                $data['labels'] = $cvs->pluck('timestamp')->toArray();
+                $data['qty'] = $cvs->pluck('quantity')->toArray();
+//                dump($data);
+
+                $data = $this->__groupGraphData($days, $data);
+                $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
+                if ($days == 2) {
+                    $labels = [];
+                    $values = [];
+                    $qty = [];
+                    for ($i = 0; $i <= 23; $i++) {
+                        $labels[] = ($i < 10) ? '0' . $i . ':00' : $i . ':00';
+                        $values[] = (count($data['values']) > 0 ) ? $data['values'][0] : 0;
+                        $qty[] = (count($data['qty']) > 0 ) ? $data['qty'][0] : 0;
+                    }
+                    $data['labels'] = $labels;
+                    $data['values'] = $values;
+                    $data['qty'] = $qty;
+                } else {
+                    $data['values'] = array_reverse($data['values']);
+                    $data['labels'] = array_reverse($data['labels']);
+                    $data['qty'] = array_reverse($data['qty']);
+                }
+
+//                $temData = $data;
+//            }
+//                dd($temData);
+//            dump($temData);
+//            $labels = array_diff($temData[1]['labels'],$temData[0]['labels']);
+//            foreach($labels as $key => $value) {
+//                $key = array_search ($value, $labels);
+//                dd($key);
+//            }
+            $finalData['values'] = $data['values'];
+            $finalData['labels'] = $data['labels'];
+            $finalData['qty'] = $data['qty'];
+//            $finalData['values2'] = $temData[1]['values'];
+////            dd('inn');
+//            $finalData['labels2'] = $temData[1]['labels'];
+//            $finalData['qty2'] = $temData[1]['qty'];
+            $finalData['rank'] = $this->getCardRank($card_id);
+//            $finalData['rank2'] = $this->getCardRank($cids[1]);
             
 //            $finalData['labels'] = array_merge($temData[0]['labels'],$labels);
 

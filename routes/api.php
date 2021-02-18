@@ -72,6 +72,7 @@ Route::group([
     Route::post('advance-search-change-status', 'Ebay\EbayController@updateAdanceSearchOptionStatus');
     Route::get('get-card-data/{id}', 'CardController@getCardDetails');
     Route::get('get-card-graph/{card_id}/{days?}', 'CardController@getCardGraphData');
+    Route::get('get-single-card-graph/{card_id}/{days?}', 'CardController@getSingleCardGraphData');
     Route::get('get-stoxticker-data', 'CardController@getStoxtickerData');
     Route::get('get-dashboard-graph/{days?}/{card_id?}', 'CardController@getDashboardGraphData');
     Route::get('get-edit-card/{card_id}', 'CardController@getEditCard');
