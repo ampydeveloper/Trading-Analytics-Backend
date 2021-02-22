@@ -88,6 +88,7 @@ Route::group([
     Route::get('get-cards-list', 'CardController@getCardList');
     Route::post('get-cards-list-for-admin', 'CardController@getCardListForAdmin');
     Route::post('fetch-card-by-item-id-for-admin', 'CardController@getFetchItemForAdmin');
+    Route::post('scrap-item-for-admin', 'CardController@getItemScarpForAdmin');
     Route::post('set-featured-card', 'CardController@setFeatured');
     Route::post('set-card-status', 'CardController@setStatus');
     Route::post('set-card-sx', 'CardController@setSx');

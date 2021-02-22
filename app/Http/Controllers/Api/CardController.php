@@ -43,6 +43,26 @@ class CardController extends Controller {
             return response()->json('Invalid item id', 500);
         }
     }
+    public function getItemScarpForAdmin(Request $request) {
+        $itemId = $request->input('itemid', null);
+        if ($itemId != null) {
+            try {
+//                $response = EbayService::getSingleItemDetails($itemId);
+                $script_link = '/home/ubuntu/ebay/ebayFetch/bin/python3 /home/ubuntu/ebay/core.py """'.$itemId.'"""';
+                $response = shell_exec($script_link." 2>&1");
+                    return response()->json(['status' => 200, 'data' => $response], 200);
+//                if (isset($response['data'])) {
+//                    return response()->json(['status' => 200, 'data' => $response['data']], 200);
+//                } else {
+//                    return response()->json('No record found.', 500);
+//                }
+            } catch (\Exception $e) {
+                return response()->json($e->getMessage(), 500);
+            }
+        } else {
+            return response()->json('Invalid item id', 500);
+        }
+    }
 
     public function getCardListForAdmin(Request $request) {
         $page = $request->input('page', 1);
