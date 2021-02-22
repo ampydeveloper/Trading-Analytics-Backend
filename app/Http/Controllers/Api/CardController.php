@@ -199,7 +199,6 @@ class CardController extends Controller {
         $skip = $take * $page;
         $skip = $skip - $take;
         try {
-
             $cards = Card::where(function ($q) use ($request, $search) {
                         if ($request->has('sport') && $request->input('sport') != null) {
                             $q->where('sport', $request->input('sport'));
@@ -208,32 +207,18 @@ class CardController extends Controller {
                             $q->where('title', 'like', '%' . $search . '%');
                         }
                     })->where('active', 1)->with('details');
-
             if ($top_trend) {
                 $cards = $cards->groupBy('sport');
             }
-
             $cards = $cards->skip($skip)->take($take)->get();
             $cards = $cards->map(function($card, $key) {
                 $data = $card;
-                $cardValues = CardValues::where('card_id', $card->id)->orderBy('date', 'DESC')->limit(2)->get('avg_value');
-                $sx = 0;
-                $sx_icon = 'up';
-                if (count($cardValues) == 2) {
-                    foreach ($cardValues as $i => $cv) {
-                        if ($sx == 0) {
-                            $sx = $cv->avg_value;
-                        } else {
-                            $sx = $sx - $cv->avg_value;
-                        }
-                    }
-                }
-                if ($sx < 0) {
-                    $sx = abs($sx);
-                    $sx_icon = 'down';
-                }
+                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
+                $count = count($lastSx);
+                $lastSx = ($count > 0) ? array_sum($lastSx->toArray())/$count : 0;
+                $sx_icon = (($sx-$lastSx) >= 0) ? 'up':'down';
                 $data['sx_value'] = number_format((float) $sx, 2, '.', '');
-                ;
                 $data['sx_icon'] = $sx_icon;
                 $data['price'] = 0;
                 if (isset($card->details->currentPrice)) {
@@ -241,7 +226,6 @@ class CardController extends Controller {
                 }
                 return $data;
             });
-
             if ($top_trend) {
                 $cards = $cards->sortBy('price');
             }
@@ -264,26 +248,12 @@ class CardController extends Controller {
             $cards = $cards->take($take)->get();
             $cards = $cards->map(function($card, $key) {
                 $data = $card;
-                $cardValues = CardValues::where('card_id', $card->id)->orderBy('date', 'DESC')->limit(2)->get('avg_value');
-                $sx = 0;
-                $sx_icon = 'up';
-                if (!empty($cardValues)) {
-                    if (count($cardValues) == 2) {
-                        foreach ($cardValues as $i => $cv) {
-                            if ($sx == 0) {
-                                $sx = $cv->avg_value;
-                            } else {
-                                $sx = $sx - $cv->avg_value;
-                            }
-                        }
-                    }
-                    if ($sx < 0) {
-                        $sx = abs($sx);
-                        $sx_icon = 'down';
-                    }
-                }
+                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
+                $count = count($lastSx);
+                $lastSx = ($count > 0) ? array_sum($lastSx->toArray())/$count : 0;
+                $sx_icon = (($sx-$lastSx) >= 0) ? 'up':'down';
                 $data['sx_value'] = number_format((float) $sx, 2, '.', '');
-                ;
                 $data['sx_icon'] = $sx_icon;
                 $data['price'] = 0;
                 if (isset($card->details)) {

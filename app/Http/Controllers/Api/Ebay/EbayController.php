@@ -16,6 +16,8 @@ use App\Models\UserSearch;
 use Carbon\Carbon;
 use Validator;
 use App\Models\Ebay\EbayItemCategories;
+use App\Models\Ebay\EbayItemListingInfo;
+
 
 class EbayController extends Controller {
 
@@ -330,24 +332,14 @@ class EbayController extends Controller {
                 $cards = Card::whereIn('id', $items['cards'])->with('details')->get();
             }
             foreach ($cards as $ind => $card) {
-                $cardValues = CardValues::where('card_id', $card->id)->orderBy('date', 'DESC')->limit(2)->get('avg_value');
-                $sx = 0;
-                $sx_icon = 'up';
-                if (count($cardValues) == 2) {
-                    foreach ($cardValues as $cv) {
-                        if ($sx == 0) {
-                            $sx = $cv['avg_value'];
-                        } else {
-                            $sx = $sx - $cv['avg_value'];
-                        }
-                    }
-                }
-                if ($sx < 0) {
-                    $sx = abs($sx);
-                    $sx_icon = 'down';
-                }
-                $cards[$ind]['sx_value'] = number_format((float) $sx, 2, '.', '');
-                $cards[$ind]['sx_icon'] = $sx_icon;
+                
+                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
+                $count = count($lastSx);
+                $lastSx = ($count > 0) ? array_sum($lastSx->toArray())/$count : 0;
+                $sx_icon = (($sx-$lastSx) >= 0) ? 'up':'down';
+                $data['sx_value'] = number_format((float) $sx, 2, '.', '');
+                $data['sx_icon'] = $sx_icon;
                 $cards[$ind]['price'] = 0;
                 if (isset($card->details->currentPrice)) {
                     $cards[$ind]['price'] = $card->details->currentPrice;
@@ -715,7 +707,7 @@ class EbayController extends Controller {
                     'galleryURL' => $data['details']['GalleryURL'] ? $data['details']['GalleryURL'] : null,
                     'viewItemURL' => $data['details']['ViewItemURLForNaturalSearch'] ? $data['details']['ViewItemURLForNaturalSearch'] : null,
                     'autoPay' => $data['details']['AutoPay'] ? $data['details']['AutoPay'] : null,
-                    'postalCode' => $data['details']['PostalCode'] ? $data['details']['PostalCode'] : null,
+                    'postalCode' => isset($data['details']['PostalCode']) ? $data['details']['PostalCode'] : null,
                     'location' => $data['details']['Location'] ? $data['details']['Location'] : null,
                     'country' => $data['details']['Country'] ? $data['details']['Country'] : null,
                     'returnsAccepted' => $data['details']['ReturnPolicy']['ReturnsAccepted'] == 'ReturnsNotAccepted' ? false : true,
@@ -741,10 +733,11 @@ class EbayController extends Controller {
                         ]);
                     }
                 }
+                
                 EbayItemListingInfo::create([
                     'itemId' => $data['itemId'],
-                    'startTime' => $data['auction_start_time'],
-                    'endTime' => $data['auction_end_time'],
+                    'startTime' => $data['auction_start'],
+                    'endTime' => $data['auction_end'],
                 ]);
                 \DB::commit();
 
@@ -770,8 +763,8 @@ class EbayController extends Controller {
                     ]);
                 }
                 EbayItemListingInfo::where('id', $data['auction_start_end_id'])->update([
-                    'startTime' => $data['auction_start_time'],
-                    'endTime' => $data['auction_end_time'],
+                    'startTime' => $data['auction_start'],
+                    'endTime' => $data['auction_end'],
                 ]);
 
                 \DB::commit();

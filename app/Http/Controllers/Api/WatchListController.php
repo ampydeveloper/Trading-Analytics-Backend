@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Card;
 use App\Models\CardValues;
+use App\Models\CardSales;
 
 class WatchListController extends Controller {
 
@@ -89,18 +90,35 @@ class WatchListController extends Controller {
             $cards = $cards->skip($skip)->take($take);
             $data = [];
             foreach ($cards as $key => $card) {
-                $cardValues = CardValues::where('card_id', $card->id)->orderBy('date', 'DESC')->limit(2)->get('avg_value');
-                $sx = 0; $sx_icon = 'up';
-                foreach ($cardValues as $i => $cv) {
-                    if($sx == 0){ $sx = $cv->avg_value; }else{ $sx = $sx - $cv->avg_value; }
-                }
-                if($sx < 0){ $sx = abs($sx); $sx_icon = 'down'; }
                 
-                $purchase_price = (isset($ptempcards[$card->id])?$ptempcards[$card->id]->purchase_price:0);
+                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
+                $count = count($lastSx);
+                $lastSx = ($count > 0) ? array_sum($lastSx->toArray())/$count : 0;
+                $sx_icon = (($sx-$lastSx) >= 0) ? 'up':'down';
+                $sx = number_format((float) $sx, 2, '.', '');
+                
+                
+//                $cardValues = CardValues::where('card_id', $card->id)->orderBy('date', 'DESC')->limit(2)->get('avg_value');
+//                $sx = 0;
+//                $sx_icon = 'up';
+//                foreach ($cardValues as $i => $cv) {
+//                        if ($sx == 0) {
+//                            $sx = $cv->avg_value;
+//                        } else {
+//                            $sx = $sx - $cv->avg_value;
+//                        }
+//                    }
+//                    if ($sx < 0) {
+//                        $sx = abs($sx);
+//                        $sx_icon = 'down';
+//                    }
+
+                    $purchase_price = (isset($ptempcards[$card->id])?$ptempcards[$card->id]->purchase_price:0);
                 $purchase_quantity = (isset($ptempcards[$card->id])?$ptempcards[$card->id]->purchase_quantity:1);
                 $portfolio_id = (isset($ptempcards[$card->id])?$ptempcards[$card->id]->id:0);
                 $differ = number_format((float) ($sx - $purchase_price),2,'.','');
-                $sx_icon = (($differ < 0)?'down':'up');
+//                $sx_icon = (($differ < 0)?'down':'up');
                 $data[] = [
                     'id' => $card->id,
                     'title' => $card->title,

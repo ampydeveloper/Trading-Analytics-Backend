@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Http\Request;
-
+//header("Access-Control-Allow-Origin: *");
+//header("Access-Control-Allow-Methods: PUT, GET, POST, DELETE, OPTIONS");
+//header("Access-Control-Allow-Headers: *");
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -16,6 +18,11 @@ use Illuminate\Http\Request;
 /*Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });*/
+
+//header("Access-Control-Allow-Origin: *");
+//header('Access-Control-Allow-Origin: http://localhost:3000');
+//header('Access-Control-Allow-Headers: origin, x-requested-with, content-type');
+//header('Access-Control-Allow-Methods: PUT, GET, POST, DELETE, OPTIONS');
 
 //header('Access-Control-Allow-Origin: *');
 //header( 'Access-Control-Allow-Headers: Authorization, Content-Type' );
@@ -183,6 +190,7 @@ Route::group([
     'middleware' => 'jwt.verify'
 ], function () {
     Route::post('add', 'MyPortfolioController@add');
+    Route::post('delete', 'MyPortfolioController@delete');
     Route::post('listing', 'MyPortfolioController@getList');
     Route::post('dashboard-listing', 'MyPortfolioController@getDashboardList');
     Route::get('filters', 'MyPortfolioController@getFiltersData');
@@ -210,11 +218,8 @@ Route::group([
     'prefix' => 'stoxticker',
 //    'middleware' => 'jwt.verify'
 ], function () {
-//    Route::post('ended-listing', 'Ebay\EbayController@getEndedList');
-//    
-//    Route::post('featured-listing', 'CardController@getFeaturedList');
-//    Route::post('slab-listing', 'CardController@getRecentList');
     Route::post('slab-search', 'StoxtickerController@slabSearch');
     Route::post('create-board', 'StoxtickerController@createBoard');
     Route::post('search-board', 'StoxtickerController@searchBoard');
+    Route::get('board-details/{board}', 'StoxtickerController@boardDetails');
 });

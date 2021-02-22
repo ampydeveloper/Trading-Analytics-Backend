@@ -50,16 +50,37 @@ class MyPortfolioController extends Controller {
                 } else {
                     for ($i = 1; $i <= $quantity; $i++) {
                         $myPortfolio = MyPortfolio::create([
-                                'user_id' => $this->user_id,
-                                'card_id' => $cardId,
-                                'purchase_price' => $price,
-                    ]);
+                                    'user_id' => $this->user_id,
+                                    'card_id' => $cardId,
+                                    'purchase_price' => $price,
+                        ]);
                     }
                 }
                 return response()->json(['status' => 200, 'data' => 'Added in your portfolio'], 200);
             }
 
             return response()->json(['status' => 200, 'data' => 'Already added portfolio.'], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+    public function delete(MyPortfolioCreateRequest $request) {
+        try {
+//            $is_edit = $request->input('isedit', 'no');
+            $cardId = $request->input('id', null);
+//            $price = (float) $request->input('price', 0);
+//            $price = (($price > 0) ? $price : 0);
+//            $quantity = (int) $request->input('quantity', 1);
+//            $quantity = (($quantity > 0) ? $quantity : 1);
+
+            if ($cardId <= 0) {
+                throw new Exception('Unable to add in your portfolio');
+            }
+
+            $this->user_id = auth()->user()->id;
+                $myPortfolio = MyPortfolio::where('id', $cardId)->delete();
+
+                return response()->json(['status' => 200, 'data' => 'Portfolio has been deleted.'], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -130,7 +151,7 @@ class MyPortfolioController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
-    
+
     public function getList(Request $request) {
         $page = $request->input('page', 1);
         $take = $request->input('take', 30);
@@ -150,7 +171,7 @@ class MyPortfolioController extends Controller {
             foreach ($cards as $key => $card) {
                 $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 $sx = ($sx == null) ? 0 : $sx;
-                foreach($ptempcards[$card->id] as $ptempcard) {
+                foreach ($ptempcards[$card->id] as $ptempcard) {
                     $purchase_price = (isset($ptempcard) ? $ptempcard->purchase_price : 0);
                     $portfolio_id = (isset($ptempcard) ? $ptempcard->id : 0);
                     $differ = number_format((float) ($sx - $purchase_price), 2, '.', '');
@@ -167,7 +188,6 @@ class MyPortfolioController extends Controller {
                         'portfolio_id' => $portfolio_id,
                     ];
                 }
-                
             }
             usort($data, function($a, $b) {
                 return $a['purchase_price'] <=> $b['purchase_price'];
@@ -177,13 +197,9 @@ class MyPortfolioController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
-    
+
     public function getDashboardList(Request $request) {
-//        $page = $request->input('page', 1);
         $take = $request->input('take', 6);
-//        $filterBy = $request->input('filterBy', null);
-//        $skip = $take * $page;
-//        $skip = $skip - $take;
         try {
             $this->user_id = auth()->user()->id;
             $ptempcards = MyPortfolio::where("user_id", $this->user_id)->get()->groupBy('card_id');
@@ -191,16 +207,12 @@ class MyPortfolioController extends Controller {
             $cards = $cards->take($take);
             $data = [];
             foreach ($cards as $key => $card) {
-                    $data[] = [
-                        'id' => $card->id,
-                        'title' => $card->title,
-                        'price' => $card->details->currentPrice,
-                    ];
-                
+                $data[] = [
+                    'id' => $card->id,
+                    'title' => $card->title,
+                    'price' => $card->details->currentPrice,
+                ];
             }
-//            usort($data, function($a, $b) {
-//                return $a['purchase_price'] <=> $b['purchase_price'];
-//            });
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -275,15 +287,15 @@ class MyPortfolioController extends Controller {
             $purchaseVal = MyPortfolio::where("user_id", $this->user_id)->selectRaw('sum(purchase_price) as total_purchases')->pluck('total_purchases');
             $myPortfolioValues = PortfolioUserValues::where('user_id', $this->user_id)->orderBy('date', 'DESC')->limit(2)->get();
             $updated = $myPortfolioValues[0]->updated_at;
-            
+
             //Calculate SX value
             $card_ids = WatchList::where('user_id', $this->user_id)->pluck('card_id');
             $total_sx_value = 0;
-            foreach($card_ids as $card_id) {
+            foreach ($card_ids as $card_id) {
                 $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 $total_sx_value += $sx;
             }
-            
+
             $total_purchases = (isset($purchaseVal[0]) ? $purchaseVal[0] : 0);
             $diff = ((float) $total_sx_value) - ((float) $total_purchases);
             $diff_icon = (($diff < 0) ? 'down' : 'up');
@@ -293,11 +305,11 @@ class MyPortfolioController extends Controller {
             $percent_diff_icon = (($percent_diff < 0) ? 'down' : 'up');
             $percent_diff = abs($percent_diff);
             $percent_diff = number_format($percent_diff, 2, '.', '');
-            
-            
+
+
             return response()->json([
                         'status' => 200,
-                        'value' =>  number_format($total_sx_value, 2, '.', ''), //$user->slab_value, 
+                        'value' => number_format($total_sx_value, 2, '.', ''), //$user->slab_value, 
                         'rank' => $user->overall_rank,
                         'diff_value' => $diff,
                         'diff_icon' => $diff_icon,
