@@ -7,7 +7,7 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithStartRow;
 use Illuminate\Support\Collection;
 
-class FootballCardsImport implements ToCollection, WithStartRow
+class CardsImport implements ToCollection, WithStartRow
 {
     private $row = 1;
     

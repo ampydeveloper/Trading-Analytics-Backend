@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Imports\BaseballCardsImport;
-use App\Imports\BasketballCardsImport;
-use App\Imports\FootballCardsImport;
-use App\Imports\SoccerCardsImport;
+use App\Imports\CardsImport;
+use App\Imports\ListingsImport;
+//use App\Imports\BaseballCardsImport;
+//use App\Imports\BasketballCardsImport;
+//use App\Imports\FootballCardsImport;
+//use App\Imports\SoccerCardsImport;
 use Illuminate\Http\Request;
 use App\Services\EbayService;
 use App\Models\Card;
@@ -249,6 +251,24 @@ class CardController extends Controller {
             if ($top_trend) {
                 $cards = $cards->sortBy('price');
             }
+            if($request->input('orderby') == 'priceup') {
+                foreach($cards as $key=>$card) {
+                    if($card->sx_icon == 'down') {
+                        $cards->forget($key);
+                    }
+                }
+            } elseif($request->input('orderby') == 'pricedown') {
+                foreach($cards as $key=>$card) {
+                    if($card->sx_icon == 'up') {
+                        $cards->forget($key);
+                    }
+                }
+            } elseif($request->input('orderby') == 'percentup') {
+                
+            } elseif($request->input('orderby') == 'percentdown') {
+                
+            }
+            
 
             return response()->json(['status' => 200, 'data' => $cards, 'next' => ($page + 1)], 200);
         } catch (\Exception $e) {
@@ -328,7 +348,7 @@ class CardController extends Controller {
 
     public function getPopularPickCards(Request $request) {
         try {
-            $data = Card::with(['details'])->orderBy('updated_at', 'desc')->get()->take($request->input('take', 10));
+            $data = Card::with(['details'])->orderBy('views', 'desc')->orderBy('created_at', 'desc')->get()->take($request->input('take', 10));
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage() . ' ' . $e->getLine(), 500);
@@ -623,13 +643,16 @@ class CardController extends Controller {
             $cids = explode('|', (string) $card_id);
 //            $cids[0] = 10;
 //            $cids[1] = 12;
+//            dd($cids);
             foreach ($cids as $ind => $cid) {
 
                 $cvs = CardSales::where('card_id', $cid)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
+                $views = Card::where('id', $cid)->pluck('views');
+                $view = ($views[0] == null)? $view = 1: $view = $views[0] +1;
+                Card::where('id', $cid)->update(['views' => $view]);
                 $data['values'] = $cvs->pluck('cost')->toArray();
                 $data['labels'] = $cvs->pluck('timestamp')->toArray();
                 $data['qty'] = $cvs->pluck('quantity')->toArray();
-//                dump($data);
 
                 $data = $this->__groupGraphData($days, $data);
                 $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
@@ -828,6 +851,7 @@ class CardController extends Controller {
     }
 
     public function uploadSlabForExcelImport(Request $request) {
+//        dd($request->all());
         try {
 
 //            if (isset($request->input('card_id'))) {
@@ -886,16 +910,28 @@ class CardController extends Controller {
                 }
                 return response()->json(['message' => 'File uploaded unsuccessfully'], 500);
             } else {
-                if ($request->input('for') == 'baseball') {
-                    Excel::import(new BaseballCardsImport, request()->file('file'));
-                } else if ($request->input('for') == 'basketball') {
-                    Excel::import(new BasketballCardsImport, request()->file('file'));
-                } else if ($request->input('for') == 'football') {
-                    Excel::import(new FootballCardsImport, request()->file('file'));
-                } else if ($request->input('for') == 'soccer') {
-                    Excel::import(new SoccerCardsImport, request()->file('file'));
+                
+                if($request->has('card_id')) {
+                    Excel::import(new ListingsImport, request()->file('file'));
+                } else {
+                    Excel::import(new CardsImport, request()->file('file'));
                 }
                 return response()->json(['message' => 'Card imported successfully'], 200);
+                
+                
+//                dd($request->input('for'));
+//                if ($request->input('for') == 'baseball') {
+//                    Excel::import(new BaseballCardsImport, request()->file('file'));
+//                } else if ($request->input('for') == 'basketball') {
+//                    Excel::import(new BasketballCardsImport, request()->file('file'));
+//                } else if ($request->input('for') == 'football') {
+//                    Excel::import(new FootballCardsImport, request()->file('file'));
+//                } else if ($request->input('for') == 'soccer') {
+//                    Excel::import(new SoccerCardsImport, request()->file('file'));
+//                } else {
+//                    return response()->json(['message' => 'File doesnot matched any category'], 200);
+//                }
+//                return response()->json(['message' => 'Card imported successfully'], 200);
             }
 //            }
         } catch (\Exception $e) {

@@ -30,7 +30,7 @@ use Illuminate\Http\Request;
 //Route::post('get-cards-list-for-admin', 'Api\CardController@getCardListForAdmin');
 
 
-
+Route::post('get-ebay-list1', 'Api\CardController@getPopularPickCards');
 Route::post('get-ebay-list1/{days?}/{card_id?}', 'Api\CardController@getCardGraphData');
 
 Route::group([
@@ -153,11 +153,11 @@ Route::group([
     'middleware' => 'jwt.verify'
 ], function () {
 //    Route::post('get-card-list', 'Ebay\EbayController@getItemsList');
-    Route::post('get-recent-auction-list', 'Ebay\EbayController@getRecentAuctionList');
+//    Route::post('get-recent-auction-list', 'Ebay\EbayController@getRecentAuctionList');
     Route::post('get-internal-card-list', 'Ebay\EbayController@getInternalItemsList');
     Route::post('head-to-head', 'Ebay\EbayController@getItemsList');
 //    Route::post('recent-listing', 'Ebay\EbayController@getRecentList');
-    Route::post('ending-soon-listing', 'Ebay\EbayController@getEndingSoonList');
+//    Route::post('ending-soon-listing', 'Ebay\EbayController@getEndingSoonList');
     Route::post('sample-my-listing', 'Ebay\EbayController@sampleMyListing');
 //    Route::post('ended-listing', 'Ebay\EbayController@getEndedList');
     
@@ -176,8 +176,10 @@ Route::group([
 //    'middleware' => 'jwt.verify'
 ], function () {
     Route::post('get-card-list', 'Ebay\EbayController@getItemsList');
+    Route::post('get-recent-auction-list', 'Ebay\EbayController@getRecentAuctionList');
     Route::post('recent-listing', 'Ebay\EbayController@getRecentList');
     Route::post('ended-listing', 'Ebay\EbayController@getEndedList');
+    Route::post('ending-soon-listing', 'Ebay\EbayController@getEndingSoonList');
     
     Route::post('featured-listing', 'CardController@getFeaturedList');
     Route::post('slab-listing', 'CardController@getRecentList');
