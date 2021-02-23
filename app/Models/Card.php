@@ -38,6 +38,8 @@ class Card extends Model
         'is_featured',
         'active',
         'image',
+        'title',
+        'views'
     ];
 
     protected $appends = [
@@ -76,6 +78,10 @@ class Card extends Model
     public function details()
     {
         return $this->hasOne(CardDetails::class, 'card_id');
+    }
+    public function player_details()
+    {
+        return $this->hasOne(CardPlayerDetails::class, 'card_id');
     }
     
      public function sales()

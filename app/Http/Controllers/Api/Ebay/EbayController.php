@@ -10,6 +10,7 @@ use App\Models\Ebay\EbayItemSellerInfo;
 use App\Models\Card;
 use App\Models\CardDetails;
 use App\Models\CardValues;
+use App\Models\CardSales;
 use App\Models\Ebay\EbayItemSpecific;
 use App\Models\SeeProblem;
 use App\Models\UserSearch;
@@ -42,7 +43,7 @@ class EbayController extends Controller {
                             }
                         }
                         if ($request->input('sport') == 'random_bin') {
-                            $q->orWhere('is_random_bin', 2);
+                            $q->orWhere('is_random_bin', 1);
                         }
 
                         if ($request->input('filter_by') == 'ending_soon') {
@@ -316,6 +317,7 @@ class EbayController extends Controller {
     }
 
     public function getItemsList(Request $request) {
+//        dd('in');
         try {
             $filter = $request->input('filter', null);
             $searchCard = $request->input('searchCard', null);
@@ -1097,10 +1099,13 @@ class EbayController extends Controller {
             // $itemsSpecsIds = EbayItemSpecific::where('value', 'like', '%' . $search . '%')->groupBy('itemId')->pluck('itemId');
             $itemsSpecsIds = [];
             $items = EbayItems::with(['sellingStatus', 'card', 'card.value', 'listingInfo'])->where(function ($q) use ($itemsSpecsIds, $search, $request, $filterBy) {
-                        if ($request->has('sport') && $request->input('sport') != null) {
+                        if ($request->has('sport') && $request->input('sport') != null && $request->input('sport') != 'random bin') {
                             $q->orWhereHas('card', function ($qq) use ($request) {
                                 $qq->where('sport', $request->input('sport'));
                             });
+                        }
+                        if ($request->input('sport') == 'random bin') {
+                            $q->orWhere('is_random_bin', 1);
                         }
                         if ($search != null) {
                             if (count($itemsSpecsIds) > 0) {
@@ -1114,9 +1119,12 @@ class EbayController extends Controller {
                                 $qq->where('listingType', '!=', 'Auction');
                             });
                         }
-                    })->whereHas('card', function($q) {
+                    });
+        if($request->input('sport') != 'random bin') {
+            $items->whereHas('card', function($q) {
                 $q->where('active', 1);
             });
+        }
             if ($filterBy == 'ending_soon') {
                 $date_one = Carbon::now()->addDay();
                 $date_one->setTimezone('UTC');

@@ -59,7 +59,8 @@ class StoxtickerController extends Controller {
             foreach ($all_cards as $card) {
                 $each_cards[] = Card::where('id', (int) $card)->with('details')->first();
             }
-            return response()->json(['status' => 200, 'board' => $board, 'cards' => $each_cards], 200);
+            $finalData = $this->__cardData();
+            return response()->json(['status' => 200, 'board' => $board, 'cards' => $each_cards, 'card_data' => $finalData], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }

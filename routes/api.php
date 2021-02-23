@@ -30,8 +30,7 @@ use Illuminate\Http\Request;
 //Route::post('get-cards-list-for-admin', 'Api\CardController@getCardListForAdmin');
 
 
-Route::post('get-ebay-list1', 'Api\CardController@getPopularPickCards');
-Route::post('get-ebay-list1/{days?}/{card_id?}', 'Api\CardController@getCardGraphData');
+Route::post('get-ebay-list1/{days?}/{card_id?}', 'Api\CardController@getDashboardGraphData');
 
 Route::group([
     'namespace' => 'Api\Auth',
@@ -80,6 +79,7 @@ Route::group([
     Route::get('get-card-data/{id}', 'CardController@getCardDetails');
     Route::get('get-card-graph/{card_id}/{days?}', 'CardController@getCardGraphData');
     Route::get('get-single-card-graph/{card_id}/{days?}', 'CardController@getSingleCardGraphData');
+    Route::get('get-card-all-graph/{card_id}', 'CardController@getCardAllGraph');
     Route::get('get-stoxticker-data', 'CardController@getStoxtickerData');
     Route::get('get-dashboard-graph/{days?}/{card_id?}', 'CardController@getDashboardGraphData');
     Route::get('get-edit-card/{card_id}', 'CardController@getEditCard');

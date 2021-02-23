@@ -182,6 +182,7 @@ class UserController extends Controller
 
     public function generateImageUsingBase(Request $request)
     {
+//        dump($request->all());
         $validator = Validator::make($request->all(), [
             'image' => 'required',
             'prefix' => 'required',
@@ -195,11 +196,14 @@ class UserController extends Controller
 
                 $data = base64_decode($data);
                 $user_id = rand(4, 7);
+//                dump($user_id);
                 $name = 'dash/'.$request->prefix . $user_id . '.png';
+//                dd($name);
                 $a = Storage::disk('local')->put('public/' . $name, $data);
                 if (!$a) {
                     throw new Exception('Unable to upload image');
                 }
+//                dd(url('storage/' . $name));
                 return response()->json(['status' => 200, 'url' => url('storage/' . $name)], 200);
             }
         } catch (\Exception $e) {

@@ -257,12 +257,14 @@ class CardController extends Controller {
                         $cards->forget($key);
                     }
                 }
+                $cards = $cards->sortBy('sx_value');
             } elseif($request->input('orderby') == 'pricedown') {
                 foreach($cards as $key=>$card) {
                     if($card->sx_icon == 'up') {
                         $cards->forget($key);
                     }
                 }
+                $cards = $cards->sortBy('sx_value');
             } elseif($request->input('orderby') == 'percentup') {
                 
             } elseif($request->input('orderby') == 'percentdown') {
@@ -592,10 +594,12 @@ class CardController extends Controller {
 
     public function getDashboardGraphData($days = 2, $card_id = 0) {
         try {
+//            dd('in');
             $data = ['values' => [], 'labels' => []];
             $cvs = CardSales::where('card_id', $card_id)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
             $data['values'] = $cvs->pluck('cost')->toArray();
             $data['labels'] = $cvs->pluck('timestamp')->toArray();
+//            dd($data['labels']);
             $data['qty'] = $cvs->pluck('quantity')->toArray();
 
 //            $cvs = CardValues::select('date', 'avg_value')->groupBy('date')->orderBy('date', 'DESC')->limit($days);
@@ -618,7 +622,10 @@ class CardController extends Controller {
                 $data['qty'] = $qty;
             } else {
                 $data['values'] = array_reverse($data['values']);
-                $data['labels'] = array_reverse($data['labels']);
+                foreach($data['labels'] as $key=>$date)  {
+                    $tempDate[$key] = date('M/d/y', strtotime($date));
+                }
+                $data['labels'] = array_reverse($tempDate);
                 $data['qty'] = array_reverse($data['qty']);
             }
             $sales_diff = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->take(2)->get();
@@ -648,7 +655,7 @@ class CardController extends Controller {
 
                 $cvs = CardSales::where('card_id', $cid)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
                 $views = Card::where('id', $cid)->pluck('views');
-                $view = ($views[0] == null)? $view = 1: $view = $views[0] +1;
+                $view = ($views[0] == null) ? $view = 1 : $view = $views[0] + 1;
                 Card::where('id', $cid)->update(['views' => $view]);
                 $data['values'] = $cvs->pluck('cost')->toArray();
                 $data['labels'] = $cvs->pluck('timestamp')->toArray();
@@ -670,10 +677,12 @@ class CardController extends Controller {
                     $data['qty'] = $qty;
                 } else {
                     $data['values'] = array_reverse($data['values']);
-                    $data['labels'] = array_reverse($data['labels']);
+                    foreach ($data['labels'] as $key => $date) {
+                        $tempDate[$key] = date('M/d/y', strtotime($date));
+                    }
+                    $data['labels'] = array_reverse($tempDate);
                     $data['qty'] = array_reverse($data['qty']);
                 }
-
                 $temData[$ind] = $data;
             }
 //                dd($temData);
@@ -713,7 +722,7 @@ class CardController extends Controller {
 //            $cids[0] = 10;
 //            $cids[1] = 12;
 //            foreach ($cids as $ind => $cid) {
-
+            
                 $cvs = CardSales::where('card_id', $card_id)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
                 $data['values'] = $cvs->pluck('cost')->toArray();
                 $data['labels'] = $cvs->pluck('timestamp')->toArray();
@@ -735,10 +744,13 @@ class CardController extends Controller {
                     $data['values'] = $values;
                     $data['qty'] = $qty;
                 } else {
-                    $data['values'] = array_reverse($data['values']);
-                    $data['labels'] = array_reverse($data['labels']);
-                    $data['qty'] = array_reverse($data['qty']);
+                $data['values'] = array_reverse($data['values']);
+                foreach ($data['labels'] as $key => $date) {
+                    $tempDate[$key] = date('M/d/y', strtotime($date));
                 }
+                $data['labels'] = array_reverse($tempDate);
+                $data['qty'] = array_reverse($data['qty']);
+            }
 
 //                $temData = $data;
 //            }
@@ -749,6 +761,7 @@ class CardController extends Controller {
 //                $key = array_search ($value, $labels);
 //                dd($key);
 //            }
+//                dd($data['labels']);
             $finalData['values'] = $data['values'];
             $finalData['labels'] = $data['labels'];
             $finalData['qty'] = $data['qty'];
@@ -760,8 +773,30 @@ class CardController extends Controller {
 //            $finalData['rank2'] = $this->getCardRank($cids[1]);
             
 //            $finalData['labels'] = array_merge($temData[0]['labels'],$labels);
+            
+            $finalData['slabstoxValue'] = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+            $lastSaleData = CardSales::where('card_id', $card_id)->latest()->first();
+            $finalData['lastSalePrice'] = $lastSaleData->cost;
+            $finalData['lastSaleDate'] = $lastSaleData['timestamp'];
+            $finalData['highestSale'] = CardSales::where('card_id', $card_id)->max('cost');
+            $finalData['lowestSale'] = CardSales::where('card_id', $card_id)->min('cost');
 
             return response()->json(['status' => 200, 'data' => $finalData], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+    
+    public function getCardAllGraph($card_id) {
+        try {
+            $days = [1, 7, 30, 90, 180, 365, 1825];
+            $data['labels'] = ['1D','1W','1M','3M','6M','1Y','5Y'];
+            foreach($days as $day) {
+                $cvs = CardSales::where('card_id', $card_id)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($day)->pluck('cost');
+                $data['values'][] = array_sum($cvs->toArray());
+            }
+            $data['cardDetails'] = Card::where('id',$card_id)->first()->toArray();
+            return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
