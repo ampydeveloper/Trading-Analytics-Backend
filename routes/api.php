@@ -82,6 +82,7 @@ Route::group([
     Route::get('get-card-all-graph/{card_id}', 'CardController@getCardAllGraph');
     Route::get('get-stoxticker-data', 'CardController@getStoxtickerData');
     Route::get('get-dashboard-graph/{days?}/{card_id?}', 'CardController@getDashboardGraphData');
+    Route::get('get-sx-dashboard-graph/{days?}', 'CardController@getStoxtickerAllData');
     Route::get('get-edit-card/{card_id}', 'CardController@getEditCard');
     Route::post('card-edit', 'CardController@editCard');
 
@@ -225,4 +226,5 @@ Route::group([
     Route::post('create-board', 'StoxtickerController@createBoard');
     Route::post('search-board', 'StoxtickerController@searchBoard');
     Route::get('board-details/{board}', 'StoxtickerController@boardDetails');
+    Route::get('all-board', 'StoxtickerController@allBoards');
 });

@@ -51,6 +51,20 @@ class StoxtickerController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
+    
+    public function allBoards(Request $request) {
+        try {
+            $boards = Board::get()->take(4);
+//            foreach($boards as $board){
+//                $board->cards
+//            }
+//            $finalData = $this->__cardData();
+
+            return response()->json(['status' => 200, 'data' => $boards], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
 
     public function boardDetails($board) {
         try {

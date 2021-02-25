@@ -644,6 +644,58 @@ class CardController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
+    public function getStoxtickerAllData($days = 2) {
+        try {
+            $card_id = 8;
+            $data = ['values' => [], 'labels' => []];
+            $cvs = CardSales::where('card_id', $card_id)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
+            $data['values'] = $cvs->pluck('cost')->toArray();
+            $data['labels'] = $cvs->pluck('timestamp')->toArray();
+//            dd($data['labels']);
+            $data['qty'] = $cvs->pluck('quantity')->toArray();
+
+//            $cvs = CardValues::select('date', 'avg_value')->groupBy('date')->orderBy('date', 'DESC')->limit($days);
+//            $data['values'] = $cvs->pluck('avg_value')->toArray();
+//            $data['labels'] = $cvs->pluck('date')->toArray();
+
+            $data = $this->__groupGraphData($days, $data);
+            $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
+            if ($days == 2) {
+                $labels = [];
+                $values = [];
+                $qty = [];
+                for ($i = 0; $i <= 23; $i++) {
+                    $labels[] = ($i < 10) ? '0' . $i . ':00' : $i . ':00';
+                    $values[] = (count($data['values']) > 0 ) ? $data['values'][0] : 0;
+                    $qty[] = (count($data['qty']) > 0 ) ? $data['qty'][0] : 0;
+                }
+                $data['labels'] = $labels;
+                $data['values'] = $values;
+                $data['qty'] = $qty;
+            } else {
+                $data['values'] = array_reverse($data['values']);
+                foreach($data['labels'] as $key=>$date)  {
+                    $tempDate[$key] = date('M/d/y', strtotime($date));
+                }
+                $data['labels'] = array_reverse($tempDate);
+                $data['qty'] = array_reverse($data['qty']);
+            }
+            $sales_diff = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->take(2)->get();
+            if (isset($sales_diff[1])) {
+                $data['doller_diff'] = $sales_diff[1]->cost - $sales_diff[0]->cost;
+                $data['perc_diff'] = $sales_diff[1]->cost / $sales_diff[0]->cost * 100;
+                $data['last_timestamp'] = Carbon::create($sales_diff[1]->timestamp)->format('F d Y \- h:i:s A');
+            } else {
+                $data['doller_diff'] = 0;
+                $data['perc_diff'] = 0;
+                $data['last_timestamp'] = '';
+            }
+            $data['total_sales'] = CardSales::where('card_id', $card_id)->sum('cost');
+            return response()->json(['status' => 200, 'data' => $data], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
 
     public function getCardGraphData($card_id, $days = 2) {
         try {
