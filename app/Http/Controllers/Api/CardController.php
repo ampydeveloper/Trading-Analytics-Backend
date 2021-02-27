@@ -51,7 +51,8 @@ class CardController extends Controller {
             try {
 //                $response = EbayService::getSingleItemDetails($itemId);
                 $script_link = '/home/ubuntu/ebay/ebayFetch/bin/python3 /home/ubuntu/ebay/core.py """'.$itemId.'"""';
-                $response = shell_exec($script_link." 2>&1");
+                $scrap_response = shell_exec($script_link." 2>&1");
+                $response = json_decode($scrap_response);
                     return response()->json(['status' => 200, 'data' => $response], 200);
 //                if (isset($response['data'])) {
 //                    return response()->json(['status' => 200, 'data' => $response['data']], 200);
@@ -847,7 +848,7 @@ class CardController extends Controller {
                 $cvs = CardSales::where('card_id', $card_id)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($day)->pluck('cost');
                 $data['values'][] = array_sum($cvs->toArray());
             }
-            $data['cardDetails'] = Card::where('id',$card_id)->first()->toArray();
+            $data['card_history'] = CardSales::where('card_id', $card_id)->get();
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);

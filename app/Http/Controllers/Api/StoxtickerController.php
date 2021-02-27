@@ -44,7 +44,7 @@ class StoxtickerController extends Controller {
 //            foreach($boards as $board){
 //                $board->cards
 //            }
-            $finalData = $this->__cardData();
+            $finalData = $this->__cardDataSimple();
 
             return response()->json(['status' => 200, 'data' => $boards, 'card_data' => $finalData], 200);
         } catch (\Exception $e) {
@@ -52,13 +52,15 @@ class StoxtickerController extends Controller {
         }
     }
     
-    public function allBoards(Request $request) {
+    public function allBoards($days) {
         try {
             $boards = Board::get()->take(4);
-//            foreach($boards as $board){
-//                $board->cards
-//            }
-//            $finalData = $this->__cardData();
+            foreach($boards as $key=>$board){
+                        $all_cards = json_decode($board->cards);
+                        $boards[$key]['board_details'] = Card::whereIn('id', $all_cards)->with('details')->get();
+                        $boards[$key]['sale_details'] = CardSales::whereIn('card_id', $all_cards)->get();
+            $boards[$key]['sales_graph'] = $this->__cardData($all_cards, 2);
+            }
 
             return response()->json(['status' => 200, 'data' => $boards], 200);
         } catch (\Exception $e) {
@@ -73,14 +75,47 @@ class StoxtickerController extends Controller {
             foreach ($all_cards as $card) {
                 $each_cards[] = Card::where('id', (int) $card)->with('details')->first();
             }
-            $finalData = $this->__cardData();
+            $finalData = $this->__cardDataSimple();
             return response()->json(['status' => 200, 'board' => $board, 'cards' => $each_cards, 'card_data' => $finalData], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
     }
 
-    public function __cardData() {
+    public function __cardData($card_ids, $days) {
+//        $card_id = 12;
+//        $days = 2;
+        $cvs = CardSales::whereIn('card_id', $card_ids)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
+        $data['values'] = $cvs->pluck('cost')->toArray();
+        $data['labels'] = $cvs->pluck('timestamp')->toArray();
+        $data['qty'] = $cvs->pluck('quantity')->toArray();
+
+        $data = $this->__groupGraphData($days, $data);
+        $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
+        if ($days == 2) {
+            $labels = [];
+            $values = [];
+            $qty = [];
+            for ($i = 0; $i <= 23; $i++) {
+                $labels[] = ($i < 10) ? '0' . $i . ':00' : $i . ':00';
+                $values[] = (count($data['values']) > 0 ) ? $data['values'][0] : 0;
+                $qty[] = (count($data['qty']) > 0 ) ? $data['qty'][0] : 0;
+            }
+            $data['labels'] = $labels;
+            $data['values'] = $values;
+            $data['qty'] = $qty;
+        } else {
+            $data['values'] = array_reverse($data['values']);
+            $data['labels'] = array_reverse($data['labels']);
+            $data['qty'] = array_reverse($data['qty']);
+        }
+        $finalData['values'] = $data['values'];
+        $finalData['labels'] = $data['labels'];
+        $finalData['qty'] = $data['qty'];
+//        $finalData['rank'] = $this->getCardRank($card_id);
+        return $finalData;
+    }
+    public function __cardDataSimple() {
         $card_id = 12;
         $days = 2;
         $cvs = CardSales::where('card_id', $card_id)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
@@ -157,4 +192,32 @@ class StoxtickerController extends Controller {
         return $data;
     }
 
+    public function getSoldListings(Request $request) {
+        try {
+            $items['basketball'] = EbayItems::whereHas('card', function($q) use($request) {
+                            $q->where('sport', 'basketball');
+                        })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+            $items['football'] = EbayItems::whereHas('card', function($q) use($request) {
+                            $q->where('sport', 'football');
+                        })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+            $items['baseball'] = EbayItems::whereHas('card', function($q) use($request) {
+                            $q->where('sport', 'baseball');
+                        })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+            $items['soccer'] = EbayItems::whereHas('card', function($q) use($request) {
+                            $q->where('sport', 'soccer');
+                        })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+            $items['pokemon'] = EbayItems::whereHas('card', function($q) use($request) {
+                            $q->where('sport', 'pokemon');
+                        })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+//            $board = Board::where('id', $board)->first();
+//            $all_cards = json_decode($board->cards);
+//            foreach ($all_cards as $card) {
+//                $each_cards[] = Card::where('id', (int) $card)->with('details')->first();
+//            }
+//            $finalData = $this->__cardData();
+            return response()->json(['status' => 200, 'data' => $items], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
 }

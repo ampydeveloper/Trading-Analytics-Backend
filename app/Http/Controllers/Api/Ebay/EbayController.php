@@ -19,7 +19,6 @@ use Validator;
 use App\Models\Ebay\EbayItemCategories;
 use App\Models\Ebay\EbayItemListingInfo;
 
-
 class EbayController extends Controller {
 
     public function getItemsListForAdmin(Request $request) {
@@ -334,12 +333,12 @@ class EbayController extends Controller {
                 $cards = Card::whereIn('id', $items['cards'])->with('details')->get();
             }
             foreach ($cards as $ind => $card) {
-                
+
                 $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
                 $count = count($lastSx);
-                $lastSx = ($count > 0) ? array_sum($lastSx->toArray())/$count : 0;
-                $sx_icon = (($sx-$lastSx) >= 0) ? 'up':'down';
+                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                 $data['sx_value'] = number_format((float) $sx, 2, '.', '');
                 $data['sx_icon'] = $sx_icon;
                 $cards[$ind]['price'] = 0;
@@ -686,7 +685,15 @@ class EbayController extends Controller {
             $data['card_id'] = ($data['card_id'] == "null" ? null : $data['card_id']);
             $item = EbayItems::where('card_id', $data['card_id'])->where('itemId', $data['itemId'])->first();
             if ($item == null) {
-                $cat_id = EbayItemCategories::where('categoryId', $data['details']['PrimaryCategoryID'])->first()['id'];
+                $cat_id = 1;
+                if (isset($data['details']['PrimaryCategoryID'])) {
+                    $cat_id = EbayItemCategories::where('categoryId', $data['details']['PrimaryCategoryID'])->first()['id'];
+                } else {
+                    if (isset($data['category'])) {
+                        $cat_id = 1;
+//                        $cat_id = $data['category'];
+                    }
+                }
                 if (isset($data['details']['PictureURL'])) {
                     if (is_array($data['details']['PictureURL']) && count($data['details']['PictureURL']) > 0) {
                         $pictureURLLarge = $data['details']['PictureURL'][0];
@@ -705,18 +712,18 @@ class EbayController extends Controller {
                     'itemId' => $data['itemId'],
                     'title' => $data['title'],
                     'category_id' => $cat_id,
-                    'globalId' => $data['details']['Site'] ? 'EBAY-' . $data['details']['Site'] : null,
-                    'galleryURL' => $data['details']['GalleryURL'] ? $data['details']['GalleryURL'] : null,
-                    'viewItemURL' => $data['details']['ViewItemURLForNaturalSearch'] ? $data['details']['ViewItemURLForNaturalSearch'] : null,
-                    'autoPay' => $data['details']['AutoPay'] ? $data['details']['AutoPay'] : null,
+                    'globalId' => isset($data['details']['Site']) ? 'EBAY-' . $data['details']['Site'] : null,
+                    'galleryURL' => isset($data['details']['GalleryURL']) ? $data['details']['GalleryURL'] : null,
+                    'viewItemURL' => isset($data['details']['ViewItemURLForNaturalSearch']) ? $data['details']['ViewItemURLForNaturalSearch'] : null,
+                    'autoPay' => isset($data['details']['AutoPay']) ? $data['details']['AutoPay'] : null,
                     'postalCode' => isset($data['details']['PostalCode']) ? $data['details']['PostalCode'] : null,
-                    'location' => $data['details']['Location'] ? $data['details']['Location'] : null,
-                    'country' => $data['details']['Country'] ? $data['details']['Country'] : null,
-                    'returnsAccepted' => $data['details']['ReturnPolicy']['ReturnsAccepted'] == 'ReturnsNotAccepted' ? false : true,
-                    'condition_id' => $data['details']['ConditionID'] ? $data['details']['ConditionID'] : '',
+                    'location' => isset($data['details']['Location']) ? $data['details']['Location'] : null,
+                    'country' => isset($data['details']['Country']) ? $data['details']['Country'] : null,
+                    'returnsAccepted' => isset($data['details']['ReturnPolicy']['ReturnsAccepted']) == 'ReturnsNotAccepted' ? false : true,
+                    'condition_id' => isset($data['details']['ConditionID']) ? $data['details']['ConditionID'] : '',
                     'pictureURLLarge' => $pictureURLLarge,
                     'pictureURLSuperSize' => $pictureURLSuperSize,
-                    'listing_ending_at' => $data['details']['EndTime'] ? $data['details']['EndTime'] : null,
+                    'listing_ending_at' => isset($data['details']['EndTime']) ? $data['details']['EndTime'] : null,
                     'is_random_bin' => array_key_exists('random_bin', $data) ? (bool) $data['random_bin'] : 0
                 ]);
                 EbayItemSellerInfo::create([
@@ -726,16 +733,24 @@ class EbayController extends Controller {
                     'seller_contact_link' => $data['seller_contact_link'],
                     'seller_store_link' => $data['seller_store_link']
                 ]);
-                foreach ($data['specifics'] as $speci) {
-                    if ($speci['Value'] != "N/A") {
+                foreach ($data['specifics'] as $key=>$speci) {
+                    if (isset($speci['Value'])) {
+                        if ($speci['Value'] != "N/A") {
+                            EbayItemSpecific::create([
+                                'itemId' => $data['itemId'],
+                                'name' => $speci['Name'],
+                                'value' => is_array($speci['Value']) ? implode(',', $speci['Value']) : $speci['Value']
+                            ]);
+                        }
+                    } else {
                         EbayItemSpecific::create([
-                            'itemId' => $data['itemId'],
-                            'name' => $speci['Name'],
-                            'value' => is_array($speci['Value']) ? implode(',', $speci['Value']) : $speci['Value']
+                            'itemId' => null,
+                            'name' => $key,
+                            'value' => is_array($speci) ? implode(',', $speci) : $speci
                         ]);
                     }
                 }
-                
+
                 EbayItemListingInfo::create([
                     'itemId' => $data['itemId'],
                     'startTime' => $data['auction_start'],
@@ -779,7 +794,16 @@ class EbayController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
-    
+
+    public function getListingCategories() {
+        try {
+            $all_categories = EbayItemCategories::get();
+            return response()->json(['status' => 200, 'data' => $all_categories], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+
     public function searchedCardsByUserForAdmin() {
         try {
             $card_ids = UserSearch::pluck('card_id');
@@ -1099,32 +1123,32 @@ class EbayController extends Controller {
             // $itemsSpecsIds = EbayItemSpecific::where('value', 'like', '%' . $search . '%')->groupBy('itemId')->pluck('itemId');
             $itemsSpecsIds = [];
             $items = EbayItems::with(['sellingStatus', 'card', 'card.value', 'listingInfo'])->where(function ($q) use ($itemsSpecsIds, $search, $request, $filterBy) {
-                        if ($request->has('sport') && $request->input('sport') != null && $request->input('sport') != 'random bin') {
-                            $q->orWhereHas('card', function ($qq) use ($request) {
-                                $qq->where('sport', $request->input('sport'));
-                            });
-                        }
-                        if ($request->input('sport') == 'random bin') {
-                            $q->orWhere('is_random_bin', 1);
-                        }
-                        if ($search != null) {
-                            if (count($itemsSpecsIds) > 0) {
-                                $q->whereIn('itemId', $itemsSpecsIds);
-                            } else {
-                                $q->where('title', 'like', '%' . $search . '%');
-                            }
-                        }
-                        if ($filterBy == 'buy_it_now') {
-                            $q->orWhereHas('listingInfo', function ($qq) {
-                                $qq->where('listingType', '!=', 'Auction');
-                            });
-                        }
+                if ($request->has('sport') && $request->input('sport') != null && $request->input('sport') != 'random bin') {
+                    $q->orWhereHas('card', function ($qq) use ($request) {
+                        $qq->where('sport', $request->input('sport'));
                     });
-        if($request->input('sport') != 'random bin') {
-            $items->whereHas('card', function($q) {
-                $q->where('active', 1);
+                }
+                if ($request->input('sport') == 'random bin') {
+                    $q->orWhere('is_random_bin', 1);
+                }
+                if ($search != null) {
+                    if (count($itemsSpecsIds) > 0) {
+                        $q->whereIn('itemId', $itemsSpecsIds);
+                    } else {
+                        $q->where('title', 'like', '%' . $search . '%');
+                    }
+                }
+                if ($filterBy == 'buy_it_now') {
+                    $q->orWhereHas('listingInfo', function ($qq) {
+                        $qq->where('listingType', '!=', 'Auction');
+                    });
+                }
             });
-        }
+            if ($request->input('sport') != 'random bin') {
+                $items->whereHas('card', function($q) {
+                    $q->where('active', 1);
+                });
+            }
             if ($filterBy == 'ending_soon') {
                 $date_one = Carbon::now()->addDay();
                 $date_one->setTimezone('UTC');

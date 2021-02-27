@@ -113,6 +113,7 @@ Route::group([
     Route::get('get-edit-listing/{listing_id}', 'Ebay\EbayController@getListingEdit');
 Route::post('upload-slab-excel', 'CardController@uploadSlabForExcelImport');
 Route::post('create-new-item-from-admin', 'Ebay\EbayController@createEbayItemForAdmin');
+Route::get('get-listing-categories', 'Ebay\EbayController@getListingCategories');
 Route::get('searched-cards', 'Ebay\EbayController@searchedCardsByUserForAdmin');
 });
 
@@ -226,5 +227,6 @@ Route::group([
     Route::post('create-board', 'StoxtickerController@createBoard');
     Route::post('search-board', 'StoxtickerController@searchBoard');
     Route::get('board-details/{board}', 'StoxtickerController@boardDetails');
-    Route::get('all-board', 'StoxtickerController@allBoards');
+    Route::get('all-boards/{days}', 'StoxtickerController@allBoards');
+    Route::get('sold-listings', 'StoxtickerController@getSoldListings');
 });
