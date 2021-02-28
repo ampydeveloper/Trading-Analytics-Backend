@@ -730,6 +730,7 @@ class CardController extends Controller {
                     $data['qty'] = $qty;
                 } else {
                     $data['values'] = array_reverse($data['values']);
+                    $tempDate = [];
                     foreach ($data['labels'] as $key => $date) {
                         $tempDate[$key] = date('M/d/y', strtotime($date));
                     }

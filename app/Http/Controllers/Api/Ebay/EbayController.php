@@ -690,8 +690,8 @@ class EbayController extends Controller {
                     $cat_id = EbayItemCategories::where('categoryId', $data['details']['PrimaryCategoryID'])->first()['id'];
                 } else {
                     if (isset($data['category'])) {
-                        $cat_id = 1;
-//                        $cat_id = $data['category'];
+//                        $cat_id = 1;
+                        $cat_id = $data['category'];
                     }
                 }
                 if (isset($data['details']['PictureURL'])) {
@@ -720,7 +720,7 @@ class EbayController extends Controller {
                     'location' => isset($data['details']['Location']) ? $data['details']['Location'] : null,
                     'country' => isset($data['details']['Country']) ? $data['details']['Country'] : null,
                     'returnsAccepted' => isset($data['details']['ReturnPolicy']['ReturnsAccepted']) == 'ReturnsNotAccepted' ? false : true,
-                    'condition_id' => isset($data['details']['ConditionID']) ? $data['details']['ConditionID'] : '',
+                    'condition_id' => isset($data['details']['ConditionID']) ? $data['details']['ConditionID'] : 1,
                     'pictureURLLarge' => $pictureURLLarge,
                     'pictureURLSuperSize' => $pictureURLSuperSize,
                     'listing_ending_at' => isset($data['details']['EndTime']) ? $data['details']['EndTime'] : null,
@@ -744,7 +744,7 @@ class EbayController extends Controller {
                         }
                     } else {
                         EbayItemSpecific::create([
-                            'itemId' => null,
+                            'itemId' => 1,
                             'name' => $key,
                             'value' => is_array($speci) ? implode(',', $speci) : $speci
                         ]);

@@ -9,6 +9,7 @@ use App\Models\CardDetails;
 use App\Models\CardValues;
 use App\Models\CardSales;
 use App\Models\Board;
+use App\Models\BoardFollow;
 use App\Models\Ebay\EbayItems;
 use Carbon\Carbon;
 use Validator;
@@ -38,28 +39,31 @@ class StoxtickerController extends Controller {
         }
     }
 
-    public function searchBoard(Request $request) {
+    public function followBoard(Request $request) {
         try {
-            $boards = Board::where('name', 'like', '%' . $request->input('keyword') . '%')->get()->take(4);
-//            foreach($boards as $board){
-//                $board->cards
-//            }
-            $finalData = $this->__cardDataSimple();
-
-            return response()->json(['status' => 200, 'data' => $boards, 'card_data' => $finalData], 200);
+            if (empty(BoardFollow::where('board_id', '=', $request->input('board'))->where('user_id', '=', auth()->user()->id)->first())) {
+                BoardFollow::create([
+                    'board_id' => $request->input('board'),
+                    'user_id' => auth()->user()->id,
+                ]);
+                $board_create = true;
+            } else {
+                BoardFollow::where('board_id', '=', $request->input('board'))->where('user_id', '=', auth()->user()->id)->delete();
+                $board_create = false;
+            }
+            return response()->json(['status' => 200, 'message' => 'Board followed.', 'board_create' => $board_create], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
     }
-    
-    public function allBoards($days) {
+
+    public function searchBoard(Request $request) {
         try {
-            $boards = Board::get()->take(4);
-            foreach($boards as $key=>$board){
-                        $all_cards = json_decode($board->cards);
-                        $boards[$key]['board_details'] = Card::whereIn('id', $all_cards)->with('details')->get();
-                        $boards[$key]['sale_details'] = CardSales::whereIn('card_id', $all_cards)->get();
-            $boards[$key]['sales_graph'] = $this->__cardData($all_cards, 2);
+            $boards = Board::where('name', 'like', '%' . $request->input('keyword') . '%')->get()->take(4);
+            foreach ($boards as $key => $board) {
+                $all_cards = json_decode($board->cards);
+                $boards[$key]['sales_graph'] = $this->__cardData($all_cards, 2);
+                ;
             }
 
             return response()->json(['status' => 200, 'data' => $boards], 200);
@@ -68,15 +72,57 @@ class StoxtickerController extends Controller {
         }
     }
 
-    public function boardDetails($board) {
+    public function allBoards($days) {
+        try {
+            $boards = Board::get()->take(4);
+            foreach ($boards as $key => $board) {
+                $all_cards = json_decode($board->cards);
+                $boards[$key]['board_details'] = Card::whereIn('id', $all_cards)->with('details')->get();
+                $boards[$key]['sale_details'] = CardSales::whereIn('card_id', $all_cards)->get();
+                $boards[$key]['sales_graph'] = $this->__cardData($all_cards, 2);
+                
+//        $boards[$key]['last_timestamp'] = CardSales::whereIn('card_id', $all_cards)->get();
+        
+            }
+
+            return response()->json(['status' => 200, 'data' => $boards], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+
+    public function singleBoards($days, $board) {
         try {
             $board = Board::where('id', $board)->first();
             $all_cards = json_decode($board->cards);
-            foreach ($all_cards as $card) {
-                $each_cards[] = Card::where('id', (int) $card)->with('details')->first();
+            $boards['board_details'] = Card::whereIn('id', $all_cards)->with('details')->get();
+            $boards['sale_details'] = CardSales::whereIn('card_id', $all_cards)->get();
+            $boards['sales_graph'] = $this->__cardData($all_cards, $days);
+
+            return response()->json(['status' => 200, 'data' => $boards], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+
+    public function boardDetails($board, $days = 2) {
+        try {
+            $board = Board::where('id', $board)->first();
+            $follow = BoardFollow::where('board_id', '=', $board->id)->where('user_id', '=', auth()->user()->id)->first();
+            $all_cards = json_decode($board->cards);
+            foreach ($all_cards as $key => $card) {
+                $each_cards[$key]['card_data'] = Card::where('id', (int) $card)->with('details')->first();
+                $sx = CardSales::where('card_id', $card)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $lastSx = CardSales::where('card_id', $card)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
+                $count = count($lastSx);
+                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                $each_cards[$key]['card_data']['sx_value'] = number_format((float) $sx, 2, '.', '');
+                $each_cards[$key]['card_data']['sx_icon'] = $sx_icon;
             }
-            $finalData = $this->__cardDataSimple();
-            return response()->json(['status' => 200, 'board' => $board, 'cards' => $each_cards, 'card_data' => $finalData], 200);
+            $finalData = $this->__cardData($all_cards, $days);
+
+            return response()->json(['status' => 200, 'board' => $board, 'cards' => $each_cards, 'card_data' => $finalData, 'follow' => $follow], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -112,9 +158,16 @@ class StoxtickerController extends Controller {
         $finalData['values'] = $data['values'];
         $finalData['labels'] = $data['labels'];
         $finalData['qty'] = $data['qty'];
+        $last_timestamp = CardSales::whereIn('card_id', $card_ids)->select('timestamp')->orderBy('timestamp', 'DESC')->first();
+        if(!empty($last_timestamp)){
+        $finalData['last_timestamp'] = Carbon::create($last_timestamp->timestamp)->format('F d Y \- h:i:s A');
+        }else{
+        $finalData['last_timestamp'] = Carbon::create()->format('F d Y \- h:i:s A');
+        }
 //        $finalData['rank'] = $this->getCardRank($card_id);
         return $finalData;
     }
+
     public function __cardDataSimple() {
         $card_id = 12;
         $days = 2;
@@ -195,20 +248,20 @@ class StoxtickerController extends Controller {
     public function getSoldListings(Request $request) {
         try {
             $items['basketball'] = EbayItems::whereHas('card', function($q) use($request) {
-                            $q->where('sport', 'basketball');
-                        })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+                        $q->where('sport', 'basketball');
+                    })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
             $items['football'] = EbayItems::whereHas('card', function($q) use($request) {
-                            $q->where('sport', 'football');
-                        })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+                        $q->where('sport', 'football');
+                    })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
             $items['baseball'] = EbayItems::whereHas('card', function($q) use($request) {
-                            $q->where('sport', 'baseball');
-                        })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+                        $q->where('sport', 'baseball');
+                    })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
             $items['soccer'] = EbayItems::whereHas('card', function($q) use($request) {
-                            $q->where('sport', 'soccer');
-                        })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+                        $q->where('sport', 'soccer');
+                    })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
             $items['pokemon'] = EbayItems::whereHas('card', function($q) use($request) {
-                            $q->where('sport', 'pokemon');
-                        })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+                        $q->where('sport', 'pokemon');
+                    })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
 //            $board = Board::where('id', $board)->first();
 //            $all_cards = json_decode($board->cards);
 //            foreach ($all_cards as $card) {
@@ -220,4 +273,5 @@ class StoxtickerController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
+
 }
