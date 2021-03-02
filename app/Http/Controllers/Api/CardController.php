@@ -980,11 +980,11 @@ class CardController extends Controller {
                 return response()->json(['message' => 'File uploaded unsuccessfully'], 500);
             } else {
 
-//                if($request->has('card_id')) {
+                if($request->has('card_id')) {
                 Excel::import(new ListingsImport, request()->file('file'));
-//                } else {
-//                    Excel::import(new CardsImport, request()->file('file'));
-//                }
+                } else {
+                    Excel::import(new CardsImport, request()->file('file'));
+                }
                 return response()->json(['message' => 'Card imported successfully'], 200);
             }
         } catch (\Exception $e) {
