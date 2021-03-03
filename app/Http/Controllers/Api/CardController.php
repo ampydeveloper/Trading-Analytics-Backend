@@ -816,15 +816,21 @@ class CardController extends Controller {
 
     public function getCardAllGraph($card_id) {
         try {
-            $days = [date('Y-m-d H:i:s',strtotime('-1 day')), date('Y-m-d H:i:s',strtotime('-7 days')), date('Y-m-d H:i:s',strtotime('-30 days')), 
-                date('Y-m-d H:i:s',strtotime('-90 days')), date('Y-m-d H:i:s',strtotime('-180 days')), 
-                date('Y-m-d H:i:s',strtotime('-365 days')), date('Y-m-d H:i:s',strtotime('-1825 days'))];
+            $days = [ 
+                0=>['from'=> date('Y-m-d H:i:s'),'to'=>date('Y-m-d H:i:s',strtotime('-1 day'))],
+                1=>['from'=> date('Y-m-d H:i:s',strtotime('-1 day')),'to'=>date('Y-m-d H:i:s',strtotime('-7 days'))],
+                2=>['from'=> date('Y-m-d H:i:s',strtotime('-1 day')),'to'=>date('Y-m-d H:i:s',strtotime('-30 day'))],
+                3=>['from'=> date('Y-m-d H:i:s',strtotime('-1 day')),'to'=>date('Y-m-d H:i:s',strtotime('-90 day'))],
+                4=>['from'=> date('Y-m-d H:i:s',strtotime('-1 day')),'to'=>date('Y-m-d H:i:s',strtotime('-180 day'))],
+                5=>['from'=> date('Y-m-d H:i:s',strtotime('-1 day')),'to'=>date('Y-m-d H:i:s',strtotime('-365 day'))],
+        6=>['from'=> date('Y-m-d H:i:s',strtotime('-1 day')),'to'=>date('Y-m-d H:i:s',strtotime('-1825 day'))]];
             $data['labels'] = ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y'];
             foreach ($days as $day) {
                 $today_date = date('Y-m-d H:i:s');
-                $data['values'][] = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$day, $today_date])->orderBy('timestamp', 'DESC')->sum('quantity');
+                $data['values'][] = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$day['to'], $day['from']])->orderBy('timestamp', 'DESC')->sum('quantity');
 //                $data['values'][] = array_sum($cvs->toArray());
             }
+//            $data['dfssf'] = $days;
             $data['card_history'] = CardSales::where('card_id', $card_id)->get();
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
