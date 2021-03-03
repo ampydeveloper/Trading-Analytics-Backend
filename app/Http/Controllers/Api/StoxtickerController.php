@@ -76,7 +76,8 @@ class StoxtickerController extends Controller {
                 }
                 $boards[$key]['sx_value'] = number_format((float) $sx, 2, '.', '');
                 $boards[$key]['sx_icon'] = $sx_icon;
-                $boards[$key]['total_card_value'] = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $total_card_value = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $boards[$key]['total_card_value'] = number_format((float) $total_card_value, 2, '.', '');
             }
 
             return response()->json(['status' => 200, 'data' => $boards], 200);
@@ -165,7 +166,7 @@ class StoxtickerController extends Controller {
                 }
             $finalData['sx_value'] = number_format((float) $sx, 2, '.', '');
             $finalData['sx_icon'] = $sx_icon;
-            $finalData['total_card_value'] = $total_card_value;
+            $finalData['total_card_value'] = number_format((float) $total_card_value, 2, '.', '');
 
             return response()->json(['status' => 200, 'board' => $board, 'cards' => $each_cards, 'card_data' => $finalData, 'follow' => $follow], 200);
         } catch (\Exception $e) {
@@ -209,40 +210,6 @@ class StoxtickerController extends Controller {
         } else {
             $finalData['last_timestamp'] = Carbon::create()->format('F d Y \- h:i:s A');
         }
-//        $finalData['rank'] = $this->getCardRank($card_id);
-        return $finalData;
-    }
-
-    public function __cardDataSimple() {
-        $card_id = 12;
-        $days = 2;
-        $cvs = CardSales::where('card_id', $card_id)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
-        $data['values'] = $cvs->pluck('cost')->toArray();
-        $data['labels'] = $cvs->pluck('timestamp')->toArray();
-        $data['qty'] = $cvs->pluck('quantity')->toArray();
-
-        $data = $this->__groupGraphData($days, $data);
-        $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
-        if ($days == 2) {
-            $labels = [];
-            $values = [];
-            $qty = [];
-            for ($i = 0; $i <= 23; $i++) {
-                $labels[] = ($i < 10) ? '0' . $i . ':00' : $i . ':00';
-                $values[] = (count($data['values']) > 0 ) ? $data['values'][0] : 0;
-                $qty[] = (count($data['qty']) > 0 ) ? $data['qty'][0] : 0;
-            }
-            $data['labels'] = $labels;
-            $data['values'] = $values;
-            $data['qty'] = $qty;
-        } else {
-            $data['values'] = array_reverse($data['values']);
-            $data['labels'] = array_reverse($data['labels']);
-            $data['qty'] = array_reverse($data['qty']);
-        }
-        $finalData['values'] = $data['values'];
-        $finalData['labels'] = $data['labels'];
-        $finalData['qty'] = $data['qty'];
 //        $finalData['rank'] = $this->getCardRank($card_id);
         return $finalData;
     }

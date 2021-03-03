@@ -569,7 +569,8 @@ class CardController extends Controller {
         try {
             $data = ['total' => 0, 'sale' => 0, 'avg_sale' => 0, 'change' => 0, 'change_arrow' => 'up', 'last_updated' => ''];
             $data['total'] = Card::count();
-            $data['sale'] = CardSales::sum('cost');
+            $cs_cost = CardSales::sum('cost');
+            $data['sale'] =  number_format((float) $cs_cost, 2, '.', '');
             $last_updated = CardSales::orderBy('timestamp', 'DESC')->first();
             if (!empty($last_updated)) {
                 $data['last_updated'] = Carbon::create($last_updated->timestamp)->format('F d Y \- h:i:s A');
@@ -646,17 +647,11 @@ class CardController extends Controller {
 
     public function getStoxtickerAllData($days = 2) {
         try {
-//            $card_id = 8;
             $data = ['values' => [], 'labels' => []];
             $cvs = CardSales::groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
             $data['values'] = $cvs->pluck('cost')->toArray();
             $data['labels'] = $cvs->pluck('timestamp')->toArray();
-//            dd($data['labels']);
             $data['qty'] = $cvs->pluck('quantity')->toArray();
-
-//            $cvs = CardValues::select('date', 'avg_value')->groupBy('date')->orderBy('date', 'DESC')->limit($days);
-//            $data['values'] = $cvs->pluck('avg_value')->toArray();
-//            $data['labels'] = $cvs->pluck('date')->toArray();
 
             $data = $this->__groupGraphData($days, $data);
             $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
@@ -683,7 +678,8 @@ class CardController extends Controller {
             $sales_diff = CardSales::orderBy('timestamp', 'DESC')->take(2)->get();
             if (isset($sales_diff[1])) {
                 $data['doller_diff'] = $sales_diff[1]->cost - $sales_diff[0]->cost;
-                $data['perc_diff'] = $sales_diff[1]->cost / $sales_diff[0]->cost * 100;
+                $perc_diff = $sales_diff[1]->cost / $sales_diff[0]->cost * 100;
+                $data['perc_diff'] = number_format((float) $perc_diff, 2, '.', '');
                 $data['last_timestamp'] = Carbon::create($sales_diff[1]->timestamp)->format('F d Y \- h:i:s A');
             } else {
                 $data['doller_diff'] = 0;
@@ -694,7 +690,8 @@ class CardController extends Controller {
             if ($data['doller_diff'] < 0) {
                 $data['change_arrow'] = 'down';
             }
-            $data['total_sales'] = CardSales::sum('cost');
+            $total_sales = CardSales::sum('cost');
+            $data['total_sales'] = number_format((float) $total_sales, 2, '.', '');
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -704,11 +701,7 @@ class CardController extends Controller {
     public function getCardGraphData($card_id, $days = 2) {
         try {
             $cids = explode('|', (string) $card_id);
-//            $cids[0] = 10;
-//            $cids[1] = 12;
-//            dd($cids);
             foreach ($cids as $ind => $cid) {
-
                 $cvs = CardSales::where('card_id', $cid)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
                 $views = Card::where('id', $cid)->pluck('views');
                 $view = ($views[0] == null) ? $view = 1 : $view = $views[0] + 1;
@@ -742,18 +735,10 @@ class CardController extends Controller {
                 }
                 $temData[$ind] = $data;
             }
-//                dd($temData);
-//            dump($temData);
-//            $labels = array_diff($temData[1]['labels'],$temData[0]['labels']);
-//            foreach($labels as $key => $value) {
-//                $key = array_search ($value, $labels);
-//                dd($key);
-//            }
             $finalData['values1'] = $temData[0]['values'];
             $finalData['lable1'] = $temData[0]['labels'];
             $finalData['qty1'] = $temData[0]['qty'];
             $finalData['values2'] = $temData[1]['values'];
-//            dd('inn');
             $finalData['labels2'] = $temData[1]['labels'];
             $finalData['qty2'] = $temData[1]['qty'];
             $finalData['rank1'] = $this->getCardRank($cids[0]);
@@ -765,8 +750,6 @@ class CardController extends Controller {
             $finalData['low_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('cost', 'ASC')->first();
             $finalData['low_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('cost', 'ASC')->first();
 
-//            $finalData['labels'] = array_merge($temData[0]['labels'],$labels);
-
             return response()->json(['status' => 200, 'data' => $finalData], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -775,16 +758,10 @@ class CardController extends Controller {
 
     public function getSingleCardGraphData($card_id, $days = 2) {
         try {
-//            $cids = explode('|', (string) $card_id);
-//            $cids[0] = 10;
-//            $cids[1] = 12;
-//            foreach ($cids as $ind => $cid) {
-
             $cvs = CardSales::where('card_id', $card_id)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
             $data['values'] = $cvs->pluck('cost')->toArray();
             $data['labels'] = $cvs->pluck('timestamp')->toArray();
             $data['qty'] = $cvs->pluck('quantity')->toArray();
-//                dump($data);
 
             $data = $this->__groupGraphData($days, $data);
             $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
@@ -809,26 +786,10 @@ class CardController extends Controller {
                 $data['qty'] = array_reverse($data['qty']);
             }
 
-//                $temData = $data;
-//            }
-//                dd($temData);
-//            dump($temData);
-//            $labels = array_diff($temData[1]['labels'],$temData[0]['labels']);
-//            foreach($labels as $key => $value) {
-//                $key = array_search ($value, $labels);
-//                dd($key);
-//            }
-//                dd($data['labels']);
             $finalData['values'] = $data['values'];
             $finalData['labels'] = $data['labels'];
             $finalData['qty'] = $data['qty'];
-//            $finalData['values2'] = $temData[1]['values'];
-////            dd('inn');
-//            $finalData['labels2'] = $temData[1]['labels'];
-//            $finalData['qty2'] = $temData[1]['qty'];
             $finalData['rank'] = $this->getCardRank($card_id);
-//            $finalData['rank2'] = $this->getCardRank($cids[1]);
-//            $finalData['labels'] = array_merge($temData[0]['labels'],$labels);
 
             $sx = $finalData['slabstoxValue'] = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
             $lastSaleData = CardSales::where('card_id', $card_id)->latest()->first();
@@ -857,8 +818,8 @@ class CardController extends Controller {
             $days = [1, 7, 30, 90, 180, 365, 1825];
             $data['labels'] = ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y'];
             foreach ($days as $day) {
-                $cvs = CardSales::where('card_id', $card_id)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($day)->pluck('quantity');
-                $data['values'][] = array_sum($cvs->toArray());
+                $data['values'][] = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit($day)->sum('quantity');
+//                $data['values'][] = array_sum($cvs->toArray());
             }
             $data['card_history'] = CardSales::where('card_id', $card_id)->get();
             return response()->json(['status' => 200, 'data' => $data], 200);
@@ -980,8 +941,8 @@ class CardController extends Controller {
                 return response()->json(['message' => 'File uploaded unsuccessfully'], 500);
             } else {
 
-                if($request->has('card_id')) {
-                Excel::import(new ListingsImport, request()->file('file'));
+                if ($request->has('card_id')) {
+                    Excel::import(new ListingsImport, request()->file('file'));
                 } else {
                     Excel::import(new CardsImport, request()->file('file'));
                 }
