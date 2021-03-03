@@ -18,7 +18,7 @@ class Board extends Model
      */
     protected $fillable = [
         'name',
-//        'sports',
+        'user_id',
         'cards',
     ];
 

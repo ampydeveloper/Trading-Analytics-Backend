@@ -224,7 +224,7 @@ Route::group([
 //    'middleware' => 'jwt.verify'
 ], function () {
     Route::post('slab-search', 'StoxtickerController@slabSearch');
-    Route::post('create-board', 'StoxtickerController@createBoard');
+   
     Route::post('search-board', 'StoxtickerController@searchBoard');
     
     Route::get('all-boards/{days}', 'StoxtickerController@allBoards');
@@ -237,6 +237,8 @@ Route::group([
     'prefix' => 'stoxticker',
     'middleware' => 'jwt.verify'
 ], function () {
+     Route::post('create-board', 'StoxtickerController@createBoard');
     Route::get('board-details/{board}/{days}', 'StoxtickerController@boardDetails');
     Route::post('follow-board', 'StoxtickerController@followBoard');
+    Route::post('delete-board', 'StoxtickerController@deleteBoard');
 });

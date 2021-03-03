@@ -30,7 +30,7 @@ class StoxtickerController extends Controller {
         try {
             Board::create([
                 'name' => $request->input('name'),
-//                'sports' => json_encode($request->input('sports')),
+                'user_id' => auth()->user()->id,
                 'cards' => json_encode($request->input('cards')),
             ]);
             return response()->json(['status' => 200, 'message' => 'Board Created'], 200);
@@ -57,6 +57,15 @@ class StoxtickerController extends Controller {
         }
     }
 
+    public function deleteBoard(Request $request) {
+        try {
+            Board::where('id', '=', $request->input('board'))->delete();
+            return response()->json(['status' => 200, 'message' => 'Board deleted.'], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+
     public function searchBoard(Request $request) {
         try {
             $boards = Board::where('name', 'like', '%' . $request->input('keyword') . '%')->get()->take(4);
@@ -69,10 +78,10 @@ class StoxtickerController extends Controller {
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-                if($sx != 0){
-                $boards[$key]['pert_diff'] = number_format((float) $lastSx / $sx * 100, 2, '.', '');
-                }else{
-                $boards[$key]['pert_diff'] = 0;
+                if ($sx != 0) {
+                    $boards[$key]['pert_diff'] = number_format((float) $lastSx / $sx * 100, 2, '.', '');
+                } else {
+                    $boards[$key]['pert_diff'] = 0;
                 }
                 $boards[$key]['sx_value'] = number_format((float) $sx, 2, '.', '');
                 $boards[$key]['sx_icon'] = $sx_icon;
@@ -100,17 +109,17 @@ class StoxtickerController extends Controller {
                 } else {
                     $boards[$key]['total_card_value'] = 0;
                 }
-                
+
                 $sx = CardSales::where('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 $lastSx = CardSales::where('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                 $boards[$key]['sx_value'] = number_format((float) $sx, 2, '.', '');
-                if($sx != 0){
-                $boards[$key]['pert_diff'] = number_format((float) $lastSx / $sx * 100, 2, '.', '');
-                }else{
-                $boards[$key]['pert_diff'] = 0;
+                if ($sx != 0) {
+                    $boards[$key]['pert_diff'] = number_format((float) $lastSx / $sx * 100, 2, '.', '');
+                } else {
+                    $boards[$key]['pert_diff'] = 0;
                 }
                 $boards[$key]['sx_icon'] = $sx_icon;
             }
@@ -129,6 +138,26 @@ class StoxtickerController extends Controller {
             $boards['sale_details'] = CardSales::whereIn('card_id', $all_cards)->get();
             $boards['sales_graph'] = $this->__cardData($all_cards, $days);
 
+            $total_card_value = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                if (!empty($total_card_value)) {
+                    $boards['total_card_value'] = $total_card_value;
+                } else {
+                    $boards['total_card_value'] = 0;
+                }
+
+                $sx = CardSales::where('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $lastSx = CardSales::where('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
+                $count = count($lastSx);
+                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                $boards['sx_value'] = number_format((float) $sx, 2, '.', '');
+                if ($sx != 0) {
+                    $boards['pert_diff'] = number_format((float) $lastSx / $sx * 100, 2, '.', '');
+                } else {
+                    $boards['pert_diff'] = 0;
+                }
+                $boards['sx_icon'] = $sx_icon;
+            
             return response()->json(['status' => 200, 'data' => $boards], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -159,11 +188,11 @@ class StoxtickerController extends Controller {
             $count = count($lastSx);
             $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
             $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-            if($sx != 0){
+            if ($sx != 0) {
                 $finalData['pert_diff'] = number_format((float) $lastSx / $sx * 100, 2, '.', '');
-                }else{
+            } else {
                 $finalData['pert_diff'] = 0;
-                }
+            }
             $finalData['sx_value'] = number_format((float) $sx, 2, '.', '');
             $finalData['sx_icon'] = $sx_icon;
             $finalData['total_card_value'] = number_format((float) $total_card_value, 2, '.', '');
@@ -208,7 +237,7 @@ class StoxtickerController extends Controller {
         if (!empty($last_timestamp)) {
             $finalData['last_timestamp'] = Carbon::create($last_timestamp->timestamp)->format('F d Y \- h:i:s A');
         } else {
-            $finalData['last_timestamp'] = Carbon::create()->format('F d Y \- h:i:s A');
+            $finalData['last_timestamp'] = 'N/A';
         }
 //        $finalData['rank'] = $this->getCardRank($card_id);
         return $finalData;

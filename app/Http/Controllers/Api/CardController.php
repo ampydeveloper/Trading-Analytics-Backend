@@ -677,7 +677,8 @@ class CardController extends Controller {
             }
             $sales_diff = CardSales::orderBy('timestamp', 'DESC')->take(2)->get();
             if (isset($sales_diff[1])) {
-                $data['doller_diff'] = $sales_diff[1]->cost - $sales_diff[0]->cost;
+                $doller_diff = $sales_diff[1]->cost - $sales_diff[0]->cost;
+                $data['doller_diff'] = str_replace('-','',$doller_diff);
                 $perc_diff = $sales_diff[1]->cost / $sales_diff[0]->cost * 100;
                 $data['perc_diff'] = number_format((float) $perc_diff, 2, '.', '');
                 $data['last_timestamp'] = Carbon::create($sales_diff[1]->timestamp)->format('F d Y \- h:i:s A');
@@ -815,10 +816,13 @@ class CardController extends Controller {
 
     public function getCardAllGraph($card_id) {
         try {
-            $days = [1, 7, 30, 90, 180, 365, 1825];
+            $days = [date('Y-m-d H:i:s',strtotime('-1 day')), date('Y-m-d H:i:s',strtotime('-7 days')), date('Y-m-d H:i:s',strtotime('-30 days')), 
+                date('Y-m-d H:i:s',strtotime('-90 days')), date('Y-m-d H:i:s',strtotime('-180 days')), 
+                date('Y-m-d H:i:s',strtotime('-365 days')), date('Y-m-d H:i:s',strtotime('-1825 days'))];
             $data['labels'] = ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y'];
             foreach ($days as $day) {
-                $data['values'][] = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit($day)->sum('quantity');
+                $today_date = date('Y-m-d H:i:s');
+                $data['values'][] = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$day, $today_date])->orderBy('timestamp', 'DESC')->sum('quantity');
 //                $data['values'][] = array_sum($cvs->toArray());
             }
             $data['card_history'] = CardSales::where('card_id', $card_id)->get();
