@@ -174,7 +174,7 @@ class MyPortfolioController extends Controller {
                 foreach ($ptempcards[$card->id] as $ptempcard) {
                     $purchase_price = (isset($ptempcard) ? $ptempcard->purchase_price : 0);
                     $portfolio_id = (isset($ptempcard) ? $ptempcard->id : 0);
-                    $differ = number_format((float) ($sx - $purchase_price), 2, '.', '');
+                    $differ = str_replace('-', '', number_format((float) ($sx - $purchase_price), 2, '.', ''));
                     $sx_icon = (($differ < 0) ? 'down' : 'up');
                     $data[] = [
                         'id' => $card->id,

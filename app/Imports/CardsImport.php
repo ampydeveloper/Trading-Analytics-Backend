@@ -6,6 +6,7 @@ use App\Models\Card;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithStartRow;
 use Illuminate\Support\Collection;
+use App\Models\ExcelUploads;
 
 class CardsImport implements ToCollection, WithStartRow
 {
@@ -26,9 +27,14 @@ class CardsImport implements ToCollection, WithStartRow
      */
     public function collection(Collection $rows)
     {
+         $eu_ids = ExcelUploads::create([
+                'file_name' => substr(md5(mt_rand()), 0, 7),
+             'status' => 1,
+            ]);
         foreach($rows as $row) {
             $card = Card::create([
                         'row_id' => ++$this->row,
+                        'excel_uploads_id' => $eu_ids->id,
                         'player' => $row[0],
                         'year' => (int) $row[1],
                         'brand' => $row[2],

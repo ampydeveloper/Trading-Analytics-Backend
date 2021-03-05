@@ -23,6 +23,7 @@ class EbayItems extends Model
     protected $fillable = [
         'itemId',
         'card_id',
+        'excel_uploads_id',
         'title',
         'globalId',
         'category_id',

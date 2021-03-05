@@ -12,6 +12,7 @@ use App\Models\Ebay\EbayItemSellerInfo;
 use App\Models\Ebay\EbayItemSpecific;
 use App\Models\Ebay\EbayItemListingInfo;
 use Carbon\Carbon;
+use App\Models\ExcelUploads;
 
 class ListingsImport implements ToCollection, WithStartRow
 {
@@ -32,11 +33,18 @@ class ListingsImport implements ToCollection, WithStartRow
      */
     public function collection(Collection $rows)
     {
+        
+        $eu_ids = ExcelUploads::create([
+                'file_name' => substr(md5(mt_rand()), 0, 7),
+                'status' => 1,
+            ]);
+        
         foreach($rows as $row) {
             if($row[8] != 'EBAY'){
                 if(!empty($row[1])){
                 CardSales::create([
                 'card_id' => $row[1],
+                'excel_uploads_id' => $eu_ids->id,
                 'timestamp' => Carbon::create($row[6])->format('Y-m-d h:i:s'),
                 'quantity' => 1,
                 'cost' => str_replace('$', '', $row[3]),
@@ -60,6 +68,7 @@ class ListingsImport implements ToCollection, WithStartRow
                 
                 EbayItems::create([
                     'card_id' => $row[1],
+                    'excel_uploads_id' => $eu_ids->id,
                     'itemId' => $row[0],
                     'title' => $data['name'],
                     'category_id' => $cat_id,

@@ -74,7 +74,7 @@ class StoxtickerController extends Controller {
                 $boards[$key]['sales_graph'] = $this->__cardData($all_cards, 2);
 
                 $sx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                $lastSx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
+                $lastSx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
@@ -97,7 +97,8 @@ class StoxtickerController extends Controller {
 
     public function allBoards($days) {
         try {
-            $boards = Board::get()->take(4);
+            $b_ids = BoardFollow::where('user_id', '=', auth()->user()->id)->pluck('id');
+            $boards = Board::whereIn('id', $b_ids)->where('user_id', '=', auth()->user()->id)->get();
             foreach ($boards as $key => $board) {
                 $all_cards = json_decode($board->cards);
                 $boards[$key]['board_details'] = Card::whereIn('id', $all_cards)->with('details')->get();
@@ -111,7 +112,7 @@ class StoxtickerController extends Controller {
                 }
 
                 $sx = CardSales::where('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                $lastSx = CardSales::where('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
+                $lastSx = CardSales::where('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
@@ -146,7 +147,7 @@ class StoxtickerController extends Controller {
                 }
 
                 $sx = CardSales::where('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                $lastSx = CardSales::where('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
+                $lastSx = CardSales::where('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
@@ -174,7 +175,7 @@ class StoxtickerController extends Controller {
                 $each_cards[$key]['card_data'] = Card::where('id', (int) $card)->with('details')->first();
                 $sx = CardSales::where('card_id', $card)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 $total_card_value = $total_card_value + $sx;
-                $lastSx = CardSales::where('card_id', $card)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
+                $lastSx = CardSales::where('card_id', $card)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';

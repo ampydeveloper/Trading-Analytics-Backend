@@ -92,9 +92,9 @@ class WatchListController extends Controller {
             foreach ($cards as $key => $card) {
                 
                 $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
-                $count = count($lastSx);
-                $lastSx = ($count > 0) ? array_sum($lastSx->toArray())/$count : 0;
+                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->avg('cost');
+//                $count = count($lastSx);
+//                $lastSx = ($count > 0) ? array_sum($lastSx->toArray())/$count : 0;
                 $sx_icon = (($sx-$lastSx) >= 0) ? 'up':'down';
                 $sx = number_format((float) $sx, 2, '.', '');
                 
@@ -123,9 +123,9 @@ class WatchListController extends Controller {
                     'id' => $card->id,
                     'title' => $card->title,
                     'cardImage' => $card->cardImage,
-                    'sx_value' => $sx,
+                    'sx_value' => str_replace('-', '',number_format((float) $lastSx - $sx, 2, '.', '')),
                     'sx_icon' => $sx_icon,
-                    'price' => $card->details->currentPrice,
+                    'price' => $sx,
                     'purchase_price' => $purchase_price,
                     'differ' => $differ,
                     'portfolio_id' => $portfolio_id,
