@@ -2,9 +2,6 @@
 
 use Illuminate\Http\Request;
 
-//header("Access-Control-Allow-Origin: *");
-//header("Access-Control-Allow-Methods: PUT, GET, POST, DELETE, OPTIONS");
-//header("Access-Control-Allow-Headers: *");
 /*
   |--------------------------------------------------------------------------
   | API Routes
@@ -20,17 +17,9 @@ use Illuminate\Http\Request;
   return $request->user();
   }); */
 
-//header("Access-Control-Allow-Origin: *");
-//header('Access-Control-Allow-Origin: http://localhost:3000');
-//header('Access-Control-Allow-Headers: origin, x-requested-with, content-type');
-//header('Access-Control-Allow-Methods: PUT, GET, POST, DELETE, OPTIONS');
-//header('Access-Control-Allow-Origin: *');
-//header( 'Access-Control-Allow-Headers: Authorization, Content-Type' );
 //Route::post('create-new-item-from-admin1', 'Api\Ebay\EbayController@createEbayItemForAdmin');
 //Route::post('get-cards-list-for-admin', 'Api\CardController@getCardListForAdmin');
-
-
-Route::post('get-ebay-list1/{days?}/{card_id?}', 'Api\CardController@getDashboardGraphData');
+//Route::post('get-ebay-list1/{days?}/{card_id?}', 'Api\CardController@getDashboardGraphData');
 
 Route::group([
     'namespace' => 'Api\Auth',

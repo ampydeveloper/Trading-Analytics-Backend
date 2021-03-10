@@ -28,7 +28,7 @@ class CardsImport implements ToCollection, WithStartRow
     public function collection(Collection $rows)
     {
          $eu_ids = ExcelUploads::create([
-                'file_name' => substr(md5(mt_rand()), 0, 7),
+                'file_name' => 'CARD_'.substr(md5(mt_rand()), 0, 7).'.csv',
              'status' => 1,
             ]);
         foreach($rows as $row) {

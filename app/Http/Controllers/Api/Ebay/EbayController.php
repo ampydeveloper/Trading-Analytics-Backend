@@ -39,6 +39,8 @@ class EbayController extends Controller {
                             } else {
                                 $q->where('title', 'like', '%' . $search . '%');
                                 $q->orWhere('id', $search);
+                                $q->orWhere('card_id', $search);
+                                $q->orWhere('itemId', $search);
                             }
                         }
                         if ($request->input('sport') == 'random_bin') {
@@ -63,6 +65,7 @@ class EbayController extends Controller {
                 }
                 $data[] = [
                     'id' => $item->id,
+                    'card_id' => $item->card_id,
                     'title' => $item->title,
                     'galleryURL' => $galleryURL,
                     'price' => ($item->sellingStatus ? $item->sellingStatus->price : 0),
@@ -187,6 +190,8 @@ class EbayController extends Controller {
                                 $q->whereIn('itemId', $itemsSpecsIds);
                             } else {
                                 $q->where('title', 'like', '%' . $search . '%');
+                                $q->orWhere('card_id', $search);
+                                $q->orWhere('itemId', $search);
                             }
                         }
                     })->orderBy('updated_at', 'desc')->get();
@@ -203,6 +208,7 @@ class EbayController extends Controller {
                 }
                 $data[] = [
                     'id' => $item->id,
+                    'card_id' => $item->card_id,
                     'title' => $item->title,
                     'galleryURL' => $galleryURL,
                     'price' => ($item->sellingStatus ? $item->sellingStatus->price : 0),
@@ -235,6 +241,8 @@ class EbayController extends Controller {
 //                        $q->whereIn('itemId', $itemsSpecsIds);
 //                    } else {
                             $q->where('title', 'like', '%' . $search . '%');
+                            $q->orWhere('card_id', $search);
+                            $q->orWhere('itemId', $search);
 //                    }
                         }
                     })->orderBy('updated_at', 'desc')->get();
@@ -251,6 +259,7 @@ class EbayController extends Controller {
                 }
                 $data[] = [
                     'id' => $item->id,
+                    'card_id' => $item->card_id,
                     'title' => $item->title,
                     'galleryURL' => $galleryURL,
                     'price' => ($item->sellingStatus ? $item->sellingStatus->price : 0),
@@ -733,7 +742,7 @@ class EbayController extends Controller {
                     'seller_contact_link' => $data['seller_contact_link'],
                     'seller_store_link' => $data['seller_store_link']
                 ]);
-                foreach ($data['specifics'] as $key=>$speci) {
+                foreach ($data['specifics'] as $key => $speci) {
                     if (isset($speci['Value'])) {
                         if ($speci['Value'] != "N/A") {
                             EbayItemSpecific::create([

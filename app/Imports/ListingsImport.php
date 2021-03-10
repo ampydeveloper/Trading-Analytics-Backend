@@ -35,7 +35,7 @@ class ListingsImport implements ToCollection, WithStartRow
     {
         
         $eu_ids = ExcelUploads::create([
-                'file_name' => substr(md5(mt_rand()), 0, 7),
+                'file_name' => 'CARD_'.substr(md5(mt_rand()), 0, 7).'.csv',
                 'status' => 1,
             ]);
         
