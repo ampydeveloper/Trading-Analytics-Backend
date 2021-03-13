@@ -181,7 +181,7 @@ class CardController extends Controller {
     public function getCardDetails(int $id, Request $request) {
         try {
             $rank = 0;
-            CardDetails::orderBy('currentPrice', 'DESC')->get('card_id')->map(function($item, $key) use($id, &$rank) {
+            CardSales::groupBy('card_id')->orderBy('quantity', 'DESC')->get('card_id')->map(function($item, $key) use($id, &$rank) {
                 if ($item['card_id'] == $id) {
                     $rank = $key;
                 }
@@ -242,11 +242,12 @@ class CardController extends Controller {
                         if ($search != null) {
                             $q->where('title', 'like', '%' . $search . '%');
                         }
-                    })->where('active', 1)->with('details');
+                    })->join('card_sales', 'cards.id', '=', 'card_sales.card_id')->where('cards.active', 1)->orderBy('card_sales.quantity', 'DESC')->with('details');
             if ($top_trend) {
                 $cards = $cards->groupBy('sport');
             }
             $cards = $cards->skip($skip)->take($take)->get();
+            // dd($cards);
             $cards = $cards->map(function($card, $key) {
                 $data = $card;
                 $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
@@ -257,15 +258,16 @@ class CardController extends Controller {
                 $data['price'] = number_format((float) $sx, 2, '.', '');
                 $data['sx_value'] = str_replace('-', '', number_format((float) $lastSx - $sx, 2, '.', ''));
                 $data['sx_icon'] = $sx_icon;
+                $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
 //                $data['price'] = 0;
 //                if (isset($card->details->currentPrice)) {
 //                    $data['price'] = $card->details->currentPrice;
 //                }
                 return $data;
             });
-            if ($top_trend) {
-                $cards = $cards->sortBy('price');
-            }
+            // if ($top_trend) {
+                // $cards = $cards->sortBy('sale_qty');
+            // }
             if ($request->input('orderby') == 'priceup') {
                 foreach ($cards as $key => $card) {
                     if ($card->sx_icon == 'down') {
@@ -329,6 +331,7 @@ class CardController extends Controller {
 
     public function getSmartKeyword(Request $request) {
         try {
+            // ->orWhere('title', 'like', '%' . $request->input('keyword') . '%')
             $data = Card::where('player', 'like', '%' . $request->input('keyword') . '%')->distinct('player')->where('active', 1)->get()->take(10);
             $list = [];
             foreach ($data as $key => $value) {
@@ -451,9 +454,10 @@ class CardController extends Controller {
 
     public function create(Request $request) {
         try {
+            // dd($request->all());
             $data = Card::where('sport', $request->input('sport'))->orderBy('updated_at', 'desc')->first();
             if ($request->hasFile('image')) {
-                $filename = $request->image->getClientOriginalName();
+                $filename = $request->input('sport').'/F'. ((int) $data->row_id + 1) .'.jpg';
                 Storage::disk('public')->put($filename, file_get_contents($request->image->getRealPath()));
             }
             Card::create([
