@@ -44,6 +44,7 @@ class CardsImport implements ToCollection, WithStartRow
                         'grade' => $row[6],
                         'sport' => $row[7],
                         'qualifiers' => $row[8],
+                        'active' => 1,
                         'image' => $row[12],
                         'title' => $row[1] . ' ' . $row[2] . ' ' . $row[0] . ' - #' . $row[3] . ' - ' . (($row[4] == 'RC') ? 'Rookie' : '') . ' ' . $row[5] . ' ' . $row[6],
             ]);

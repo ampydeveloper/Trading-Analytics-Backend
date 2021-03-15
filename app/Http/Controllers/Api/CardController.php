@@ -240,7 +240,6 @@ class CardController extends Controller {
         try {
             $card_sales = CardSales::groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
             // dd($card_sales);
-            
             $cards = Card::where(function ($q) use ($request, $search) {
                         if ($request->has('sport') && $request->input('sport') != null) {
                             $q->where('sport', $request->input('sport'));
@@ -251,6 +250,7 @@ class CardController extends Controller {
                     })->has('sales')->where('active', 1)->with('details')->orderByRaw('FIELD (id, ' . implode(', ', $card_sales) . ') ASC');
             if (!$top_trend) {
                 $cards = $cards->skip($skip)->take($take);
+
             }
             $cards = $cards->get();
             
@@ -280,9 +280,9 @@ class CardController extends Controller {
                 $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
                 //                $data['price'] = 0;
                 //                if (isset($card->details->currentPrice)) {
-                    //                    $data['price'] = $card->details->currentPrice;
-                    //                }
-                    return $data;
+                //                    $data['price'] = $card->details->currentPrice;
+                //                }
+                return $data;
             });
             // dd($cards->toArray());
             if ($top_trend) {
@@ -477,7 +477,7 @@ class CardController extends Controller {
             // dd($request->all());
             $data = Card::where('sport', $request->input('sport'))->orderBy('updated_at', 'desc')->first();
             if ($request->hasFile('image')) {
-                $filename = $request->input('sport').'/F'. ((int) $data->row_id + 1) .'.jpg';
+                $filename = $request->input('sport') . '/F' . ((int) $data->row_id + 1) . '.jpg';
                 Storage::disk('public')->put($filename, file_get_contents($request->image->getRealPath()));
             }
             Card::create([
@@ -863,55 +863,71 @@ class CardController extends Controller {
             }
 
             $cvs = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->groupBy('timestamp')->orderBy('timestamp', 'DESC');
-            $data['values'] = $cvs->pluck('cost')->toArray();
-            $data['labels'] = $cvs->pluck('timestamp')->toArray();
-            $data['qty'] = $cvs->pluck('quantity')->toArray();
+//            return response()->json(['status' => 200, 'data' => $cvs], 200);
+            if (!empty($cvs) && $cvs->count() > 0) {
+                $data['values'] = $cvs->pluck('cost')->toArray();
+                $data['labels'] = $cvs->pluck('timestamp')->toArray();
+                $data['qty'] = $cvs->pluck('quantity')->toArray();
 
-            $data = $this->__groupGraphData($days, $data);
+                $data = $this->__groupGraphData($days, $data);
 //            $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
-            if ($days == 2) {
-                $labels = [];
-                $values = [];
-                $qty = [];
-                for ($i = 0; $i <= 23; $i++) {
-                    $labels[] = ($i < 10) ? '0' . $i . ':00' : $i . ':00';
-                    $values[] = (count($data['values']) > 0 ) ? $data['values'][0] : 0;
-                    $qty[] = (count($data['qty']) > 0 ) ? $data['qty'][0] : 0;
+                if ($days == 2) {
+                    $labels = [];
+                    $values = [];
+                    $qty = [];
+                    for ($i = 0; $i <= 23; $i++) {
+                        $labels[] = ($i < 10) ? '0' . $i . ':00' : $i . ':00';
+                        $values[] = (count($data['values']) > 0 ) ? $data['values'][0] : 0;
+                        $qty[] = (count($data['qty']) > 0 ) ? $data['qty'][0] : 0;
+                    }
+                    $data['labels'] = $labels;
+                    $data['values'] = $values;
+                    $data['qty'] = $qty;
+                } else {
+                    $data['values'] = array_reverse($data['values']);
+                    foreach ($data['labels'] as $key => $date) {
+                        $tempDate[$key] = date('M/d/y', strtotime($date));
+                    }
+                    $data['labels'] = array_reverse($tempDate);
+                    $data['qty'] = array_reverse($data['qty']);
                 }
-                $data['labels'] = $labels;
-                $data['values'] = $values;
-                $data['qty'] = $qty;
-            } else {
-                $data['values'] = array_reverse($data['values']);
-                foreach ($data['labels'] as $key => $date) {
-                    $tempDate[$key] = date('M/d/y', strtotime($date));
-                }
-                $data['labels'] = array_reverse($tempDate);
-                $data['qty'] = array_reverse($data['qty']);
-            }
 
-            $finalData['values'] = $data['values'];
-            $finalData['labels'] = $data['labels'];
-            $finalData['qty'] = $data['qty'];
-            $finalData['rank'] = $this->getCardRank($card_id);
+                $finalData['values'] = $data['values'];
+                $finalData['labels'] = $data['labels'];
+                $finalData['qty'] = $data['qty'];
+                $finalData['rank'] = $this->getCardRank($card_id);
 
-            $sx = $finalData['slabstoxValue'] = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-            $lastSaleData = CardSales::where('card_id', $card_id)->latest()->first();
-            $finalData['lastSalePrice'] = $lastSaleData->cost;
-            $finalData['lastSaleDate'] = $lastSaleData['timestamp'];
-            $finalData['highestSale'] = CardSales::where('card_id', $card_id)->max('cost');
-            $finalData['lowestSale'] = CardSales::where('card_id', $card_id)->min('cost');
+                $sx = $finalData['slabstoxValue'] = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $lastSaleData = CardSales::where('card_id', $card_id)->latest()->first();
+                $finalData['lastSalePrice'] = $lastSaleData->cost;
+                $finalData['lastSaleDate'] = $lastSaleData['timestamp'];
+                $finalData['highestSale'] = CardSales::where('card_id', $card_id)->max('cost');
+                $finalData['lowestSale'] = CardSales::where('card_id', $card_id)->min('cost');
 
 //            $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-            $lastSx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-            $lastSx = count($lastSx);
+                $lastSx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+                $lastSx = count($lastSx);
 //                $lastSx = ($count > 0) ? array_sum($lastSx->toArray())/$count : 0;
-            $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-            $finalData['dollar_diff'] = number_format($sx - $lastSx, 2, '.', '');
-            $finalData['pert_diff'] = number_format($lastSx / $sx * 100, 2, '.', '');
-            $finalData['sx_icon'] = $sx_icon;
+                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                $finalData['dollar_diff'] = number_format($sx - $lastSx, 2, '.', '');
+                $finalData['pert_diff'] = number_format($lastSx / $sx * 100, 2, '.', '');
+                $finalData['sx_icon'] = $sx_icon;
 
-            return response()->json(['status' => 200, 'data' => $finalData], 200);
+                return response()->json(['status' => 200, 'data' => $finalData], 200);
+            } else {
+                $finalData['values'] = [];
+                $finalData['labels'] = [];
+                $finalData['qty'] = [];
+                $finalData['rank'] = 0;
+                $finalData['lastSalePrice'] = 0;
+                $finalData['lastSaleDate'] = 0;
+                $finalData['highestSale'] = [];
+                $finalData['lowestSale'] = [];
+                $finalData['dollar_diff'] = 0;
+                $finalData['pert_diff'] = 0;
+                $finalData['sx_icon'] = 0;
+                return response()->json(['status' => 200, 'data' => $finalData], 200);
+            }
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -1027,9 +1043,10 @@ class CardController extends Controller {
     public function uploadSlabForExcelImport(Request $request) {
         try {
 
-            if ($request->input('imageType') != 0) {
+            if ($request->has('imageType')) {
                 $filename = $request->file1->getClientOriginalName();
-                if (Storage::disk('public')->put($filename, file_get_contents($request->file->getRealPath()))) {
+//                return response()->json(['message' => $filename], 500);
+                if (Storage::disk('public')->put($filename, file_get_contents($request->file1->getRealPath()))) {
                     $zip = new ZipArchive;
                     $res = $zip->open(public_path("storage/" . $filename));
                     if ($res === TRUE) {
@@ -1048,17 +1065,21 @@ class CardController extends Controller {
                         }
 //                        return response()->json(['message' => $filename], 200);
                     } else {
-                        return response()->json(['message' => 'Error while extracting the files'], 500);
+                        return response()->json(['message' => 'Error while extracting the files.'], 500);
                     }
                 }
 //                return response()->json(['message' => 'File uploaded unsuccessfully'], 500);
             }
-            if ($request->has('card_id')) {
-                Excel::import(new ListingsImport, request()->file('file'));
-                return response()->json(['message' => 'Listings imported successfully'], 200);
+            if ($request->has('file')) {
+                if ($request->has('card_id')) {
+                    Excel::import(new ListingsImport, request()->file('file'));
+                    return response()->json(['message' => 'Listings imported successfully.'], 200);
+                } else {
+                    Excel::import(new CardsImport, request()->file('file'));
+                    return response()->json(['message' => 'Slabs imported successfully.'], 200);
+                }
             } else {
-                Excel::import(new CardsImport, request()->file('file'));
-                return response()->json(['message' => 'Slabs imported successfully'], 200);
+                return response()->json(['message' => 'Images uploaded successfully.'], 200);
             }
         } catch (\Exception $e) {
             \Log::error($e);

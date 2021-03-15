@@ -51,7 +51,11 @@ class Card extends Model
         $card_url = $this->getImageFileName($this->row_id, $this->sport);
         if($card_url){
             return url($card_url);
-        }else{
+        }
+        else if($this->image != null){
+            return url("storage/".strtolower($this->sport). '/' . $this->image);
+        }
+        else{
             return asset('/img/default-image.jpg');
         }
     }

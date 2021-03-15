@@ -97,8 +97,9 @@ class StoxtickerController extends Controller {
 
     public function allBoards($days) {
         try {
-            $b_ids = BoardFollow::where('user_id', '=', auth()->user()->id)->pluck('id');
-            $boards = Board::whereIn('id', $b_ids)->where('user_id', '=', auth()->user()->id)->get();
+//            $b_ids = BoardFollow::where('user_id', auth()->user()->id)->pluck('id');
+            $boards = Board::where('user_id', auth()->user()->id)->get();
+            
             foreach ($boards as $key => $board) {
                 $all_cards = json_decode($board->cards);
                 $boards[$key]['board_details'] = Card::whereIn('id', $all_cards)->with('details')->get();
@@ -124,7 +125,6 @@ class StoxtickerController extends Controller {
                 }
                 $boards[$key]['sx_icon'] = $sx_icon;
             }
-
             return response()->json(['status' => 200, 'data' => $boards], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
