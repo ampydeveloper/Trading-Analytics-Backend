@@ -167,6 +167,9 @@ class MyPortfolioController extends Controller {
                         }
                     })->with('details')->get();
             $cards = $cards->skip($skip)->take($take);
+            $card_grades = MyPortfolio::where("user_id", auth()->user()->id)->get(['card_id', 'grade'])->mapWithKeys(function ($crd) {
+                return [$crd->card_id => $crd->grade];
+            })->toArray();
             $data = [];
             foreach ($cards as $key => $card) {
                 $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
@@ -186,6 +189,7 @@ class MyPortfolioController extends Controller {
                         'purchase_price' => $purchase_price,
                         'differ' => $differ,
                         'portfolio_id' => $portfolio_id,
+                        'grade' => $card_grades[$card->id]
                     ];
                 }
             }
@@ -382,4 +386,15 @@ class MyPortfolioController extends Controller {
         }
     }
 
+    public function gradeCard(Request $request){
+        try {
+            if($request->has('card_id') && $request->has('grade') && $request->has('purchase_price')){
+                MyPortfolio::where(['card_id' => $request->get('card_id'), 'purchase_price' => $request->get('purchase_price')])->update(['grade' => $request->get('grade')]);
+                return response()->json(['status' => 200, 'data' => 'Grading Successful!'], 200);
+            }
+            return response()->json(['status' => 200, 'data' => 'Grading Un-Successful!'], 500);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
 }

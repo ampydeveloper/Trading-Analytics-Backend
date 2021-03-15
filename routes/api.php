@@ -116,6 +116,7 @@ Route::group([
         ], function () {
     Route::post('get-card-list-using-card-id/{id}', 'Ebay\EbayController@getItemsListForCard');
     Route::post('add-request-slab', 'CardController@addRequestSlab');
+    Route::post('add-request-listing', 'CardController@addRequestListing');
     Route::post('get-request-slab-list-for-admin', 'CardController@getRequestSlabListForAdmin');
 });
 
@@ -192,6 +193,7 @@ Route::group([
     Route::post('search', 'MyPortfolioController@search');
     Route::post('portfolio-value', 'MyPortfolioController@portfolioValue');
     Route::get('get-portfolio-graph/{days?}', 'MyPortfolioController@getPortfolioGraphData');
+    Route::post('gradeCard', 'MyPortfolioController@gradeCard');
 });
 
 Route::group([

@@ -20,6 +20,7 @@ use App\Jobs\ProcessCardsComplieData;
 use App\Jobs\CompareEbayImagesWithCardImages;
 use App\Models\Ebay\EbayItems;
 use App\Models\RequestSlab;
+use App\Models\RequestListing;
 use App\Models\ExcelUploads;
 use Carbon\Carbon;
 use Excel;
@@ -1004,11 +1005,17 @@ class CardController extends Controller {
         try {
             $user_id = auth()->user()->id;
             $validator = Validator::make($request->all(), [
-                        'player' => 'required',
+                'player' => 'required',
             ]);
             if ($validator->fails()) {
                 return response()->json($validator, 500);
             }
+            $filename = null;
+            if ($request->hasFile('image')) {
+                $filename = 'stoxRequests/'. substr(md5(mt_rand()), 0, 7).$request->image->getClientOriginalName();
+                Storage::disk('public')->put($filename, file_get_contents($request->image->getRealPath()));
+            }
+
             RequestSlab::create([
                 'user_id' => $user_id,
                 'player' => $request->input('player'),
@@ -1019,6 +1026,29 @@ class CardController extends Controller {
                 'rc' => $request->input('rc'),
                 'variation' => $request->input('variation'),
                 'grade' => $request->input('grade'),
+                'image' => $filename
+            ]);
+            return response()->json(['status' => 200, 'data' => ['message' => 'Request added']], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+    
+    public function addRequestListing(Request $request) {
+        try {
+            $user_id = auth()->user()->id;
+            $validator = Validator::make($request->all(), [
+                'link' => 'required|url',
+                'card_id' => 'required|exists:cards,id'
+            ]);
+            if ($validator->fails()) {
+                // dd($validator->errors());
+                return response()->json($validator->errors(), 500);
+            }
+            RequestListing::create([
+                'user_id' => $user_id,
+                'link' => $request->input('link'),
+                'card_id' => $request->input('card_id')
             ]);
             return response()->json(['status' => 200, 'data' => ['message' => 'Request added']], 200);
         } catch (\Exception $e) {
@@ -1072,7 +1102,7 @@ class CardController extends Controller {
             }
             if ($request->has('file')) {
                 if ($request->has('card_id')) {
-                    Excel::import(new ListingsImport, request()->file('file'));
+                    Excel::queueImport(new ListingsImport, request()->file('file'));
                     return response()->json(['message' => 'Listings imported successfully.'], 200);
                 } else {
                     Excel::import(new CardsImport, request()->file('file'));

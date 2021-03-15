@@ -5,37 +5,24 @@ namespace App\Models;
 use App\Models\Auth\User;
 use Illuminate\Database\Eloquent\Model;
 
-class RequestSlab extends Model
+class RequestListing extends Model
 {
     public $timestamps = true;
 
-    protected $table = 'request_slab'; 
+    protected $table = 'request_listing'; 
     /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
     protected $fillable = [
+        'card_id',
         'user_id',
-        'player',
-        'sport',
-        'year',
-        'brand',
-        'card',
-        'rc',
-        'variation',
-        'grade',
-        'image'
+        'link',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-
-    public function getCardImageAttribute(){
-        return url("storage/" . $this->image);
-    }
-
-    protected $appends = ['cardImage'];
 }
