@@ -26,6 +26,7 @@ use Excel;
 use Validator;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
+use Illuminate\Support\Facades\DB;
 
 class CardController extends Controller {
 
@@ -180,10 +181,12 @@ class CardController extends Controller {
 
     public function getCardDetails(int $id, Request $request) {
         try {
-            $rank = 0;
-            CardSales::groupBy('card_id')->orderBy('quantity', 'DESC')->get('card_id')->map(function($item, $key) use($id, &$rank) {
+            $rank = 'NA';
+            $cs = CardSales::groupBy('card_id')->select('id', 'card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->get()->map(function($item, $key) use($id, &$rank) {
+                // dump($item['card_id'], $id);
                 if ($item['card_id'] == $id) {
-                    $rank = $key;
+                    $rank = ++$key;
+                    return;
                 }
             });
             $cards = Card::where('id', $id)->with('details')->firstOrFail()->toArray();
@@ -235,6 +238,9 @@ class CardController extends Controller {
         $skip = $take * $page;
         $skip = $skip - $take;
         try {
+            $card_sales = CardSales::groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
+            // dd($card_sales);
+            
             $cards = Card::where(function ($q) use ($request, $search) {
                         if ($request->has('sport') && $request->input('sport') != null) {
                             $q->where('sport', $request->input('sport'));
@@ -242,32 +248,47 @@ class CardController extends Controller {
                         if ($search != null) {
                             $q->where('title', 'like', '%' . $search . '%');
                         }
-                    })->join('card_sales', 'cards.id', '=', 'card_sales.card_id')->where('cards.active', 1)->orderBy('card_sales.quantity', 'DESC')->with('details');
-            if ($top_trend) {
-                $cards = $cards->groupBy('sport');
+                    })->has('sales')->where('active', 1)->with('details')->orderByRaw('FIELD (id, ' . implode(', ', $card_sales) . ') ASC');
+            if (!$top_trend) {
+                $cards = $cards->skip($skip)->take($take);
             }
-            $cards = $cards->skip($skip)->take($take)->get();
-            // dd($cards);
+            $cards = $cards->get();
+            
+            if(!$top_trend){
+                $take = 12-count($cards);
+                $no_sale_cards = Card::where(function ($q) use ($request, $search) {
+                        if ($request->has('sport') && $request->input('sport') != null) {
+                            $q->where('sport', $request->input('sport'));
+                        }
+                        if ($search != null) {
+                            $q->where('title', 'like', '%' . $search . '%');
+                        }
+                    })->whereNotIn('id', $card_sales)->where('active', 1)->with('details')->skip($skip)->take($take)->get();
+                $cards = $cards->merge($no_sale_cards);
+            }
+            // dd($cards->get()->toArray());
             $cards = $cards->map(function($card, $key) {
                 $data = $card;
                 $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->avg('cost');
-//                $count = count($lastSx);
-//                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                //                $count = count($lastSx);
+                //                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                 $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
                 $data['price'] = number_format((float) $sx, 2, '.', '');
                 $data['sx_value'] = str_replace('-', '', number_format((float) $lastSx - $sx, 2, '.', ''));
                 $data['sx_icon'] = $sx_icon;
                 $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
-//                $data['price'] = 0;
-//                if (isset($card->details->currentPrice)) {
-//                    $data['price'] = $card->details->currentPrice;
-//                }
-                return $data;
+                //                $data['price'] = 0;
+                //                if (isset($card->details->currentPrice)) {
+                    //                    $data['price'] = $card->details->currentPrice;
+                    //                }
+                    return $data;
             });
-            // if ($top_trend) {
-                // $cards = $cards->sortBy('sale_qty');
-            // }
+            // dd($cards->toArray());
+            if ($top_trend) {
+                $cards = $cards->unique('sport')->toArray();
+                $cards = array_values($cards);
+            }
             if ($request->input('orderby') == 'priceup') {
                 foreach ($cards as $key => $card) {
                     if ($card->sx_icon == 'down') {
@@ -331,8 +352,7 @@ class CardController extends Controller {
 
     public function getSmartKeyword(Request $request) {
         try {
-            // ->orWhere('title', 'like', '%' . $request->input('keyword') . '%')
-            $data = Card::where('player', 'like', '%' . $request->input('keyword') . '%')->distinct('player')->where('active', 1)->get()->take(10);
+            $data = Card::where('player', 'like', '%' . $request->input('keyword') . '%')->orWhere('title', 'like', '%' . $request->input('keyword') . '%')->distinct('player')->where('active', 1)->get()->take(10);
             $list = [];
             foreach ($data as $key => $value) {
                 $name = explode(' ', $value['player']);

@@ -33,10 +33,10 @@ class DashboardController extends Controller
      */
     public function index(Request $request)
     {
-        $this->test($request);
+        // $this->test($request);
         // $this->sampleCron();
         // $this->filtersCards();
-        // return view('backend.dashboard');
+        return view('backend.dashboard');
 
     }
 

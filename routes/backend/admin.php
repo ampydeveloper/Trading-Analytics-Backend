@@ -5,7 +5,7 @@ use App\Http\Controllers\Backend\Card\CardController;
 use App\Http\Controllers\Backend\Ebay\EbayController;
 
 // All route names are prefixed with 'admin.'.
-Route::redirect('/', '/admin/dashboard', 301);
+// Route::redirect('/', '/admin/dashboard', 301);
 Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 // Card Management

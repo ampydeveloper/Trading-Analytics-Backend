@@ -143,7 +143,7 @@ Route::group([
     // Prefixed with /auth
     'namespace' => 'Api',
     'prefix' => 'search',
-    'middleware' => 'jwt.verify'
+    // 'middleware' => 'jwt.verify'
         ], function () {
 //    Route::post('get-card-list', 'Ebay\EbayController@getItemsList');
 //    Route::post('get-recent-auction-list', 'Ebay\EbayController@getRecentAuctionList');

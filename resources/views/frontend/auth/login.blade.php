@@ -92,6 +92,6 @@
 
 @push('after-scripts')
     @if(config('access.captcha.login'))
-        @captchaScripts
+        {{-- @captchaScripts --}}
     @endif
 @endpush
