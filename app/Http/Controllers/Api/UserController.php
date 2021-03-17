@@ -9,6 +9,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Storage;
 use Validator;
+use App\Repositories\Backend\Auth\UserRepository;
 
 class UserController extends Controller
 {
@@ -208,6 +209,72 @@ class UserController extends Controller
             }
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
+        }
+    }
+
+    public function getAllUsersForAdmin(Request $request){
+        if (!auth()->user()->isAdmin()) {
+            return response()->json(['error' => 'Unauthorised'], 301);
+        }
+        try{
+            $page = $request->input('page', 1);
+            $take = $request->input('take', 30);
+            $search = $request->input('search', null);
+            $skip = $take * $page;
+            $skip = $skip - $take;
+
+            return response()->json(['status' => 200, 'data' => User::with('roles', 'permissions', 'providers')->withTrashed()->skip($skip)->take($take)->get(), 'next' => ($page)], 200);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 500, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function saveUserForAdmin(Request $request){
+        if (!auth()->user()->isAdmin()) {
+            return response()->json(['error' => 'Unauthorised'], 301);
+        }
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+            'first_name' => 'required|string',
+            'last_name' => 'nullable|string',
+            'email' => 'required|email|unique:users,email,'.$request->get('id'),
+            'mobile' => 'nullable|numeric',
+            'dob' => 'nullable',
+            'address' => 'nullable|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->messages(), 201);
+        }
+        try{
+            User::whereId($request->get('id'))->update($request->only('first_name', 'last_name', 'email', 'mobile', 'dob', 'address'));
+            return response()->json(['status' => 200, 'data' => ['message' => 'User saved']], 200);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 500, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function updateUserAttributeForAdmin(User $user, $action){
+        if (!auth()->user()->isAdmin()) {
+            return response()->json(['error' => 'Unauthorised'], 301);
+        }
+        try{
+            if($action == 'active'){
+                if($user->isActive()){
+                    $user->update(['active' => 0]);
+                }else{
+                    $user->update(['active' => 1]);
+                }
+            }elseif($action == 'delete'){
+                if ($user->trashed()) {
+                    $user->restore();
+                } else {
+                    $user->delete();
+                }
+            }
+            return response()->json(['status' => 200, 'data' => ['message' => 'User status updated']], 200);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 500, 'error' => $e->getMessage()], 500);
         }
     }
 }

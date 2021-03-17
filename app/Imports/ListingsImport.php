@@ -5,8 +5,7 @@ namespace App\Imports;
 use App\Models\Card;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithStartRow;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Illuminate\Support\Collection;
 use App\Models\CardSales;
 use App\Models\Ebay\EbayItems;
@@ -17,7 +16,7 @@ use App\Models\Ebay\EbayItemListingInfo;
 use Carbon\Carbon;
 use App\Models\ExcelUploads;
 
-class ListingsImport implements ToCollection, WithStartRow, WithChunkReading, ShouldQueue
+class ListingsImport implements ToCollection, WithStartRow, WithBatchInserts
 {
     private $row = 1;
     
@@ -29,9 +28,9 @@ class ListingsImport implements ToCollection, WithStartRow, WithChunkReading, Sh
         return 2;
     }
 
-    public function chunkSize(): int
+    public function batchSize(): int
     {
-        return 10;
+        return 1000;
     }
 
     /**

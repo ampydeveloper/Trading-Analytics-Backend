@@ -118,6 +118,19 @@ Route::group([
     Route::post('add-request-slab', 'CardController@addRequestSlab');
     Route::post('add-request-listing', 'CardController@addRequestListing');
     Route::post('get-request-slab-list-for-admin', 'CardController@getRequestSlabListForAdmin');
+    Route::post('get-request-listing-list-for-admin', 'CardController@getRequestListingListForAdmin');
+    Route::post('requested-listing-action-for-admin', 'CardController@markRequestedListingForAdmin');
+});
+
+Route::group([
+    // Prefixed with /auth
+    'namespace' => 'Api',
+    'prefix' => 'users',
+    'middleware' => 'jwt.verify'
+], function () {
+    Route::post('get-list-for-admin', 'UserController@getAllUsersForAdmin');
+    Route::post('save-user-by-admin', 'UserController@saveUserForAdmin');
+    Route::post('update-user-by-admin/{user}/{type}', 'UserController@updateUserAttributeForAdmin');
 });
 
 Route::group([

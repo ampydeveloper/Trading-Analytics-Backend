@@ -28,6 +28,7 @@ use Validator;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 use Illuminate\Support\Facades\DB;
+use App\Jobs\ExcelImports;
 
 class CardController extends Controller {
 
@@ -182,7 +183,7 @@ class CardController extends Controller {
 
     public function getCardDetails(int $id, Request $request) {
         try {
-            $rank = 'NA';
+            $rank = 'N/A';
             $cs = CardSales::groupBy('card_id')->select('id', 'card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->get()->map(function($item, $key) use($id, &$rank) {
                 // dump($item['card_id'], $id);
                 if ($item['card_id'] == $id) {
@@ -251,20 +252,19 @@ class CardController extends Controller {
                     })->has('sales')->where('active', 1)->with('details')->orderByRaw('FIELD (id, ' . implode(', ', $card_sales) . ') ASC');
             if (!$top_trend) {
                 $cards = $cards->skip($skip)->take($take);
-
             }
             $cards = $cards->get();
-            
-            if(!$top_trend){
-                $take = 12-count($cards);
+
+            if (!$top_trend) {
+                $take = 12 - count($cards);
                 $no_sale_cards = Card::where(function ($q) use ($request, $search) {
-                        if ($request->has('sport') && $request->input('sport') != null) {
-                            $q->where('sport', $request->input('sport'));
-                        }
-                        if ($search != null) {
-                            $q->where('title', 'like', '%' . $search . '%');
-                        }
-                    })->whereNotIn('id', $card_sales)->where('active', 1)->with('details')->skip($skip)->take($take)->get();
+                            if ($request->has('sport') && $request->input('sport') != null) {
+                                $q->where('sport', $request->input('sport'));
+                            }
+                            if ($search != null) {
+                                $q->where('title', 'like', '%' . $search . '%');
+                            }
+                        })->whereNotIn('id', $card_sales)->where('active', 1)->with('details')->skip($skip)->take($take)->get();
                 $cards = $cards->merge($no_sale_cards);
             }
             // dd($cards->get()->toArray());
@@ -398,11 +398,19 @@ class CardController extends Controller {
     }
 
     public function getCardRank($id) {
-        $rank = 0;
-//        $rank =CardSales::groupBy('quantity')->orderBy('quantity', 'DESC');
-        CardDetails::orderBy('currentPrice', 'DESC')->get('card_id')->map(function($item, $key) use($id, &$rank) {
+//        $rank = 0;
+////        $rank =CardSales::groupBy('quantity')->orderBy('quantity', 'DESC');
+//        CardDetails::orderBy('currentPrice', 'DESC')->get('card_id')->map(function($item, $key) use($id, &$rank) {
+//            if ($item['card_id'] == $id) {
+//                $rank = $key;
+//            }
+//        });
+        $rank = 'N/A';
+        $cs = CardSales::groupBy('card_id')->select('id', 'card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->get()->map(function($item, $key) use($id, &$rank) {
+            // dump($item['card_id'], $id);
             if ($item['card_id'] == $id) {
-                $rank = $key;
+                $rank = ++$key;
+                return;
             }
         });
         return $rank;
@@ -478,8 +486,9 @@ class CardController extends Controller {
             // dd($request->all());
             $data = Card::where('sport', $request->input('sport'))->orderBy('updated_at', 'desc')->first();
             if ($request->hasFile('image')) {
-                $filename = $request->input('sport') . '/F' . ((int) $data->row_id + 1) . '.jpg';
-                Storage::disk('public')->put($filename, file_get_contents($request->image->getRealPath()));
+                $save_filename = $request->input('sport') . '/F' . ((int) $data->row_id + 1) . '.' . $request->image->extension();
+                $filename = 'F' . ((int) $data->row_id + 1) . '.' . $request->image->extension();
+                Storage::disk('public')->put($save_filename, file_get_contents($request->image->getRealPath()));
             }
             Card::create([
                 'row_id' => (int) $data->row_id + 1,
@@ -524,7 +533,11 @@ class CardController extends Controller {
 
 
 //             Card::where('id', $request->input('id'))->update(array('is_featured'=>$is_featured));
-
+            if ($request->hasFile('image')) {
+                $save_filename = $request->input('sport') .'/F' . $request->image->getClientOriginalName();
+                $filename = 'F' . $request->image->getClientOriginalName();
+                Storage::disk('public')->put($save_filename, file_get_contents($request->image->getRealPath()));
+            }
             Card::where('id', $request->input('id'))->update([
                 'sport' => $request->input('sport'),
                 'player' => $request->input('player'),
@@ -543,6 +556,7 @@ class CardController extends Controller {
                 'qualifiers7' => $request->input('qualifiers7'),
                 'qualifiers8' => $request->input('qualifiers8'),
                 'is_featured' => ((bool) $request->input('is_featured')),
+                'image' => $request->hasFile('image') ? $filename : null,
             ]);
 //            $data = Card::where('id', $request->input('card_id'))->update($updated_array);
             return response()->json(['status' => 200, 'message' => 'Card Updated'], 200);
@@ -1005,14 +1019,14 @@ class CardController extends Controller {
         try {
             $user_id = auth()->user()->id;
             $validator = Validator::make($request->all(), [
-                'player' => 'required',
+                        'player' => 'required',
             ]);
             if ($validator->fails()) {
                 return response()->json($validator, 500);
             }
             $filename = null;
             if ($request->hasFile('image')) {
-                $filename = 'stoxRequests/'. substr(md5(mt_rand()), 0, 7).$request->image->getClientOriginalName();
+                $filename = 'stoxRequests/' . substr(md5(mt_rand()), 0, 7) . $request->image->getClientOriginalName();
                 Storage::disk('public')->put($filename, file_get_contents($request->image->getRealPath()));
             }
 
@@ -1033,13 +1047,13 @@ class CardController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
-    
+
     public function addRequestListing(Request $request) {
         try {
             $user_id = auth()->user()->id;
             $validator = Validator::make($request->all(), [
-                'link' => 'required|url',
-                'card_id' => 'required|exists:cards,id'
+                        'link' => 'required|url',
+                        'card_id' => 'required|exists:cards,id'
             ]);
             if ($validator->fails()) {
                 // dd($validator->errors());
@@ -1070,10 +1084,51 @@ class CardController extends Controller {
         }
     }
 
+    public function getRequestListingListForAdmin(Request $request) {
+        $page = $request->input('page', 1);
+        $take = $request->input('take', 30);
+        $skip = $take * $page;
+        $skip = $skip - $take;
+        try {
+            $items = RequestListing::where('approved', 0)->with(['user', 'card'])->orderBy('updated_at', 'desc')->get();
+            $items = $items->skip($skip)->take($take);
+            return response()->json(['status' => 200, 'data' => $items, 'next' => ($page + 1)], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+
+    public function markRequestedListingForAdmin(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'rid' => 'required|exists:request_listing,id',
+            'sts' => 'required|numeric'
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator, 500);
+        }
+        try {
+            $req = RequestListing::whereId($request->get('rid'))->first();
+            $req->update(['approved' => $request->get('sts')]);
+            if($request->get('sts') == -1){
+                return response()->json(['status' => 200, 'data' => 'Request successfully rejected!'], 200);
+            }
+
+            // Scrap Data
+            $script_link = '/home/ubuntu/ebay/ebayFetch/bin/python3 /home/ubuntu/ebay/core.py """' . $req->link . '"""';
+            $scrap_response = shell_exec($script_link . " 2>&1");
+            $response = json_decode($scrap_response);
+            $response->card_id = $req->card_id;
+            $response->item_link = $req->link;
+            return response()->json(['status' => 200, 'data' => $response], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+
     public function uploadSlabForExcelImport(Request $request) {
         try {
 
-            if ($request->has('imageType')) {
+            if ($request->has('imageType') && $request->get('imageType') != 0) {
                 $filename = $request->file1->getClientOriginalName();
 //                return response()->json(['message' => $filename], 500);
                 if (Storage::disk('public')->put($filename, file_get_contents($request->file1->getRealPath()))) {
@@ -1102,7 +1157,12 @@ class CardController extends Controller {
             }
             if ($request->has('file')) {
                 if ($request->has('card_id')) {
-                    Excel::queueImport(new ListingsImport, request()->file('file'));
+                    // $filename = $request->file('file')->getClientOriginalName();
+                    // if(Storage::disk('public')->put($filename, file_get_contents($request->file('file')->getRealPath()))){
+                        $path = $request->file('file')->store('temp'); 
+                        ExcelImports::dispatch($path);
+                    // }
+                    // Excel::queueImport(new ListingsImport, request()->file('file'));
                     return response()->json(['message' => 'Listings imported successfully.'], 200);
                 } else {
                     Excel::import(new CardsImport, request()->file('file'));
