@@ -131,6 +131,8 @@ Route::group([
     Route::post('get-list-for-admin', 'UserController@getAllUsersForAdmin');
     Route::post('save-user-by-admin', 'UserController@saveUserForAdmin');
     Route::post('update-user-by-admin/{user}/{type}', 'UserController@updateUserAttributeForAdmin');
+    Route::post('change-user-password-by-admin/{user}', 'UserController@changeUSerPasswordForAdmin');
+    
 });
 
 Route::group([

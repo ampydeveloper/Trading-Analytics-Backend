@@ -277,4 +277,16 @@ class UserController extends Controller
             return response()->json(['status' => 500, 'error' => $e->getMessage()], 500);
         }
     }
+
+    public function changeUSerPasswordForAdmin(User $user, Request $request){
+        if (!auth()->user()->isAdmin()) {
+            return response()->json(['error' => 'Unauthorised'], 301);
+        }
+        try{
+            $user->update(['password' => $request->get('password')]);
+            return response()->json(['status' => 200, 'data' => ['message' => 'User password updated']], 200);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 500, 'error' => $e->getMessage()], 500);
+        }
+    }
 }
