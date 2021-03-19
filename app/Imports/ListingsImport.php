@@ -43,7 +43,7 @@ class ListingsImport implements ToCollection, WithStartRow, WithBatchInserts
         
         $eu_ids = ExcelUploads::create([
                 'file_name' => 'CARD_'.substr(md5(mt_rand()), 0, 7).'.csv',
-                'status' => 1,
+                'status' => 0,
             ]);
         
         foreach($rows as $row) {
@@ -155,5 +155,8 @@ class ListingsImport implements ToCollection, WithStartRow, WithBatchInserts
                 }
             }
         }
+        
+         ExcelUploads::whereId($eu_ids->id)->update(['status' => 1]);
+        
     }
 }

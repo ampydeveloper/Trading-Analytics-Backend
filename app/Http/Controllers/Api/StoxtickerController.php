@@ -69,6 +69,15 @@ class StoxtickerController extends Controller {
     public function searchBoard(Request $request) {
         try {
             $boards = Board::where('name', 'like', '%' . $request->input('keyword') . '%')->get()->take(4);
+            if(!empty($request->input('sport'))){
+            foreach ($boards as $key => $board) {
+                $all_cards = json_decode($board->cards);
+                $card_details = Card::whereIn('id', $all_cards)->whereIn('sport', $request->input('sport'))->count();
+                if(empty($card_details) && $card_details == 0){
+                    $boards->forget($key);
+                }
+            }
+            }
             foreach ($boards as $key => $board) {
                 $all_cards = json_decode($board->cards);
                 $boards[$key]['sales_graph'] = $this->__cardData($all_cards, 2);
@@ -97,9 +106,10 @@ class StoxtickerController extends Controller {
 
     public function allBoards($days) {
         try {
-//            $b_ids = BoardFollow::where('user_id', auth()->user()->id)->pluck('id');
-            $boards = Board::where('user_id', auth()->user()->id)->get();
-            
+            $b_ids = BoardFollow::where('user_id', auth()->user()->id)->pluck('board_id');
+            $all_boards = Board::where('user_id', auth()->user()->id)->get();
+            $board_follow = Board::whereIn('id', $b_ids)->get();
+            $boards = $all_boards->merge($board_follow);
             foreach ($boards as $key => $board) {
                 $all_cards = json_decode($board->cards);
                 $boards[$key]['board_details'] = Card::whereIn('id', $all_cards)->with('details')->get();

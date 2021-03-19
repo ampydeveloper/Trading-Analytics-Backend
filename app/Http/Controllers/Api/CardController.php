@@ -353,7 +353,11 @@ class CardController extends Controller {
 
     public function getSmartKeyword(Request $request) {
         try {
-            $data = Card::where('player', 'like', '%' . $request->input('keyword') . '%')->orWhere('title', 'like', '%' . $request->input('keyword') . '%')->distinct('player')->where('active', 1)->get()->take(10);
+            $data = Card::where('player', 'like', '%' . $request->input('keyword') . '%')
+                    ->orWhere('variation', 'like', '%' . $request->input('keyword') . '%')
+                    ->orWhere('grade', 'like', '%' . $request->input('keyword') . '%')
+                    ->orWhere('title', 'like', '%' . $request->input('keyword') . '%')
+                    ->distinct('player')->where('active', 1)->get()->take(10);
             $list = [];
             foreach ($data as $key => $value) {
                 $name = explode(' ', $value['player']);
@@ -654,19 +658,19 @@ class CardController extends Controller {
                 $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-7 days'));
             } elseif ($days == 30) {
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s', strtotime('-7 days'));
                 $to = date('Y-m-d H:i:s', strtotime('-30 days'));
             } elseif ($days == 90) {
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s', strtotime('-30 days'));
                 $to = date('Y-m-d H:i:s', strtotime('-90 days'));
             } elseif ($days == 180) {
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s', strtotime('-90 days'));
                 $to = date('Y-m-d H:i:s', strtotime('-180 days'));
             } elseif ($days == 365) {
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s', strtotime('-180 days'));
                 $to = date('Y-m-d H:i:s', strtotime('-365 days'));
             } elseif ($days == 1825) {
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s', strtotime('-365 days'));
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }
 
@@ -782,19 +786,19 @@ class CardController extends Controller {
                     $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                     $to = date('Y-m-d H:i:s', strtotime('-7 days'));
                 } elseif ($days == 30) {
-                    $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                    $from = date('Y-m-d H:i:s', strtotime('-7 days'));
                     $to = date('Y-m-d H:i:s', strtotime('-30 days'));
                 } elseif ($days == 90) {
-                    $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                    $from = date('Y-m-d H:i:s', strtotime('-30 days'));
                     $to = date('Y-m-d H:i:s', strtotime('-90 days'));
                 } elseif ($days == 180) {
-                    $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                    $from = date('Y-m-d H:i:s', strtotime('-90 days'));
                     $to = date('Y-m-d H:i:s', strtotime('-180 days'));
                 } elseif ($days == 365) {
-                    $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                    $from = date('Y-m-d H:i:s', strtotime('-180 days'));
                     $to = date('Y-m-d H:i:s', strtotime('-365 days'));
                 } elseif ($days == 1825) {
-                    $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                    $from = date('Y-m-d H:i:s', strtotime('-365 days'));
                     $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
                 }
 
@@ -861,19 +865,19 @@ class CardController extends Controller {
                 $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-7 days'));
             } elseif ($days == 30) {
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s', strtotime('-7 days'));
                 $to = date('Y-m-d H:i:s', strtotime('-30 days'));
             } elseif ($days == 90) {
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s', strtotime('-30 days'));
                 $to = date('Y-m-d H:i:s', strtotime('-90 days'));
             } elseif ($days == 180) {
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s', strtotime('-90 days'));
                 $to = date('Y-m-d H:i:s', strtotime('-180 days'));
             } elseif ($days == 365) {
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s', strtotime('-180 days'));
                 $to = date('Y-m-d H:i:s', strtotime('-365 days'));
             } elseif ($days == 1825) {
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s', strtotime('-365 days'));
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }
 
@@ -953,11 +957,11 @@ class CardController extends Controller {
             $days = [
                 0 => ['from' => date('Y-m-d H:i:s'), 'to' => date('Y-m-d H:i:s', strtotime('-1 day'))],
                 1 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-7 days'))],
-                2 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-30 day'))],
-                3 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-90 day'))],
-                4 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-180 day'))],
-                5 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-365 day'))],
-                6 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-1825 day'))]];
+                2 => ['from' => date('Y-m-d H:i:s', strtotime('-7 days')), 'to' => date('Y-m-d H:i:s', strtotime('-30 days'))],
+                3 => ['from' => date('Y-m-d H:i:s', strtotime('-30 days')), 'to' => date('Y-m-d H:i:s', strtotime('-90 days'))],
+                4 => ['from' => date('Y-m-d H:i:s', strtotime('-90 days')), 'to' => date('Y-m-d H:i:s', strtotime('-180 days'))],
+                5 => ['from' => date('Y-m-d H:i:s', strtotime('-180 days')), 'to' => date('Y-m-d H:i:s', strtotime('-365 days'))],
+                6 => ['from' => date('Y-m-d H:i:s', strtotime('-365 days')), 'to' => date('Y-m-d H:i:s', strtotime('-1825 days'))]];
             $data['labels'] = ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y'];
             foreach ($days as $day) {
                 $today_date = date('Y-m-d H:i:s');
