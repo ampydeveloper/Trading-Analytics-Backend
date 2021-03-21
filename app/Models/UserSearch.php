@@ -18,5 +18,15 @@ class UserSearch extends Model
      */
     protected $fillable = [
         'card_id',
+        'user_id',
     ];
+    
+    public function userDetails()
+    {
+        return $this->hasOne(Auth\User::class, 'id');
+    }
+    public function cardDetails()
+    {
+        return $this->hasOne(Card::class, 'id');
+    }
 }

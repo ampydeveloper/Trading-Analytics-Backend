@@ -27,11 +27,20 @@ class CardsImport implements ToCollection, WithStartRow
      */
     public function collection(Collection $rows)
     {
-         $eu_ids = ExcelUploads::create([
+        $eu_ids = ExcelUploads::create([
                 'file_name' => 'CARD_'.substr(md5(mt_rand()), 0, 7).'.csv',
-             'status' => 1,
-            ]);
+                'status' => 0,
+        ]);
         foreach($rows as $row) {
+            if( ($row[0]!=null || !empty($row[0]))
+                    && ($row[1]!=null || !empty($row[1]))
+                    && ($row[2]!=null || !empty($row[2]))
+                    && ($row[3]!=null || !empty($row[3]))
+                            && ($row[4]!=null || !empty($row[4]))
+                                    && ($row[5]!=null || !empty($row[5]))
+                                            && ($row[7]!=null || !empty($row[7]))
+                                            && ($row[6]!=null || !empty($row[6]))
+                    ){
             $card = Card::create([
                         'row_id' => ++$this->row,
                         'excel_uploads_id' => $eu_ids->id,
@@ -47,17 +56,24 @@ class CardsImport implements ToCollection, WithStartRow
                         'active' => 1,
                         'image' => $row[12],
                         'title' => $row[1] . ' ' . $row[2] . ' ' . $row[0] . ' - #' . $row[3] . ' - ' . (($row[4] == 'RC') ? 'Rookie' : '') . ' ' . $row[5] . ' ' . $row[6],
-            ]);
-            
+                    ]);
+              }
+              if( ($row[9]!=null || !empty($row[9])) 
+                      && ($row[10]!=null || !empty($row[10]))
+                      && ($row[1]!=null || !empty($row[11]))){
+                  
             $card->details()->create([
                 'season' => $row[9],
                 'series' => $row[10],
                 'era' => $row[11],
             ]);
-            
+        }
+         if( ($row[13]!=null || !empty($row[13])) ){
             $card->player_details()->create([
                 'team' => $row[13]
             ]);
+                      }
         }
+        ExcelUploads::whereId($eu_ids->id)->update(['status' => 1]);
     }
 }

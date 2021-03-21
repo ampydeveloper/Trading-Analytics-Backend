@@ -353,11 +353,18 @@ class CardController extends Controller {
 
     public function getSmartKeyword(Request $request) {
         try {
-            $data = Card::where('player', 'like', '%' . $request->input('keyword') . '%')
-                    ->orWhere('variation', 'like', '%' . $request->input('keyword') . '%')
-                    ->orWhere('grade', 'like', '%' . $request->input('keyword') . '%')
-                    ->orWhere('title', 'like', '%' . $request->input('keyword') . '%')
-                    ->distinct('player')->where('active', 1)->get()->take(10);
+           $keyword_list = explode(' ', $request->input('keyword'));
+            $data = Card::
+                            Where(function ($query) use($keyword_list) {
+                                for ($i = 0; $i < count($keyword_list); $i++) {
+                                    $query->orwhere('title', 'like', '%' . $keyword_list[$i] . '%');
+                                }
+                            })
+//                    whereIn('title', 'like', '%' . $keyword_list . '%')
+//                    ->orWhere('variation', 'like', '%' . $request->input('keyword') . '%')
+//                    ->orWhere('grade', 'like', '%' . $request->input('keyword') . '%')
+//                    ->orWhere('player', 'like', '%' . $request->input('keyword') . '%')
+                            ->distinct('player')->where('active', 1)->get()->take(10);
             $list = [];
             foreach ($data as $key => $value) {
                 $name = explode(' ', $value['player']);
@@ -771,6 +778,7 @@ class CardController extends Controller {
             $data['total_sales'] = number_format((float) $total_sales, 2, '.', '');
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
+            dd($e);
             return response()->json($e->getMessage(), 500);
         }
     }
@@ -992,7 +1000,10 @@ class CardController extends Controller {
             $max = $months;
             foreach ($data['labels'] as $ind => $dt) {
                 $dt = explode('-', $dt);
-                $dt = sprintf('%s-%s', $dt[0], $dt[1]);
+                if(count($dt) > 1){ $dt = sprintf('%s-%s', $dt[0], $dt[1]);}
+                else{
+                    $dt = $dt[0];
+                }
                 if (!in_array($dt, array_keys($grouped))) {
                     $grouped[$dt] = 0;
                 }
@@ -1164,12 +1175,14 @@ class CardController extends Controller {
                     // $filename = $request->file('file')->getClientOriginalName();
                     // if(Storage::disk('public')->put($filename, file_get_contents($request->file('file')->getRealPath()))){
                         $path = $request->file('file')->store('temp'); 
-                        ExcelImports::dispatch($path);
+                        ExcelImports::dispatch(['file' => $path, 'type' => 'listings']);
                     // }
                     // Excel::queueImport(new ListingsImport, request()->file('file'));
                     return response()->json(['message' => 'Listings imported successfully.'], 200);
                 } else {
-                    Excel::import(new CardsImport, request()->file('file'));
+                    $path = $request->file('file')->store('temp');
+                    ExcelImports::dispatch(['file' => $path, 'type' => 'slabs']);
+                    // Excel::import(new CardsImport, request()->file('file'));
                     return response()->json(['message' => 'Slabs imported successfully.'], 200);
                 }
             } else {

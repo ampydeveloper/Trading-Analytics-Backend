@@ -5,7 +5,6 @@ namespace App\Imports;
 use App\Models\Card;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithStartRow;
-use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Illuminate\Support\Collection;
 use App\Models\CardSales;
 use App\Models\Ebay\EbayItems;
@@ -16,7 +15,7 @@ use App\Models\Ebay\EbayItemListingInfo;
 use Carbon\Carbon;
 use App\Models\ExcelUploads;
 
-class ListingsImport implements ToCollection, WithStartRow, WithBatchInserts
+class ListingsImport implements ToCollection, WithStartRow
 {
     private $row = 1;
     
@@ -28,11 +27,6 @@ class ListingsImport implements ToCollection, WithStartRow, WithBatchInserts
         return 2;
     }
 
-    public function batchSize(): int
-    {
-        return 1000;
-    }
-
     /**
      * @param array $row
      *
@@ -40,11 +34,10 @@ class ListingsImport implements ToCollection, WithStartRow, WithBatchInserts
      */
     public function collection(Collection $rows)
     {
-        
         $eu_ids = ExcelUploads::create([
-                'file_name' => 'CARD_'.substr(md5(mt_rand()), 0, 7).'.csv',
-                'status' => 0,
-            ]);
+            'file_name' => 'LISTING_'.substr(md5(mt_rand()), 0, 7).'.csv',
+            'status' => 0,
+        ]);
         
         foreach($rows as $row) {
             if($row[8] != 'EBAY'){

@@ -337,7 +337,7 @@ class EbayController extends Controller {
 
             if ($searchCard != null) {
                 $cards = Card::where('id', $searchCard)->with('details')->get();
-                UserSearch::create(['card_id' => $searchCard]);
+                UserSearch::create(['card_id' => $searchCard, 'user_id'=>auth()->user()->id]);
             } else {
                 $cards = Card::whereIn('id', $items['cards'])->with('details')->get();
             }
@@ -815,8 +815,9 @@ class EbayController extends Controller {
 
     public function searchedCardsByUserForAdmin() {
         try {
-            $card_ids = UserSearch::pluck('card_id');
-            $data = Card::whereIn('id', $card_ids)->get();
+            $data = UserSearch::with(['userDetails', 'cardDetails'])->get();
+//            $card_ids = UserSearch::pluck('card_id');
+//            $data = Card::whereIn('id', $card_ids)->get();
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
