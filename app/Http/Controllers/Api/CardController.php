@@ -1142,8 +1142,7 @@ class CardController extends Controller {
 
     public function uploadSlabForExcelImport(Request $request) {
         try {
-
-            if ($request->has('imageType') && $request->get('imageType') != 0) {
+            if ($request->has('imageType') && $request->get('imageType') == 'images') {
                 $filename = $request->file1->getClientOriginalName();
 //                return response()->json(['message' => $filename], 500);
                 if (Storage::disk('public')->put($filename, file_get_contents($request->file1->getRealPath()))) {
@@ -1162,8 +1161,12 @@ class CardController extends Controller {
                         } else if ($request->input('for') == 'soccer') {
                             $zip->extractTo(public_path("storage/soccer"));
                             $zip->close();
+                        } else if ($request->input('for') == 'pokemon') {
+                            $zip->extractTo(public_path("storage/pokemon"));
+                            $zip->close();
                         }
-//                        return response()->json(['message' => $filename], 200);
+                        // return response()->json(['message' => $filename], 200);
+                        Storage::disk('public')->delete($filename);
                     } else {
                         return response()->json(['message' => 'Error while extracting the files.'], 500);
                     }

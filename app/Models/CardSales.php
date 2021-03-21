@@ -19,6 +19,7 @@ class CardSales extends Model
     protected $fillable = [
         'card_id',
         'timestamp',
+        'excel_uploads_id',
         'quantity',
         'cost',
         'source',

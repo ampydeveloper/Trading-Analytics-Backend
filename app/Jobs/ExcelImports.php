@@ -47,7 +47,7 @@ class ExcelImports implements ShouldQueue
             $file = Storage::disk('public')->get($this->file);
             $file->delete();
 
-        }catch(Exception $e){
+        }catch(Exception $e){            
             \Log::error($e);
         }
     }

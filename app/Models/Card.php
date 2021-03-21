@@ -18,6 +18,7 @@ class Card extends Model
      */
     protected $fillable = [
         'row_id',
+        'excel_uploads_id',
         'sport',
         'player',
         'year',
