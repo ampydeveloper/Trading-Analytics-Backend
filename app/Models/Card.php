@@ -54,7 +54,8 @@ class Card extends Model
             return url($card_url);
         }
         else if($this->image != null){
-            return url("storage/".strtolower($this->sport). '/' . $this->image);
+            return url("storage/" . $this->image);
+//            return url("storage/".strtolower($this->sport). '/' . $this->image);
         }
         else{
             return asset('/img/default-image.jpg');

@@ -272,11 +272,11 @@ class CardController extends Controller {
                 $data = $card;
                 $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->avg('cost');
-                //                $count = count($lastSx);
-                //                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-                $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
+                                $count = count($lastSx);
+                                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                 $data['price'] = number_format((float) $sx, 2, '.', '');
-                $data['sx_value'] = str_replace('-', '', number_format((float) $lastSx - $sx, 2, '.', ''));
+                $data['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
                 $data['sx_icon'] = $sx_icon;
                 $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
                 //                $data['price'] = 0;
@@ -924,7 +924,8 @@ class CardController extends Controller {
                 $finalData['qty'] = $data['qty'];
                 $finalData['rank'] = $this->getCardRank($card_id);
 
-                $sx = $finalData['slabstoxValue'] = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $finalData['slabstoxValue'] = number_format($sx, 2, '.', '');
                 $lastSaleData = CardSales::where('card_id', $card_id)->latest()->first();
                 $finalData['lastSalePrice'] = $lastSaleData->cost;
                 $finalData['lastSaleDate'] = $lastSaleData['timestamp'];
@@ -933,10 +934,10 @@ class CardController extends Controller {
 
 //            $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 $lastSx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-                $lastSx = count($lastSx);
-//                $lastSx = ($count > 0) ? array_sum($lastSx->toArray())/$count : 0;
+                $count = count($lastSx);
+                $lastSx = ($count > 0) ? array_sum($lastSx->toArray())/$count : 0;
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-                $finalData['dollar_diff'] = number_format($sx - $lastSx, 2, '.', '');
+                $finalData['dollar_diff'] = str_replace('-', '', number_format($sx - $lastSx, 2, '.', ''));
                 $finalData['pert_diff'] = number_format($lastSx / $sx * 100, 2, '.', '');
                 $finalData['sx_icon'] = $sx_icon;
 
