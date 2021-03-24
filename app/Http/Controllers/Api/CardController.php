@@ -29,6 +29,10 @@ use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 use Illuminate\Support\Facades\DB;
 use App\Jobs\ExcelImports;
+use App\Models\Ebay\EbayItemSellingStatus;
+use App\Models\Ebay\EbayItemListingInfo;
+use App\Models\Ebay\EbayItemSellerInfo;
+use App\Models\Ebay\EbayItemSpecific;
 
 class CardController extends Controller {
 
@@ -89,6 +93,7 @@ class CardController extends Controller {
                             foreach (['player', 'year', 'brand', 'card', 'rc', 'variation', 'grade'] as $fl) {
                                 $q->orWhere($fl, 'like', '%' . $searchTerm . '%');
                             }
+                            $q->orWhere('id', $request->get('search'));
                         }
                     })->get();
             $cards = $cards->skip($skip)->take($take);
@@ -225,6 +230,11 @@ class CardController extends Controller {
             $cards['sx'] = number_format((float) $sx, 2, '.', '');
             $cards['sx_icon'] = $sx_icon;
 
+//            $card_sales = CardSales::groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
+            $card_sales = CardSales::where('card_id', $id)->pluck('id')->toArray();
+            $trender_cards = Card::has('sales')->where('active', 1)->with('details')->orderByRaw('FIELD (id, ' . implode(', ', $card_sales) . ') ASC')->get();
+            $trender_cards = $trender_cards->unique('sport')->toArray();
+            $cards['trender_cards'] = array_values($trender_cards);
 
             return response()->json(['status' => 200, 'data' => $cards], 200);
         } catch (\Exception $e) {
@@ -271,9 +281,9 @@ class CardController extends Controller {
             $cards = $cards->map(function($card, $key) {
                 $data = $card;
                 $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->avg('cost');
-                                $count = count($lastSx);
-                                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+                $count = count($lastSx);
+                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                 $data['price'] = number_format((float) $sx, 2, '.', '');
                 $data['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
@@ -353,7 +363,7 @@ class CardController extends Controller {
 
     public function getSmartKeyword(Request $request) {
         try {
-           $keyword_list = explode(' ', $request->input('keyword'));
+            $keyword_list = explode(' ', $request->input('keyword'));
             $data = Card::
                             Where(function ($query) use($keyword_list) {
                                 for ($i = 0; $i < count($keyword_list); $i++) {
@@ -382,12 +392,16 @@ class CardController extends Controller {
 
     public function getSmartKeywordWithData(Request $request) {
         try {
-            $data = Card::with(['details'])->where(function($q) use ($request) {
+            $keyword_list = explode(' ', $request->input('search'));
+            $data = Card::with(['details'])->where(function($q) use ($request, $keyword_list) {
                         // $search = explode(' ', $request->input('search'));
-                        $search = $request->input('search');
-                        $q->orWhere('title', 'like', '%' . $search . '%');
+//                        $search = $request->input('search');
+//                        $q->orWhere('title', 'like', '%' . $search . '%');
                         // foreach ($search as $key => $keyword) {
                         // }
+                        for ($i = 0; $i < count($keyword_list); $i++) {
+                            $q->orwhere('title', 'like', '%' . $keyword_list[$i] . '%');
+                        }
                     })->where('active', 1)->get()->take(10)->map(function($item, $key) {
                 $temp = $item;
                 $temp['rank'] = 0;
@@ -545,7 +559,7 @@ class CardController extends Controller {
 
 //             Card::where('id', $request->input('id'))->update(array('is_featured'=>$is_featured));
             if ($request->hasFile('image')) {
-                $save_filename = $request->input('sport') .'/F' . $request->image->getClientOriginalName();
+                $save_filename = $request->input('sport') . '/F' . $request->image->getClientOriginalName();
                 $filename = 'F' . $request->image->getClientOriginalName();
                 Storage::disk('public')->put($save_filename, file_get_contents($request->image->getRealPath()));
             }
@@ -636,7 +650,8 @@ class CardController extends Controller {
             $data['total'] = Card::count();
             $cs_cost = CardSales::sum('cost');
             $data['sale'] = number_format((float) $cs_cost, 2, '.', '');
-            $last_updated = CardSales::orderBy('timestamp', 'DESC')->first();
+//            $last_updated = CardSales::orderBy('timestamp', 'DESC')->first();
+            $last_updated = CardSales::first();
             if (!empty($last_updated)) {
                 $data['last_updated'] = Carbon::create($last_updated->timestamp)->format('F d Y \- h:i:s A');
             }
@@ -665,19 +680,19 @@ class CardController extends Controller {
                 $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-7 days'));
             } elseif ($days == 30) {
-                $from = date('Y-m-d H:i:s', strtotime('-7 days'));
+                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-30 days'));
             } elseif ($days == 90) {
-                $from = date('Y-m-d H:i:s', strtotime('-30 days'));
+                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-90 days'));
             } elseif ($days == 180) {
-                $from = date('Y-m-d H:i:s', strtotime('-90 days'));
+                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-180 days'));
             } elseif ($days == 365) {
-                $from = date('Y-m-d H:i:s', strtotime('-180 days'));
+                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-365 days'));
             } elseif ($days == 1825) {
-                $from = date('Y-m-d H:i:s', strtotime('-365 days'));
+                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }
 
@@ -794,19 +809,19 @@ class CardController extends Controller {
                     $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                     $to = date('Y-m-d H:i:s', strtotime('-7 days'));
                 } elseif ($days == 30) {
-                    $from = date('Y-m-d H:i:s', strtotime('-7 days'));
+                    $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                     $to = date('Y-m-d H:i:s', strtotime('-30 days'));
                 } elseif ($days == 90) {
-                    $from = date('Y-m-d H:i:s', strtotime('-30 days'));
+                    $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                     $to = date('Y-m-d H:i:s', strtotime('-90 days'));
                 } elseif ($days == 180) {
-                    $from = date('Y-m-d H:i:s', strtotime('-90 days'));
+                    $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                     $to = date('Y-m-d H:i:s', strtotime('-180 days'));
                 } elseif ($days == 365) {
-                    $from = date('Y-m-d H:i:s', strtotime('-180 days'));
+                    $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                     $to = date('Y-m-d H:i:s', strtotime('-365 days'));
                 } elseif ($days == 1825) {
-                    $from = date('Y-m-d H:i:s', strtotime('-365 days'));
+                    $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                     $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
                 }
 
@@ -853,10 +868,10 @@ class CardController extends Controller {
             $finalData['rank2'] = $this->getCardRank($cids[1]);
             $finalData['last_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('timestamp', 'DESC')->first();
             $finalData['last_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('timestamp', 'DESC')->first();
-            $finalData['high_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('cost', 'DESC')->first();
-            $finalData['high_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('cost', 'DESC')->first();
-            $finalData['low_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('cost', 'ASC')->first();
-            $finalData['low_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('cost', 'ASC')->first();
+            $finalData['high_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('cost', 'ASC')->first();
+            $finalData['high_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('cost', 'ASC')->first();
+            $finalData['low_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('cost', 'DESC')->first();
+            $finalData['low_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('cost', 'DESC')->first();
 
             return response()->json(['status' => 200, 'data' => $finalData], 200);
         } catch (\Exception $e) {
@@ -873,19 +888,19 @@ class CardController extends Controller {
                 $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-7 days'));
             } elseif ($days == 30) {
-                $from = date('Y-m-d H:i:s', strtotime('-7 days'));
+                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-30 days'));
             } elseif ($days == 90) {
-                $from = date('Y-m-d H:i:s', strtotime('-30 days'));
+                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-90 days'));
             } elseif ($days == 180) {
-                $from = date('Y-m-d H:i:s', strtotime('-90 days'));
+                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-180 days'));
             } elseif ($days == 365) {
-                $from = date('Y-m-d H:i:s', strtotime('-180 days'));
+                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-365 days'));
             } elseif ($days == 1825) {
-                $from = date('Y-m-d H:i:s', strtotime('-365 days'));
+                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }
 
@@ -922,40 +937,34 @@ class CardController extends Controller {
                 $finalData['values'] = $data['values'];
                 $finalData['labels'] = $data['labels'];
                 $finalData['qty'] = $data['qty'];
-                $finalData['rank'] = $this->getCardRank($card_id);
 
                 $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                $finalData['slabstoxValue'] = number_format($sx, 2, '.', '');
-                $lastSaleData = CardSales::where('card_id', $card_id)->latest()->first();
-                $finalData['lastSalePrice'] = $lastSaleData->cost;
-                $finalData['lastSaleDate'] = $lastSaleData['timestamp'];
-                $finalData['highestSale'] = CardSales::where('card_id', $card_id)->max('cost');
-                $finalData['lowestSale'] = CardSales::where('card_id', $card_id)->min('cost');
-
-//            $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 $lastSx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
-                $lastSx = ($count > 0) ? array_sum($lastSx->toArray())/$count : 0;
+                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                 $finalData['dollar_diff'] = str_replace('-', '', number_format($sx - $lastSx, 2, '.', ''));
                 $finalData['pert_diff'] = number_format($lastSx / $sx * 100, 2, '.', '');
                 $finalData['sx_icon'] = $sx_icon;
-
-                return response()->json(['status' => 200, 'data' => $finalData], 200);
             } else {
                 $finalData['values'] = [];
                 $finalData['labels'] = [];
                 $finalData['qty'] = [];
-                $finalData['rank'] = 0;
-                $finalData['lastSalePrice'] = 0;
-                $finalData['lastSaleDate'] = 0;
-                $finalData['highestSale'] = [];
-                $finalData['lowestSale'] = [];
                 $finalData['dollar_diff'] = 0;
                 $finalData['pert_diff'] = 0;
                 $finalData['sx_icon'] = 0;
-                return response()->json(['status' => 200, 'data' => $finalData], 200);
             }
+
+            $finalData['rank'] = $this->getCardRank($card_id);
+            $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+            $finalData['slabstoxValue'] = number_format($sx, 2, '.', '');
+            $lastSaleData = CardSales::where('card_id', $card_id)->latest()->first();
+            $finalData['lastSalePrice'] = $lastSaleData->cost;
+            $finalData['lastSaleDate'] = $lastSaleData['timestamp'];
+            $finalData['highestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'DESC')->first();
+            $finalData['lowestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'ASC')->first();
+
+            return response()->json(['status' => 200, 'data' => $finalData], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -1001,8 +1010,9 @@ class CardController extends Controller {
             $max = $months;
             foreach ($data['labels'] as $ind => $dt) {
                 $dt = explode('-', $dt);
-                if(count($dt) > 1){ $dt = sprintf('%s-%s', $dt[0], $dt[1]);}
-                else{
+                if (count($dt) > 1) {
+                    $dt = sprintf('%s-%s', $dt[0], $dt[1]);
+                } else {
                     $dt = $dt[0];
                 }
                 if (!in_array($dt, array_keys($grouped))) {
@@ -1116,8 +1126,8 @@ class CardController extends Controller {
 
     public function markRequestedListingForAdmin(Request $request) {
         $validator = Validator::make($request->all(), [
-            'rid' => 'required|exists:request_listing,id',
-            'sts' => 'required|numeric'
+                    'rid' => 'required|exists:request_listing,id',
+                    'sts' => 'required|numeric'
         ]);
         if ($validator->fails()) {
             return response()->json($validator, 500);
@@ -1125,7 +1135,7 @@ class CardController extends Controller {
         try {
             $req = RequestListing::whereId($request->get('rid'))->first();
             $req->update(['approved' => $request->get('sts')]);
-            if($request->get('sts') == -1){
+            if ($request->get('sts') == -1) {
                 return response()->json(['status' => 200, 'data' => 'Request successfully rejected!'], 200);
             }
 
@@ -1133,6 +1143,95 @@ class CardController extends Controller {
             $script_link = '/home/ubuntu/ebay/ebayFetch/bin/python3 /home/ubuntu/ebay/core.py """' . $req->link . '"""';
             $scrap_response = shell_exec($script_link . " 2>&1");
             $response = json_decode($scrap_response);
+            $data = (array) json_decode($scrap_response);
+
+            $cat = array(
+                'Football' => '1',
+                'Baseball' => '2',
+                'Basketball' => '3',
+                'Soccer' => '4',
+                'Pokemon' => '10',
+            );
+            if (isset($req->specifics->Sport) && !empty($req->specifics->Sport)) {
+                $cat_id = $cat[$req->specifics->Sport];
+            } else {
+                $cat_id = 1;
+            }
+
+            if (!empty($data['price'])) {
+                $selling_status = EbayItemSellingStatus::create([
+                            'itemId' => $data['ebay_id'],
+                            'currentPrice' => $data['price'],
+                            'convertedCurrentPrice' => $data['price'],
+                            'sellingState' => $data['price'],
+                            'timeLeft' => isset($data['timeLeft']) ? $data['timeLeft'] : null,
+                ]);
+            }
+            if (array_key_exists('seller', $data) && !empty($data['seller'])) {
+                $data['seller'] = (array) $data['seller'];
+                $seller_info = EbayItemSellerInfo::create([
+                            'itemId' => $data['ebay_id'],
+                            'sellerUserName' => isset($data['seller']['name']) ? $data['seller']['name'] : null,
+                            'positiveFeedbackPercent' => isset($data['seller']['feedback']) ? $data['seller']['feedback'] : null,
+                            'seller_contact_link' => isset($data['seller']['contact']) ? $data['seller']['contact'] : null,
+                            'seller_store_link' => isset($data['seller']['store']) ? $data['seller']['store'] : null
+                ]);
+            }
+            if (array_key_exists('specifics', $data) && !empty($data['specifics'])) {
+                foreach ($data['specifics'] as $key => $speci) {
+                    if (isset($speci['Value'])) {
+                        if ($speci['Value'] != "N/A") {
+                            EbayItemSpecific::create([
+                                'itemId' => $data['ebay_id'],
+                                'name' => isset($speci['Name']) ? $speci['Name'] : null,
+                                'value' => is_array($speci['Value']) ? implode(',', $speci['Value']) : $speci['Value']
+                            ]);
+                        }
+                    } else {
+                        EbayItemSpecific::create([
+                            'itemId' => $data['ebay_id'],
+                            'name' => $key,
+                            'value' => is_array($speci) ? implode(',', $speci) : $speci
+                        ]);
+                    }
+                }
+            }
+            if (array_key_exists('ebay_id', $data)) {
+//                        $listing_info = EbayItemListingInfo::create([
+//                            'itemId' => $data['ebay_id'],
+//                            'buyItNowAvailable' => isset($row[7]) ? $row[7] : null,
+//                            'listingType' => isset($row[2]) ? $row[2]: null,
+//                            'startTime' => isset($row[5]) ? Carbon::create($row[5])->format('Y-m-d h:i:s') : null,
+//                            'endTime' => isset($row[6]) ? Carbon::create($row[6])->format('Y-m-d h:i:s') : null,
+//                        ]);
+
+                EbayItems::create([
+                    'card_id' => $req->card_id,
+//                            'excel_uploads_id' => $eu_ids->id,
+                    'itemId' => $data['ebay_id'],
+                    'title' => $data['name'],
+                    'category_id' => $cat_id,
+                    'globalId' => isset($data['details']['Site']) ? 'EBAY-' . $data['details']['Site'] : null,
+                    'galleryURL' => isset($data['image']) ? $data['image'] : null,
+                    'viewItemURL' => isset($data['details']['ViewItemURLForNaturalSearch']) ? $data['details']['ViewItemURLForNaturalSearch'] : null,
+                    'autoPay' => isset($data['details']['AutoPay']) ? $data['details']['AutoPay'] : null,
+                    'postalCode' => isset($data['details']['PostalCode']) ? $data['details']['PostalCode'] : null,
+                    'location' => isset($data['location']) ? $data['location'] : null,
+                    'country' => isset($data['details']['Country']) ? $data['details']['Country'] : null,
+                    'returnsAccepted' => isset($data['returns']) == 'ReturnsNotAccepted' ? false : true,
+                    'condition_id' => isset($data['details']['ConditionID']) ? $data['details']['ConditionID'] : 1,
+                    'pictureURLLarge' => isset($data['image']) ? $data['image'] : null,
+                    'pictureURLSuperSize' => isset($data['image']) ? $data['image'] : null,
+                    'listing_ending_at' => isset($data['timeLeft']) ? $data['timeLeft'] : null,
+                    'is_random_bin' => array_key_exists('random_bin', $data) ? (bool) $data['random_bin'] : 0,
+                    'seller_info_id' => isset($seller_info) ? $seller_info->id : null,
+                    'selling_status_id' => isset($selling_status) ? $selling_status->id : null,
+//                            'listing_info_id' => isset($listing_info) ? $listing_info->id : null,
+                ]);
+            }
+
+
+
             $response->card_id = $req->card_id;
             $response->item_link = $req->link;
             return response()->json(['status' => 200, 'data' => $response], 200);
@@ -1143,7 +1242,7 @@ class CardController extends Controller {
 
     public function uploadSlabForExcelImport(Request $request) {
         try {
-            if ($request->has('imageType') && $request->get('imageType') == 'images') {
+            if ($request->has('file1')) {
                 $filename = $request->file1->getClientOriginalName();
 //                return response()->json(['message' => $filename], 500);
                 if (Storage::disk('public')->put($filename, file_get_contents($request->file1->getRealPath()))) {
@@ -1178,8 +1277,8 @@ class CardController extends Controller {
                 if ($request->has('card_id')) {
                     // $filename = $request->file('file')->getClientOriginalName();
                     // if(Storage::disk('public')->put($filename, file_get_contents($request->file('file')->getRealPath()))){
-                        $path = $request->file('file')->store('temp'); 
-                        ExcelImports::dispatch(['file' => $path, 'type' => 'listings']);
+                    $path = $request->file('file')->store('temp');
+                    ExcelImports::dispatch(['file' => $path, 'type' => 'listings']);
                     // }
                     // Excel::queueImport(new ListingsImport, request()->file('file'));
                     return response()->json(['message' => 'Listings imported successfully.'], 200);

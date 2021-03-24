@@ -46,7 +46,7 @@ class ListingsImport implements ToCollection, WithStartRow
                         'card_id' => $row[1],
                         'excel_uploads_id' => $eu_ids->id,
 //                        'timestamp' => $row[6],
-                        'timestamp' => Carbon::create(strtotime($row[6])),
+                        'timestamp' => \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($row[6]),
                         'quantity' => 1,
                         'cost' => str_replace('$', '', $row[3]),
                         'source' => $row[8],

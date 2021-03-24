@@ -942,10 +942,10 @@ class EbayController extends Controller {
         try {
             // $itemsSpecsIds = EbayItemSpecific::where('value', 'like', '%' . $search . '%')->groupBy('itemId')->pluck('itemId');
             $itemsSpecsIds = [];
-            $items = EbayItems::with(['sellingStatus', 'card', 'card.value', 'listingInfo'])->where('id', '!=', $id)->where(function ($q) use ($card_id, $itemsSpecsIds, $search, $request, $filterBy) {
-                if ($card_id != null) {
-                    $q->where('card_id', $card_id);
-                }
+            $items = EbayItems::with(['sellingStatus', 'card', 'card.value', 'listingInfo'])->where('card_id', '=', $card_id)->where(function ($q) use ($card_id, $itemsSpecsIds, $search, $request, $filterBy) {
+//                if ($card_id != null) {
+//                    $q->where('card_id', $card_id);
+//                }
                 if ($request->has('sport') && $request->input('sport') != null) {
                     $q->orWhereHas('card', function ($qq) use ($request) {
                         $qq->where('sport', $request->input('sport'));
@@ -964,14 +964,14 @@ class EbayController extends Controller {
                     });
                 }
             });
-            if ($filterBy != null) {
-                if ($filterBy == 'ending_soon') {
-                    $date_one = Carbon::now()->addDay();
-                    $date_one->setTimezone('UTC');
-                    // $date_two = Carbon::now()->setTimezone('UTC');
-                    $items = $items->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one);
-                }
-            }
+//            if ($filterBy != null) {
+//                if ($filterBy == 'ending_soon') {
+//                    $date_one = Carbon::now()->addDay();
+//                    $date_one->setTimezone('UTC');
+//                    // $date_two = Carbon::now()->setTimezone('UTC');
+//                    $items = $items->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one);
+//                }
+//            }
             $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
             if ($filterBy != null && $filterBy == 'price_low_to_high') {
                 $items = $items->sortBy(function($query) {
