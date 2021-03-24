@@ -1336,15 +1336,15 @@ class EbayController extends Controller {
     public function addSeeProblem(Request $request) {
         try {
             $user_id = auth()->user()->id;
-            $validator = Validator::make($request->all(), [
-                        'id' => 'required',
-                        'message' => 'required',
-            ]);
-            if ($validator->fails()) {
-                return response()->json($validator, 500);
-            }
+//            $validator = Validator::make($request->all(), [
+//                        'id' => 'required',
+//                        'message' => 'required',
+//            ]);
+//            if ($validator->fails()) {
+//                return response()->json($validator, 500);
+//            }
             SeeProblem::create(['user_id' => $user_id, 'ebay_item_id' => $request->input('id'), 'message' => $request->input('message')]);
-            return response()->json(['status' => 200, 'data' => ['message' => 'Added succefully']], 200);
+            return response()->json(['status' => 200, 'data' => ['message' => 'Added successfully.']], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }

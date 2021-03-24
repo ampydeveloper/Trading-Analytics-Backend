@@ -214,7 +214,7 @@ class MyPortfolioController extends Controller {
                 $data[] = [
                     'id' => $card->id,
                     'title' => $card->title,
-                    'price' => $card->details->currentPrice,
+                    'price' => (isset($card->details->currentPrice)?$card->details->currentPrice:''),
                 ];
             }
             return response()->json(['status' => 200, 'data' => $data], 200);

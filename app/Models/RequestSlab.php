@@ -25,7 +25,8 @@ class RequestSlab extends Model
         'rc',
         'variation',
         'grade',
-        'image'
+        'image',
+        'status'
     ];
 
     public function user()

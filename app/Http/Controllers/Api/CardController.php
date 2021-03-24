@@ -538,6 +538,11 @@ class CardController extends Controller {
                 'is_featured' => ((bool) $request->input('is_featured')),
                 'image' => $request->hasFile('image') ? $filename : null,
             ]);
+            if ($request->has('request_slab')) {
+                $req = RequestSlab::whereId($request->input('request_slab'))->first();
+                $req->update(['status' => 0]);
+            }
+
             return response()->json(['status' => 200, 'message' => 'Card Created'], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -1102,7 +1107,7 @@ class CardController extends Controller {
         $skip = $take * $page;
         $skip = $skip - $take;
         try {
-            $items = RequestSlab::with(['user'])->orderBy('updated_at', 'desc')->get();
+            $items = RequestSlab::with(['user'])->where('status', 1)->orderBy('updated_at', 'desc')->get();
             $items = $items->skip($skip)->take($take);
             return response()->json(['status' => 200, 'data' => $items, 'next' => ($page + 1)], 200);
         } catch (\Exception $e) {
@@ -1238,6 +1243,17 @@ class CardController extends Controller {
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
+    }
+
+    public function getSingleRequestedSlab(Request $request, $card_id) {
+        $req = RequestSlab::whereId($card_id)->first();
+        return response()->json(['status' => 200, 'data' => $req], 200);
+    }
+
+    public function requestedSlabReject(Request $request) {
+        $req = RequestSlab::whereId($request->input('id'))->first();
+        $req->update(['status' => 0]);
+        return response()->json(['status' => 200, 'message' => 'Slab rejected successfully.'], 200);
     }
 
     public function uploadSlabForExcelImport(Request $request) {

@@ -120,6 +120,9 @@ Route::group([
     Route::post('get-request-slab-list-for-admin', 'CardController@getRequestSlabListForAdmin');
     Route::post('get-request-listing-list-for-admin', 'CardController@getRequestListingListForAdmin');
     Route::post('requested-listing-action-for-admin', 'CardController@markRequestedListingForAdmin');
+    Route::post('requested-slab-action-for-admin', 'CardController@markRequestedSlabForAdmin');
+    Route::post('requested-slab-action-reject', 'CardController@requestedSlabReject');
+    Route::get('get-single-requested-slab/{card_id}', 'CardController@getSingleRequestedSlab');
 });
 
 Route::group([
