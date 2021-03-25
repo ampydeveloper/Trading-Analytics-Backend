@@ -93,7 +93,7 @@ Route::group([
     Route::post('save-sold-price', 'Ebay\EbayController@saveSoldPriceAdmin');
     Route::post('generate-image', 'UserController@generateImageUsingBase');
     Route::post('generate-graph-image', 'UserController@generateImageUsingBase');
-    Route::post('add-see-problem', 'Ebay\EbayController@addSeeProblem');
+//    Route::post('add-see-problem', 'Ebay\EbayController@addSeeProblem');
     Route::post('get-see-problem', 'Ebay\EbayController@getSeeProblemForAdmin');
     Route::post('sales-create', 'CardController@createSales');
     Route::post('get-sales-list', 'CardController@getSalesList');
@@ -106,6 +106,14 @@ Route::group([
     Route::get('searched-cards', 'Ebay\EbayController@searchedCardsByUserForAdmin');
     Route::get('csv-uploads', 'CardController@csvUploads');
     Route::get('delete-upload/{excel_id}', 'CardController@deleteUploads');
+});
+
+Route::group([
+    'namespace' => 'Api',
+    'middleware' => 'jwt.verify'
+        ], function () {
+    Route::post('add-see-problem', 'Ebay\EbayController@addSeeProblem');
+    Route::get('see-problem-reject/{id}', 'Ebay\EbayController@seeProblemReject');
 });
 
 Route::group([
@@ -123,6 +131,7 @@ Route::group([
     Route::post('requested-slab-action-for-admin', 'CardController@markRequestedSlabForAdmin');
     Route::post('requested-slab-action-reject', 'CardController@requestedSlabReject');
     Route::get('get-single-requested-slab/{card_id}', 'CardController@getSingleRequestedSlab');
+    
 });
 
 Route::group([
@@ -130,12 +139,12 @@ Route::group([
     'namespace' => 'Api',
     'prefix' => 'users',
     'middleware' => 'jwt.verify'
-], function () {
+        ], function () {
     Route::post('get-list-for-admin', 'UserController@getAllUsersForAdmin');
     Route::post('save-user-by-admin', 'UserController@saveUserForAdmin');
+    Route::post('create-user', 'UserController@createUser');
     Route::post('update-user-by-admin/{user}/{type}', 'UserController@updateUserAttributeForAdmin');
     Route::post('change-user-password-by-admin/{user}', 'UserController@changeUSerPasswordForAdmin');
-    
 });
 
 Route::group([
@@ -162,7 +171,7 @@ Route::group([
     // Prefixed with /auth
     'namespace' => 'Api',
     'prefix' => 'search',
-    // 'middleware' => 'jwt.verify'
+        // 'middleware' => 'jwt.verify'
         ], function () {
 //    Route::post('get-card-list', 'Ebay\EbayController@getItemsList');
 //    Route::post('get-recent-auction-list', 'Ebay\EbayController@getRecentAuctionList');

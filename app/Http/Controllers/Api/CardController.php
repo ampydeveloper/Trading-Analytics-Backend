@@ -364,26 +364,23 @@ class CardController extends Controller {
     public function getSmartKeyword(Request $request) {
         try {
             $keyword_list = explode(' ', $request->input('keyword'));
-            $data = Card::
-                            Where(function ($query) use($keyword_list) {
-                                for ($i = 0; $i < count($keyword_list); $i++) {
-                                    $query->orwhere('title', 'like', '%' . $keyword_list[$i] . '%');
-                                }
-                            })
-//                    whereIn('title', 'like', '%' . $keyword_list . '%')
-//                    ->orWhere('variation', 'like', '%' . $request->input('keyword') . '%')
-//                    ->orWhere('grade', 'like', '%' . $request->input('keyword') . '%')
-//                    ->orWhere('player', 'like', '%' . $request->input('keyword') . '%')
-                            ->distinct('player')->where('active', 1)->get()->take(10);
             $list = [];
-            foreach ($data as $key => $value) {
-                $name = explode(' ', $value['player']);
-                $list[] = [
-                    'id' => $value['id'],
-                    'player' => $name[0],
-                    'title' => $value['title']
-                ];
-            }
+            $data = Card::where(function ($query) use($keyword_list) {
+                        foreach($keyword_list as $kw) {
+                            $query->where('title', 'like', "%$kw%");
+                        }
+                    })->distinct('player')->where('active', 1)->get()->take(10)->map(function($res) use(&$list){
+                        $name = explode(' ', $res->player);
+                        $list[] = [
+                            'id' => $res->id,
+                            'player' => $name[0],
+                            'title' => $res->title
+                        ];
+                    });
+            //                    whereIn('title', 'like', '%' . $keyword_list . '%')
+            //                    ->orWhere('variation', 'like', '%' . $request->input('keyword') . '%')
+            //                    ->orWhere('grade', 'like', '%' . $request->input('keyword') . '%')
+            //                    ->orWhere('player', 'like', '%' . $request->input('keyword') . '%')
             return response()->json(['status' => 200, 'data' => $list, 'keyword' => $request->input('keyword')], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -683,7 +680,7 @@ class CardController extends Controller {
                 $to = date('Y-m-d H:i:s', strtotime('-1 day'));
             } elseif ($days == 7) {
                 $from = date('Y-m-d H:i:s', strtotime('-1 day'));
-                $to = date('Y-m-d H:i:s', strtotime('-7 days'));
+                $to = date('Y-m-d H:i:s', strtotime('-8 days'));
             } elseif ($days == 30) {
                 $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-30 days'));
@@ -701,7 +698,7 @@ class CardController extends Controller {
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }
 
-            $data = ['values' => [], 'labels' => []];
+            $data = ['values' => [], 'labels' => []]; $tempDate = [];
             $cvs = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->groupBy('timestamp')->orderBy('timestamp', 'DESC');
             $data['values'] = $cvs->pluck('cost')->toArray();
             $data['labels'] = $cvs->pluck('timestamp')->toArray();
@@ -798,7 +795,6 @@ class CardController extends Controller {
             $data['total_sales'] = number_format((float) $total_sales, 2, '.', '');
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
-            dd($e);
             return response()->json($e->getMessage(), 500);
         }
     }
@@ -812,7 +808,7 @@ class CardController extends Controller {
                     $to = date('Y-m-d H:i:s', strtotime('-1 day'));
                 } elseif ($days == 7) {
                     $from = date('Y-m-d H:i:s', strtotime('-1 day'));
-                    $to = date('Y-m-d H:i:s', strtotime('-7 days'));
+                    $to = date('Y-m-d H:i:s', strtotime('-8 days'));
                 } elseif ($days == 30) {
                     $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                     $to = date('Y-m-d H:i:s', strtotime('-30 days'));
@@ -891,7 +887,7 @@ class CardController extends Controller {
                 $to = date('Y-m-d H:i:s', strtotime('-1 day'));
             } elseif ($days == 7) {
                 $from = date('Y-m-d H:i:s', strtotime('-1 day'));
-                $to = date('Y-m-d H:i:s', strtotime('-7 days'));
+                $to = date('Y-m-d H:i:s', strtotime('-8 days'));
             } elseif ($days == 30) {
                 $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-30 days'));
@@ -979,8 +975,8 @@ class CardController extends Controller {
         try {
             $days = [
                 0 => ['from' => date('Y-m-d H:i:s'), 'to' => date('Y-m-d H:i:s', strtotime('-1 day'))],
-                1 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-7 days'))],
-                2 => ['from' => date('Y-m-d H:i:s', strtotime('-7 days')), 'to' => date('Y-m-d H:i:s', strtotime('-30 days'))],
+                1 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-8 days'))],
+                2 => ['from' => date('Y-m-d H:i:s', strtotime('-8 days')), 'to' => date('Y-m-d H:i:s', strtotime('-30 days'))],
                 3 => ['from' => date('Y-m-d H:i:s', strtotime('-30 days')), 'to' => date('Y-m-d H:i:s', strtotime('-90 days'))],
                 4 => ['from' => date('Y-m-d H:i:s', strtotime('-90 days')), 'to' => date('Y-m-d H:i:s', strtotime('-180 days'))],
                 5 => ['from' => date('Y-m-d H:i:s', strtotime('-180 days')), 'to' => date('Y-m-d H:i:s', strtotime('-365 days'))],
@@ -999,14 +995,62 @@ class CardController extends Controller {
         }
     }
 
+    public function lbl_dt($a, $b){
+        $a = Carbon::parse($a);
+        $b = Carbon::parse($b);
+        if($a->greaterThan($b)){ return -1; }
+        else if($a->lessThan($b)){ return 1; }
+        else 0;
+    }
+
     public function __groupGraphData($days, $data) {
         $months = null;
         $years = null;
+        $cmp = $days; $cmpSfx = 'days';
         if ($days > 30 && $days <= 365) {
             $months = (int) ($days / 30);
+            $cmp = $months;
+            $cmpSfx = 'months';
         }
         if ($days > 365) {
             $years = (int) ($days / 365);
+            $cmp = $years;
+            $cmpSfx = 'years';
+        }
+
+        if ((count($data['labels']) < (int) $cmp) || $cmpSfx == 'years') {
+            // $lb_map = [];
+            // for ($i = 0; $i < count($data['labels']); $i++) {
+            //     $lb_map[$data['labels'][$i]] = $data['values'][$i];
+            // }
+
+            $last_date = Carbon::parse($data['labels'][0]);
+            if ($cmpSfx == 'days') {
+                $start_date = $last_date->copy()->subDays($cmp);
+            } else if ($cmpSfx == 'months') {
+                $start_date = $last_date->copy()->subMonths($cmp);
+            } else if ($cmpSfx == 'years') {
+                $start_date = $last_date->copy()->subYears($cmp);
+            }
+            $lblSfx = explode(' ', $data['labels'][0])[1];
+            $period = \Carbon\CarbonPeriod::create($start_date, '1 ' . $cmpSfx, $last_date);
+            $map_val = []; $map_qty = [];
+            foreach ($period as $dt) {
+                $dt = $dt->format('Y-m-d') . ' ' . $lblSfx;
+                $map_val[$dt] = 0;
+                $map_qty[$dt] = 0;
+                $ind = array_search($dt, $data['labels']);
+                if (gettype($ind) == "integer") {
+                    $map_val[$dt] = $data['values'][$ind];
+                    $map_qty[$dt] = $data['qty'][$ind];
+                }
+            }
+            uksort($map_val, [$this, "lbl_dt"]);
+            uksort($map_qty, [$this, "lbl_dt"]);
+
+            $data['labels'] = array_keys($map_val);
+            $data['values'] = array_values($map_val);
+            $data['qty'] = array_values($map_qty);
         }
 
         $grouped = [];
@@ -1043,6 +1087,7 @@ class CardController extends Controller {
             $data['values'] = array_splice($data['values'], 0, $max);
             $data['labels'] = array_splice($data['labels'], 0, $max);
         }
+        
         return $data;
     }
 
