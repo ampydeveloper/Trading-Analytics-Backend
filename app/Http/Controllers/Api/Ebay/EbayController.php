@@ -715,7 +715,7 @@ class EbayController extends Controller {
                     $pictureURLSuperSize = null;
                 }
                 $end_date = new \DateTime();
-                $end_date->add(new \DateInterval($data['details']['EndTime']));
+                $end_date->add(new \DateInterval($data['auction_end']));
                 EbayItems::create([
                     'card_id' => $data['card_id'],
                     'itemId' => $data['details']['ebay_id'],
@@ -732,7 +732,7 @@ class EbayController extends Controller {
                     'condition_id' => isset($data['details']['ConditionID']) ? $data['details']['ConditionID'] : 1,
                     'pictureURLLarge' => $pictureURLLarge,
                     'pictureURLSuperSize' => $pictureURLSuperSize,
-                    'listing_ending_at' => isset($data['details']['EndTime']) ? $end_date->format('Y-m-d H:i:s') : null,
+                    'listing_ending_at' => isset($data['auction_end']) ? $end_date->format('Y-m-d H:i:s') : null,
                     'is_random_bin' => array_key_exists('random_bin', $data) ? (bool) $data['random_bin'] : 0
                 ]);
                 EbayItemSellerInfo::create([
@@ -771,7 +771,7 @@ class EbayController extends Controller {
                 return response()->json(['status' => 200, 'data' => ['message' => 'Added successfully.']], 200);
             } else {
                 $end_date = new \DateTime();
-                $end_date->add(new \DateInterval($data['details']['EndTime']));
+                $end_date->add(new \DateInterval($data['auction_end']));
 
                 EbayItems::where('id', $item['id'])->update([
                     'title' => $data['title'],
