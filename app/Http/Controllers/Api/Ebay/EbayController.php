@@ -717,7 +717,7 @@ class EbayController extends Controller {
 
                 EbayItems::create([
                     'card_id' => $data['card_id'],
-                    'itemId' => $data['ebay_id'],
+                    'itemId' => $data['details']['ebay_id'],
                     'title' => $data['title'],
                     'category_id' => $cat_id,
                     'globalId' => isset($data['details']['Site']) ? 'EBAY-' . $data['details']['Site'] : null,
@@ -735,7 +735,7 @@ class EbayController extends Controller {
                     'is_random_bin' => array_key_exists('random_bin', $data) ? (bool) $data['random_bin'] : 0
                 ]);
                 EbayItemSellerInfo::create([
-                    'itemId' => $data['ebay_id'],
+                    'itemId' => $data['details']['ebay_id'],
                     'sellerUserName' => $data['seller_name'],
                     'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
                     'seller_contact_link' => $data['seller_contact_link'],
@@ -745,14 +745,14 @@ class EbayController extends Controller {
                     if (isset($speci['Value'])) {
                         if ($speci['Value'] != "N/A") {
                             EbayItemSpecific::create([
-                                'itemId' => $data['ebay_id'],
+                                'itemId' => $data['details']['ebay_id'],
                                 'name' => $speci['Name'],
                                 'value' => is_array($speci['Value']) ? implode(',', $speci['Value']) : $speci['Value']
                             ]);
                         }
                     } else {
                         EbayItemSpecific::create([
-                            'itemId' => 1,
+                            'itemId' => $data['details']['ebay_id'],
                             'name' => $key,
                             'value' => is_array($speci) ? implode(',', $speci) : $speci
                         ]);
@@ -760,7 +760,7 @@ class EbayController extends Controller {
                 }
 
                 EbayItemListingInfo::create([
-                    'itemId' => $data['ebay_id'],
+                    'itemId' => $data['details']['ebay_id'],
                     'startTime' => '',
                     'endTime' => Carbon::create($data['auction_end'])->format('Y-m-d h:i:s'),
                     'listingType' => ($data['listing_type']==true?'Auction':'Listing'),
