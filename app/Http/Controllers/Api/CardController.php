@@ -211,10 +211,11 @@ class CardController extends Controller {
             $cards['sx_icon'] = $sx_icon;
 
 //            $card_sales = CardSales::groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
-            
+            if(!empty($card_sales)){
             $trender_cards = Card::has('sales')->where('active', 1)->with('details')->orderByRaw('FIELD (id, ' . implode(', ', $card_sales) . ') ASC')->get();
             $trender_cards = $trender_cards->unique('sport')->toArray();
             $cards['trender_cards'] = array_values($trender_cards);
+            }
 
             return response()->json(['status' => 200, 'data' => $cards], 200);
         } catch (\Exception $e) {
@@ -940,8 +941,8 @@ class CardController extends Controller {
             $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
             $finalData['slabstoxValue'] = number_format($sx, 2, '.', '');
             $lastSaleData = CardSales::where('card_id', $card_id)->latest()->first();
-            $finalData['lastSalePrice'] = ($lastSaleData->count() > 0?$lastSaleData->cost:0);
-            $finalData['lastSaleDate'] = ($lastSaleData->count() > 0?$lastSaleData['timestamp']:0);
+            $finalData['lastSalePrice'] = (!empty($lastSaleData)?$lastSaleData->cost:0);
+            $finalData['lastSaleDate'] = (!empty($lastSaleData)?$lastSaleData['timestamp']:0);
             $finalData['highestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'DESC')->first();
             $finalData['lowestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'ASC')->first();
 
