@@ -975,12 +975,12 @@ class CardController extends Controller {
         try {
             $days = [
                 0 => ['from' => date('Y-m-d H:i:s'), 'to' => date('Y-m-d H:i:s', strtotime('-1 day'))],
-                1 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-8 days'))],
-                2 => ['from' => date('Y-m-d H:i:s', strtotime('-8 days')), 'to' => date('Y-m-d H:i:s', strtotime('-30 days'))],
-                3 => ['from' => date('Y-m-d H:i:s', strtotime('-30 days')), 'to' => date('Y-m-d H:i:s', strtotime('-90 days'))],
-                4 => ['from' => date('Y-m-d H:i:s', strtotime('-90 days')), 'to' => date('Y-m-d H:i:s', strtotime('-180 days'))],
-                5 => ['from' => date('Y-m-d H:i:s', strtotime('-180 days')), 'to' => date('Y-m-d H:i:s', strtotime('-365 days'))],
-                6 => ['from' => date('Y-m-d H:i:s', strtotime('-365 days')), 'to' => date('Y-m-d H:i:s', strtotime('-1825 days'))]];
+                1 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-7 days'))],
+                2 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-30 days'))],
+                3 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-90 days'))],
+                4 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-180 days'))],
+                5 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-365 days'))],
+                6 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-1825 days'))]];
             $data['labels'] = ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y'];
             foreach ($days as $day) {
                 $today_date = date('Y-m-d H:i:s');
