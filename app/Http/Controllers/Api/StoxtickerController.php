@@ -70,17 +70,19 @@ class StoxtickerController extends Controller {
         try {
             $boards = Board::where('name', 'like', '%' . $request->input('keyword') . '%')->get()->take(4);
             if(!empty($request->input('sport'))){
-            foreach ($boards as $key => $board) {
-                $all_cards = json_decode($board->cards);
-                $card_details = Card::whereIn('id', $all_cards)->whereIn('sport', $request->input('sport'))->count();
-                if(empty($card_details) && $card_details == 0){
-                    $boards->forget($key);
+                foreach ($boards as $key => $board) {
+                    $all_cards = json_decode($board->cards);
+                    $card_details = Card::whereIn('id', $all_cards)->whereIn('sport', $request->input('sport'))->count();
+                    if(empty($card_details) && $card_details == 0){
+                        $boards->forget($key);
+                    }
                 }
             }
-            }
+            $days = 2;
+            if($request->has('days')){ $days = $request->get('days'); }
             foreach ($boards as $key => $board) {
                 $all_cards = json_decode($board->cards);
-                $boards[$key]['sales_graph'] = $this->__cardData($all_cards, 2);
+                $boards[$key]['sales_graph'] = $this->__cardData($all_cards, $days);
 
                 $sx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 $lastSx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
@@ -254,14 +256,63 @@ class StoxtickerController extends Controller {
         return $finalData;
     }
 
-    public function __groupGraphData($days, $data) {
+    public function lbl_dt($a, $b)
+    {
+        $a = Carbon::parse($a);
+        $b = Carbon::parse($b);
+        if ($a->greaterThan($b)) {
+            return -1;
+        } else if ($a->lessThan($b)) {
+            return 1;
+        } else 0;
+    }
+
+    public function __groupGraphData($days, $data)
+    {
         $months = null;
         $years = null;
+        $cmp = $days;
+        $cmpSfx = 'days';
         if ($days > 30 && $days <= 365) {
             $months = (int) ($days / 30);
+            $cmp = $months;
+            $cmpSfx = 'months';
         }
         if ($days > 365) {
             $years = (int) ($days / 365);
+            $cmp = $years;
+            $cmpSfx = 'years';
+        }
+
+        if ((count($data['labels']) < (int) $cmp) || $cmpSfx == 'years') {
+            $last_date = Carbon::parse($data['labels'][0]);
+            if ($cmpSfx == 'days') {
+                $start_date = $last_date->copy()->subDays($cmp);
+            } else if ($cmpSfx == 'months') {
+                $start_date = $last_date->copy()->subMonths($cmp);
+            } else if ($cmpSfx == 'years') {
+                $start_date = $last_date->copy()->subYears($cmp);
+            }
+            $lblSfx = explode(' ', $data['labels'][0])[1];
+            $period = \Carbon\CarbonPeriod::create($start_date, '1 ' . $cmpSfx, $last_date);
+            $map_val = [];
+            $map_qty = [];
+            foreach ($period as $dt) {
+                $dt = $dt->format('Y-m-d') . ' ' . $lblSfx;
+                $map_val[$dt] = 0;
+                $map_qty[$dt] = 0;
+                $ind = array_search($dt, $data['labels']);
+                if (gettype($ind) == "integer") {
+                    $map_val[$dt] = $data['values'][$ind];
+                    $map_qty[$dt] = $data['qty'][$ind];
+                }
+            }
+            uksort($map_val, [$this, "lbl_dt"]);
+            uksort($map_qty, [$this, "lbl_dt"]);
+
+            $data['labels'] = array_keys($map_val);
+            $data['values'] = array_values($map_val);
+            $data['qty'] = array_values($map_qty);
         }
 
         $grouped = [];
@@ -270,7 +321,11 @@ class StoxtickerController extends Controller {
             $max = $months;
             foreach ($data['labels'] as $ind => $dt) {
                 $dt = explode('-', $dt);
-                $dt = sprintf('%s-%s', $dt[0], $dt[1]);
+                if (count($dt) > 1) {
+                    $dt = sprintf('%s-%s', $dt[0], $dt[1]);
+                } else {
+                    $dt = $dt[0];
+                }
                 if (!in_array($dt, array_keys($grouped))) {
                     $grouped[$dt] = 0;
                 }
@@ -294,6 +349,7 @@ class StoxtickerController extends Controller {
             $data['values'] = array_splice($data['values'], 0, $max);
             $data['labels'] = array_splice($data['labels'], 0, $max);
         }
+
         return $data;
     }
 

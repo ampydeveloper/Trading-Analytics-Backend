@@ -388,8 +388,8 @@ class MyPortfolioController extends Controller {
 
     public function gradeCard(Request $request){
         try {
-            if($request->has('card_id') && $request->has('grade') && $request->has('purchase_price')){
-                MyPortfolio::where(['card_id' => $request->get('card_id'), 'purchase_price' => $request->get('purchase_price')])->update(['grade' => $request->get('grade')]);
+            if($request->has('my_portfolio_id') && $request->has('grade')){
+                MyPortfolio::whereId($request->get('my_portfolio_id'))->update(['grade' => $request->get('grade')]);
                 return response()->json(['status' => 200, 'data' => 'Grading Successful!'], 200);
             }
             return response()->json(['status' => 200, 'data' => 'Grading Un-Successful!'], 500);
