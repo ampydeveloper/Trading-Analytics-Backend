@@ -18,6 +18,7 @@ use Carbon\Carbon;
 use Validator;
 use App\Models\Ebay\EbayItemCategories;
 use App\Models\Ebay\EbayItemListingInfo;
+use App\Models\Ebay\EbayItemSellingStatus;
 
 class EbayController extends Controller {
 
@@ -718,7 +719,7 @@ class EbayController extends Controller {
                     $pictureURLSuperSize = null;
                 }
                 $selling_status = EbayItemSellingStatus::create([
-                            'itemId' => $$data['details']['ebay_id'],
+                            'itemId' => $data['details']['ebay_id'],
                             'currentPrice' => $data['price'],
                             'convertedCurrentPrice' => $data['price'],
                             'sellingState' => $data['price'],
