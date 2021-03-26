@@ -714,7 +714,8 @@ class EbayController extends Controller {
                     $pictureURLLarge = null;
                     $pictureURLSuperSize = null;
                 }
-
+                $end_date = new DateTime();
+                $end_date->add(new DateInterval($data['details']['EndTime']));
                 EbayItems::create([
                     'card_id' => $data['card_id'],
                     'itemId' => $data['details']['ebay_id'],
@@ -731,7 +732,7 @@ class EbayController extends Controller {
                     'condition_id' => isset($data['details']['ConditionID']) ? $data['details']['ConditionID'] : 1,
                     'pictureURLLarge' => $pictureURLLarge,
                     'pictureURLSuperSize' => $pictureURLSuperSize,
-                    'listing_ending_at' => isset($data['details']['EndTime']) ? Carbon::create($data['details']['EndTime'])->format('Y-m-d h:i:s') : null,
+                    'listing_ending_at' => isset($data['details']['EndTime']) ? $end_date->format('Y-m-d H:i:s') : null,
                     'is_random_bin' => array_key_exists('random_bin', $data) ? (bool) $data['random_bin'] : 0
                 ]);
                 EbayItemSellerInfo::create([
@@ -762,13 +763,16 @@ class EbayController extends Controller {
                 EbayItemListingInfo::create([
                     'itemId' => $data['details']['ebay_id'],
                     'startTime' => '',
-                    'endTime' => Carbon::create($data['auction_end'])->format('Y-m-d h:i:s'),
-                    'listingType' => ($data['listing_type']==true?'Auction':'Listing'),
+                    'endTime' => $end_date->format('Y-m-d H:i:s'),
+                    'listingType' => (isset($data['listing_type']) && $data['listing_type'] == true ? 'Auction' : 'Listing'),
                 ]);
                 \DB::commit();
 
                 return response()->json(['status' => 200, 'data' => ['message' => 'Added successfully.']], 200);
             } else {
+                $end_date = new DateTime();
+                $end_date->add(new DateInterval($data['details']['EndTime']));
+
                 EbayItems::where('id', $item['id'])->update([
                     'title' => $data['title'],
                     'viewItemURL' => $data['web_link'],
@@ -790,8 +794,8 @@ class EbayController extends Controller {
 //                }
                 EbayItemListingInfo::where('id', $item['listing_info_id'])->update([
                     'startTime' => '',
-                    'endTime' => Carbon::create($data['auction_end'])->format('Y-m-d h:i:s'),
-                    'listingType' => ($data['listing_type']==true?'Auction':'Listing'),
+                    'endTime' => $end_date->format('Y-m-d H:i:s'),
+                    'listingType' => (isset($data['listing_type']) && $data['listing_type'] == true ? 'Auction' : 'Listing'),
                 ]);
 
                 \DB::commit();
@@ -1361,7 +1365,7 @@ class EbayController extends Controller {
             $sp = SeeProblem::with(['user', 'ebay'])->orderBy('updated_at', 'desc')->get();
             $sp = $sp->skip($skip)->take($take);
             $next = 0;
-            if ($sp->count() >0) {
+            if ($sp->count() > 0) {
                 $next = ($page + 1);
             }
             return response()->json(['status' => 200, 'data' => $sp, 'next' => $next], 200);
