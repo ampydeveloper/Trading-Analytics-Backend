@@ -710,7 +710,10 @@ class EbayController extends Controller {
                         $pictureURLLarge = $data['details']['PictureURL'];
                         $pictureURLSuperSize = $data['details']['PictureURL'];
                     }
-                } else {
+                } else if (isset($data['image'])&& !empty($data['image'])) {
+                    $pictureURLLarge = $data['image'];
+                    $pictureURLSuperSize = $data['image'];
+                }else{
                     $pictureURLLarge = null;
                     $pictureURLSuperSize = null;
                 }
