@@ -189,6 +189,8 @@ class CardController extends Controller {
     public function getCardDetails(int $id, Request $request) {
         try {
             $rank = 'N/A';
+            $card_sales = CardSales::where('card_id', $id)->pluck('id')->toArray();
+            if(!empty($card_sales)){
             $cs = CardSales::groupBy('card_id')->select('id', 'card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->get()->map(function($item, $key) use($id, &$rank) {
                 // dump($item['card_id'], $id);
                 if ($item['card_id'] == $id) {
@@ -196,31 +198,9 @@ class CardController extends Controller {
                     return;
                 }
             });
+            }
             $cards = Card::where('id', $id)->with('details')->firstOrFail()->toArray();
-//            $cardValues = CardValues::where('card_id', $id)->orderBy('date', 'DESC')->limit(7);
-//
-//            $cardValues = $cardValues->get()->toArray();
-//            $latestTwo = array_splice($cardValues, 0, 2);
-//
-//            $sx = 0;
-//            $sx_icon = 'up';
-//            $updated = '';
-//            foreach ($latestTwo as $cv) {
-//                if ($sx == 0) {
-//                    $cards['price_graph_updated'] = Carbon::create($cv['updated_at'])->format('F d Y \- h:i:s A');
-//                    $sx = $cv['avg_value'];
-//                } else {
-//                    $sx = $sx - $cv['avg_value'];
-//                }
-//            }
-//            if ($sx < 0) {
-//                $sx = abs($sx);
-//                $sx_icon = 'down';
-//            }
-//            $cards['sx'] = $sx;
-//            $cards['sx_icon'] = $sx_icon;
             $cards['rank'] = $rank;
-
 
             $sx = CardSales::where('card_id', $id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
             $lastSx = CardSales::where('card_id', $id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
@@ -231,7 +211,7 @@ class CardController extends Controller {
             $cards['sx_icon'] = $sx_icon;
 
 //            $card_sales = CardSales::groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
-            $card_sales = CardSales::where('card_id', $id)->pluck('id')->toArray();
+            
             $trender_cards = Card::has('sales')->where('active', 1)->with('details')->orderByRaw('FIELD (id, ' . implode(', ', $card_sales) . ') ASC')->get();
             $trender_cards = $trender_cards->unique('sport')->toArray();
             $cards['trender_cards'] = array_values($trender_cards);
@@ -960,8 +940,8 @@ class CardController extends Controller {
             $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
             $finalData['slabstoxValue'] = number_format($sx, 2, '.', '');
             $lastSaleData = CardSales::where('card_id', $card_id)->latest()->first();
-            $finalData['lastSalePrice'] = $lastSaleData->cost;
-            $finalData['lastSaleDate'] = $lastSaleData['timestamp'];
+            $finalData['lastSalePrice'] = ($lastSaleData->count() > 0?$lastSaleData->cost:0);
+            $finalData['lastSaleDate'] = ($lastSaleData->count() > 0?$lastSaleData['timestamp']:0);
             $finalData['highestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'DESC')->first();
             $finalData['lowestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'ASC')->first();
 

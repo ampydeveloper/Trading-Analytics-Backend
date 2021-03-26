@@ -116,7 +116,7 @@ class StoxtickerController extends Controller {
                 $all_cards = json_decode($board->cards);
                 $boards[$key]['board_details'] = Card::whereIn('id', $all_cards)->with('details')->get();
                 $boards[$key]['sale_details'] = CardSales::whereIn('card_id', $all_cards)->get();
-                $boards[$key]['sales_graph'] = $this->__cardData($all_cards, 2);
+//                $boards[$key]['sales_graph'] = $this->__cardData($all_cards, $days);
                 $total_card_value = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 if (!empty($total_card_value)) {
                     $boards[$key]['total_card_value'] = $total_card_value;

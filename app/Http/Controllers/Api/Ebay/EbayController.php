@@ -699,7 +699,6 @@ class EbayController extends Controller {
                     $cat_id = EbayItemCategories::where('categoryId', $data['details']['PrimaryCategoryID'])->first()['id'];
                 } else {
                     if (isset($data['category'])) {
-//                        $cat_id = 1;
                         $cat_id = $data['category'];
                     }
                 }
@@ -718,7 +717,7 @@ class EbayController extends Controller {
 
                 EbayItems::create([
                     'card_id' => $data['card_id'],
-                    'itemId' => $data['itemId'],
+                    'itemId' => $data['ebay_id'],
                     'title' => $data['title'],
                     'category_id' => $cat_id,
                     'globalId' => isset($data['details']['Site']) ? 'EBAY-' . $data['details']['Site'] : null,
@@ -732,11 +731,11 @@ class EbayController extends Controller {
                     'condition_id' => isset($data['details']['ConditionID']) ? $data['details']['ConditionID'] : 1,
                     'pictureURLLarge' => $pictureURLLarge,
                     'pictureURLSuperSize' => $pictureURLSuperSize,
-                    'listing_ending_at' => isset($data['details']['EndTime']) ? $data['details']['EndTime'] : null,
+                    'listing_ending_at' => isset($data['details']['EndTime']) ? Carbon::create($data['details']['EndTime'])->format('Y-m-d h:i:s') : null,
                     'is_random_bin' => array_key_exists('random_bin', $data) ? (bool) $data['random_bin'] : 0
                 ]);
                 EbayItemSellerInfo::create([
-                    'itemId' => $data['itemId'],
+                    'itemId' => $data['ebay_id'],
                     'sellerUserName' => $data['seller_name'],
                     'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
                     'seller_contact_link' => $data['seller_contact_link'],
@@ -746,7 +745,7 @@ class EbayController extends Controller {
                     if (isset($speci['Value'])) {
                         if ($speci['Value'] != "N/A") {
                             EbayItemSpecific::create([
-                                'itemId' => $data['itemId'],
+                                'itemId' => $data['ebay_id'],
                                 'name' => $speci['Name'],
                                 'value' => is_array($speci['Value']) ? implode(',', $speci['Value']) : $speci['Value']
                             ]);
@@ -761,36 +760,38 @@ class EbayController extends Controller {
                 }
 
                 EbayItemListingInfo::create([
-                    'itemId' => $data['itemId'],
-                    'startTime' => $data['auction_start'],
-                    'endTime' => $data['auction_end'],
+                    'itemId' => $data['ebay_id'],
+                    'startTime' => '',
+                    'endTime' => Carbon::create($data['auction_end'])->format('Y-m-d h:i:s'),
+                    'listingType' => ($data['listing_type']==true?'Auction':'Listing'),
                 ]);
                 \DB::commit();
 
                 return response()->json(['status' => 200, 'data' => ['message' => 'Added successfully.']], 200);
             } else {
-                EbayItems::where('id', $data['listing_Id'])->update([
+                EbayItems::where('id', $item['id'])->update([
                     'title' => $data['title'],
                     'viewItemURL' => $data['web_link'],
                     'location' => $data['location'],
                     'returnsAccepted' => $data['ReturnPolicy'],
                     'pictureURLLarge' => $data['image'],
-                    'listing_ending_at' => $data['time_left'],
+                    'listing_ending_at' => Carbon::create($data['time_left'])->format('Y-m-d h:i:s'),
                 ]);
-                EbayItemSellerInfo::where('id', $data['seller_id'])->update([
+                EbayItemSellerInfo::where('id', $item['seller_info_id'])->update([
                     'sellerUserName' => $data['seller_name'],
                     'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
                     'seller_contact_link' => $data['seller_contact_link'],
                     'seller_store_link' => $data['seller_store_link']
                 ]);
-                foreach ($data['specifics'] as $speci) {
-                    EbayItemSpecific::where('id', $speci['id'])->update([
-                        'value' => $speci['value']
-                    ]);
-                }
-                EbayItemListingInfo::where('id', $data['auction_start_end_id'])->update([
-                    'startTime' => $data['auction_start'],
-                    'endTime' => $data['auction_end'],
+//                foreach ($data['specifics'] as $speci) {
+//                    EbayItemSpecific::where('id', $speci['id'])->update([
+//                        'value' => $speci['value']
+//                    ]);
+//                }
+                EbayItemListingInfo::where('id', $item['listing_info_id'])->update([
+                    'startTime' => '',
+                    'endTime' => Carbon::create($data['auction_end'])->format('Y-m-d h:i:s'),
+                    'listingType' => ($data['listing_type']==true?'Auction':'Listing'),
                 ]);
 
                 \DB::commit();
