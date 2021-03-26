@@ -714,7 +714,7 @@ class EbayController extends Controller {
                     $pictureURLLarge = null;
                     $pictureURLSuperSize = null;
                 }
-                $end_date = new DateTime();
+                $end_date = new \DateTime();
                 $end_date->add(new DateInterval($data['details']['EndTime']));
                 EbayItems::create([
                     'card_id' => $data['card_id'],
@@ -770,7 +770,7 @@ class EbayController extends Controller {
 
                 return response()->json(['status' => 200, 'data' => ['message' => 'Added successfully.']], 200);
             } else {
-                $end_date = new DateTime();
+                $end_date = new \DateTime();
                 $end_date->add(new DateInterval($data['details']['EndTime']));
 
                 EbayItems::where('id', $item['id'])->update([
