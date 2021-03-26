@@ -710,13 +710,34 @@ class EbayController extends Controller {
                         $pictureURLLarge = $data['details']['PictureURL'];
                         $pictureURLSuperSize = $data['details']['PictureURL'];
                     }
-                } else if (isset($data['image'])&& !empty($data['image'])) {
+                } else if (isset($data['image']) && !empty($data['image'])) {
                     $pictureURLLarge = $data['image'];
                     $pictureURLSuperSize = $data['image'];
-                }else{
+                } else {
                     $pictureURLLarge = null;
                     $pictureURLSuperSize = null;
                 }
+                $selling_status = EbayItemSellingStatus::create([
+                            'itemId' => $$data['details']['ebay_id'],
+                            'currentPrice' => $data['price'],
+                            'convertedCurrentPrice' => $data['price'],
+                            'sellingState' => $data['price'],
+                            'timeLeft' => isset($data['auction_end']) ? $data['auction_end'] : null,
+                ]);
+                $seller_info = EbayItemSellerInfo::create([
+                            'itemId' => $data['details']['ebay_id'],
+                            'sellerUserName' => $data['seller_name'],
+                            'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
+                            'seller_contact_link' => $data['seller_contact_link'],
+                            'seller_store_link' => $data['seller_store_link']
+                ]);
+                $listing_info = EbayItemListingInfo::create([
+                            'itemId' => $data['details']['ebay_id'],
+                            'startTime' => '',
+                            'endTime' => $data['auction_end'],
+                            'listingType' => (isset($data['listing_type']) && $data['listing_type'] == true ? 'Auction' : 'Listing'),
+                ]);
+
                 EbayItems::create([
                     'card_id' => $data['card_id'],
                     'itemId' => $data['details']['ebay_id'],
@@ -734,15 +755,12 @@ class EbayController extends Controller {
                     'pictureURLLarge' => $pictureURLLarge,
                     'pictureURLSuperSize' => $pictureURLSuperSize,
                     'listing_ending_at' => isset($data['auction_end']) ? $data['auction_end'] : null,
-                    'is_random_bin' => array_key_exists('random_bin', $data) ? (bool) $data['random_bin'] : 0
+                    'is_random_bin' => array_key_exists('random_bin', $data) ? (bool) $data['random_bin'] : 0,
+                    'seller_info_id' => isset($seller_info) ? $seller_info->id : null,
+                    'selling_status_id' => isset($selling_status) ? $selling_status->id : null,
+                    'listing_info_id' => isset($listing_info) ? $listing_info->id : null,
                 ]);
-                EbayItemSellerInfo::create([
-                    'itemId' => $data['details']['ebay_id'],
-                    'sellerUserName' => $data['seller_name'],
-                    'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
-                    'seller_contact_link' => $data['seller_contact_link'],
-                    'seller_store_link' => $data['seller_store_link']
-                ]);
+
                 foreach ($data['specifics'] as $key => $speci) {
                     if (isset($speci['Value'])) {
                         if ($speci['Value'] != "N/A") {
@@ -761,12 +779,7 @@ class EbayController extends Controller {
                     }
                 }
 
-                EbayItemListingInfo::create([
-                    'itemId' => $data['details']['ebay_id'],
-                    'startTime' => '',
-                    'endTime' => $data['auction_end'],
-                    'listingType' => (isset($data['listing_type']) && $data['listing_type'] == true ? 'Auction' : 'Listing'),
-                ]);
+
                 \DB::commit();
 
                 return response()->json(['status' => 200, 'data' => ['message' => 'Added successfully.']], 200);
