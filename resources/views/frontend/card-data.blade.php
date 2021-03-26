@@ -7,7 +7,8 @@
 <meta name="description" content="<?php echo $card_details['title']; ?> SX Value $<?php echo $card_details['sx']; ?> Card Cost Change $<?php echo $card_details['dollar_diff']; ?> <?php echo $card_details['pert_diff']; ?>% Slab Image <?php echo $card_details['cardImage']; ?>">
 
 <meta  data-hid="card-og-site_name" property="og:site_name" content="Slabstox">
-<meta  data-hid="card-og-type" property="og:type" content="website">
+<meta  data-hid="card-og-type" property="og:type" content="article">
+<meta  data-hid="card-og-type" property="fb:app_id" content="2791823984386463">
 
 <meta  data-hid="card-og-title" property="og:title" content="<?php echo $card_details['title']; ?>">
 <meta  data-hid="card-og-image" property="og:image" content="<?php echo $card_details['cardImage']; ?>">
