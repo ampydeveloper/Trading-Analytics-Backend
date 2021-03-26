@@ -44,8 +44,7 @@ class ExcelImports implements ShouldQueue
             }else if($this->type == 'slabs'){
                 Excel::import(new CardsImport, storage_path('app') . '/' . $this->file);
             }
-            $file = Storage::disk('public')->get($this->file);
-            $file->delete();
+            Storage::disk('local')->delete($this->file);
 
         }catch(Exception $e){            
             \Log::error($e);
