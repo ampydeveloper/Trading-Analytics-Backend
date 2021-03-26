@@ -714,8 +714,6 @@ class EbayController extends Controller {
                     $pictureURLLarge = null;
                     $pictureURLSuperSize = null;
                 }
-                $end_date = new \DateTime();
-                $end_date->add(new \DateInterval($data['auction_end']));
                 EbayItems::create([
                     'card_id' => $data['card_id'],
                     'itemId' => $data['details']['ebay_id'],
@@ -732,7 +730,7 @@ class EbayController extends Controller {
                     'condition_id' => isset($data['details']['ConditionID']) ? $data['details']['ConditionID'] : 1,
                     'pictureURLLarge' => $pictureURLLarge,
                     'pictureURLSuperSize' => $pictureURLSuperSize,
-                    'listing_ending_at' => isset($data['auction_end']) ? $end_date->format('Y-m-d H:i:s') : null,
+                    'listing_ending_at' => isset($data['auction_end']) ? $data['auction_end'] : null,
                     'is_random_bin' => array_key_exists('random_bin', $data) ? (bool) $data['random_bin'] : 0
                 ]);
                 EbayItemSellerInfo::create([
@@ -763,15 +761,13 @@ class EbayController extends Controller {
                 EbayItemListingInfo::create([
                     'itemId' => $data['details']['ebay_id'],
                     'startTime' => '',
-                    'endTime' => $end_date->format('Y-m-d H:i:s'),
+                    'endTime' => $data['auction_end'],
                     'listingType' => (isset($data['listing_type']) && $data['listing_type'] == true ? 'Auction' : 'Listing'),
                 ]);
                 \DB::commit();
 
                 return response()->json(['status' => 200, 'data' => ['message' => 'Added successfully.']], 200);
             } else {
-                $end_date = new \DateTime();
-                $end_date->add(new \DateInterval($data['auction_end']));
 
                 EbayItems::where('id', $item['id'])->update([
                     'title' => $data['title'],
@@ -779,7 +775,7 @@ class EbayController extends Controller {
                     'location' => $data['location'],
                     'returnsAccepted' => $data['ReturnPolicy'],
                     'pictureURLLarge' => $data['image'],
-                    'listing_ending_at' => Carbon::create($data['time_left'])->format('Y-m-d h:i:s'),
+                    'listing_ending_at' => $data['auction_end'],
                 ]);
                 EbayItemSellerInfo::where('id', $item['seller_info_id'])->update([
                     'sellerUserName' => $data['seller_name'],
@@ -794,7 +790,7 @@ class EbayController extends Controller {
 //                }
                 EbayItemListingInfo::where('id', $item['listing_info_id'])->update([
                     'startTime' => '',
-                    'endTime' => $end_date->format('Y-m-d H:i:s'),
+                    'endTime' => $data['auction_end'],
                     'listingType' => (isset($data['listing_type']) && $data['listing_type'] == true ? 'Auction' : 'Listing'),
                 ]);
 
