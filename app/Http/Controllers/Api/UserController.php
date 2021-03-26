@@ -5,23 +5,23 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Auth\SocialAccount;
 use App\Models\Auth\User;
+use App\Models\Auth\Role;
 use Exception;
 use Illuminate\Http\Request;
 use Storage;
 use Validator;
 use App\Repositories\Backend\Auth\UserRepository;
 
-class UserController extends Controller
-{
-    public function profileUpdate(Request $request)
-    {
+class UserController extends Controller {
+
+    public function profileUpdate(Request $request) {
         try {
             $validator = Validator::make($request->all(), [
-                'name' => 'required',
-                'email' => 'required',
-                // 'mobile' => 'required',
-                // 'dob' => 'required',
-                // 'address' => 'required',
+                        'name' => 'required',
+                        'email' => 'required',
+                            // 'mobile' => 'required',
+                            // 'dob' => 'required',
+                            // 'address' => 'required',
             ]);
             if ($validator->fails()) {
                 return response()->json($validator->errors(), 500);
@@ -48,13 +48,11 @@ class UserController extends Controller
         }
     }
 
-
-    public function notificationSettingsUpdate(Request $request)
-    {
+    public function notificationSettingsUpdate(Request $request) {
         try {
             $validator = Validator::make($request->all(), [
-                'slabNotification' => 'required',
-                'myListingNotification' => 'required',
+                        'slabNotification' => 'required',
+                        'myListingNotification' => 'required',
             ]);
             if ($validator->fails()) {
                 return response()->json($validator->errors(), 500);
@@ -76,8 +74,7 @@ class UserController extends Controller
         }
     }
 
-    public function getSocialAccounts(Request $request)
-    {
+    public function getSocialAccounts(Request $request) {
         try {
             $user_id = auth()->user()->id;
             $google = SocialAccount::where('user_id', $user_id)->where('provider', 'google')->select('id')->first();
@@ -88,15 +85,13 @@ class UserController extends Controller
         }
     }
 
-    public function addSocialAccounts(Request $data, $provider)
-    {
+    public function addSocialAccounts(Request $data, $provider) {
         $validator = Validator::make($data->all(), [
-            'email' => 'required|string|email',
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
-            'id' => 'required|string',
-            'avatar' => 'required|string',
-
+                    'email' => 'required|string|email',
+                    'first_name' => 'required|string',
+                    'last_name' => 'required|string',
+                    'id' => 'required|string',
+                    'avatar' => 'required|string',
         ]);
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
@@ -131,12 +126,11 @@ class UserController extends Controller
         }
     }
 
-    public function removeSocialAccounts(Request $request)
-    {
+    public function removeSocialAccounts(Request $request) {
         $validator = Validator::make($request->all(), [
-            'id' => 'required',
-            'password' => 'required|string',
-            'provider' => 'required|string',
+                    'id' => 'required',
+                    'password' => 'required|string',
+                    'provider' => 'required|string',
         ]);
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
@@ -148,16 +142,15 @@ class UserController extends Controller
                 throw new Exception('Unable to update password');
             }
             SocialAccount::where('id', $request->input('id'))->delete();
-            return response()->json(['status' => 200, 'message' => 'Disconnected successfully'], 200);
+            return response()->json(['status' => 200, 'message' => 'Disconnected successfully.'], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
     }
 
-    public function updateProfileImage(Request $request)
-    {
+    public function updateProfileImage(Request $request) {
         $validator = Validator::make($request->all(), [
-            'image' => 'required',
+                    'image' => 'required',
         ]);
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
@@ -173,7 +166,7 @@ class UserController extends Controller
                 if (!$a) {
                     throw new Exception('Unable to upload image');
                 }
-                User::where('id', $user_id)->update(['avatar_type'=>'storage','avatar_location' => $name]);
+                User::where('id', $user_id)->update(['avatar_type' => 'storage', 'avatar_location' => $name]);
                 return response()->json(['status' => 200, 'message' => 'Image Updated'], 200);
             }
         } catch (\Exception $e) {
@@ -181,12 +174,11 @@ class UserController extends Controller
         }
     }
 
-    public function generateImageUsingBase(Request $request)
-    {
+    public function generateImageUsingBase(Request $request) {
 //        dump($request->all());
         $validator = Validator::make($request->all(), [
-            'image' => 'required',
-            'prefix' => 'required',
+                    'image' => 'required',
+                    'prefix' => 'required',
         ]);
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
@@ -198,7 +190,7 @@ class UserController extends Controller
                 $data = base64_decode($data);
                 $user_id = rand(4, 7);
 //                dump($user_id);
-                $name = 'dash/'.$request->prefix . $user_id . '.png';
+                $name = 'dash/' . $request->prefix . $user_id . '.png';
 //                dd($name);
                 $a = Storage::disk('local')->put('public/' . $name, $data);
                 if (!$a) {
@@ -212,81 +204,139 @@ class UserController extends Controller
         }
     }
 
-    public function getAllUsersForAdmin(Request $request){
+    public function getAllUsersForAdmin(Request $request) {
         if (!auth()->user()->isAdmin()) {
             return response()->json(['error' => 'Unauthorised'], 301);
         }
-        try{
+        try {
             $page = $request->input('page', 1);
             $take = $request->input('take', 30);
             $search = $request->input('search', null);
             $skip = $take * $page;
             $skip = $skip - $take;
 
-            return response()->json(['status' => 200, 'data' => User::with('roles', 'permissions', 'providers')->withTrashed()->skip($skip)->take($take)->get(), 'next' => ($page)], 200);
+            $users = User::where(function ($q) use ($request) {
+                        if ($request->has('search') && $request->get('search') != '' && $request->get('search') != null) {
+                            $searchTerm = strtolower($request->get('search'));
+                            $q->orWhere('first_name', 'like', '%' . $searchTerm . '%');
+                            $q->orWhere('last_name', 'like', '%' . $searchTerm . '%');
+                            $q->orWhere('email', 'like', '%' . $searchTerm . '%');
+                            $q->orWhere('id', 'like', '%' . $searchTerm . '%');
+                        }
+                    })->with('roles', 'permissions', 'providers')->withTrashed()->skip($skip)->take($take)->get();
+
+//            $users = User::with('roles', 'permissions', 'providers')->withTrashed()->skip($skip)->take($take)->get();
+            return response()->json(['status' => 200, 'data' => $users, 'next' => ($page)], 200);
         } catch (\Exception $e) {
             return response()->json(['status' => 500, 'error' => $e->getMessage()], 500);
         }
     }
 
-    public function saveUserForAdmin(Request $request){
+    public function saveUserForAdmin(Request $request) {
         if (!auth()->user()->isAdmin()) {
             return response()->json(['error' => 'Unauthorised'], 301);
         }
         $validator = Validator::make($request->all(), [
-            'id' => 'required|exists:users,id',
-            'first_name' => 'required|string',
-            'last_name' => 'nullable|string',
-            'email' => 'required|email|unique:users,email,'.$request->get('id'),
-            'mobile' => 'nullable|numeric',
-            'dob' => 'nullable',
-            'address' => 'nullable|string'
+                    'id' => 'required|exists:users,id',
+                    'first_name' => 'required|string',
+                    'last_name' => 'nullable|string',
+                    'email' => 'required|email|unique:users,email,' . $request->get('id'),
+                    'mobile' => 'nullable|numeric',
+                    'dob' => 'nullable',
+                    'address' => 'nullable|string'
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->messages(), 201);
         }
-        try{
-            User::whereId($request->get('id'))->update($request->only('first_name', 'last_name', 'email', 'mobile', 'dob', 'address'));
-            return response()->json(['status' => 200, 'data' => ['message' => 'User saved']], 200);
+        try {
+//           User::whereId($request->get('id'))->update($request->only('first_name', 'last_name', 'email', 'mobile', 'dob', 'address'));
+//            Role::where('model_id', $request->get('id'))->update(['role_id'=>$request->get('user_roles')]);
+//           $user = User::whereId($request->input('id'))->get();
+//            $user->roles()->attach($request->input('user_roles'));
+//            return response()->json(['status' => 200, 'data' => ['message' => $user]], 200);
+
+            $user = User::where('id', $request->input('id'))->first();
+            $data = [
+                'first_name' => $request->input('first_name'),
+                'last_name' => $request->input('last_name'),
+                'email' => $request->input('email'),
+                'mobile' => $request->input('mobile', ''),
+                'dob' => $request->input('dob', ''),
+                'address' => $request->input('address', ''),
+            ];
+            $user->update($data);
+
+//            return response()->json(['status' => 200, 'data' => ['message' => $user]], 200);
+            return response()->json(['status' => 200, 'data' => ['message' => 'User saved successfully.']], 200);
         } catch (\Exception $e) {
             return response()->json(['status' => 500, 'error' => $e->getMessage()], 500);
         }
     }
 
-    public function updateUserAttributeForAdmin(User $user, $action){
+    public function updateUserAttributeForAdmin(User $user, $action) {
         if (!auth()->user()->isAdmin()) {
             return response()->json(['error' => 'Unauthorised'], 301);
         }
-        try{
-            if($action == 'active'){
-                if($user->isActive()){
+        try {
+            if ($action == 'active') {
+                if ($user->isActive()) {
                     $user->update(['active' => 0]);
-                }else{
+                } else {
                     $user->update(['active' => 1]);
                 }
-            }elseif($action == 'delete'){
+            } elseif ($action == 'delete') {
                 if ($user->trashed()) {
                     $user->restore();
                 } else {
                     $user->delete();
                 }
             }
-            return response()->json(['status' => 200, 'data' => ['message' => 'User status updated']], 200);
+            return response()->json(['status' => 200, 'data' => ['message' => 'User status updated.']], 200);
         } catch (\Exception $e) {
             return response()->json(['status' => 500, 'error' => $e->getMessage()], 500);
         }
     }
 
-    public function changeUSerPasswordForAdmin(User $user, Request $request){
+    public function changeUSerPasswordForAdmin(User $user, Request $request) {
         if (!auth()->user()->isAdmin()) {
             return response()->json(['error' => 'Unauthorised'], 301);
         }
-        try{
+        try {
             $user->update(['password' => $request->get('password')]);
-            return response()->json(['status' => 200, 'data' => ['message' => 'User password updated']], 200);
+            return response()->json(['status' => 200, 'data' => ['message' => 'User password updated.']], 200);
         } catch (\Exception $e) {
             return response()->json(['status' => 500, 'error' => $e->getMessage()], 500);
         }
     }
+
+    public function createUser(Request $request) {
+        try {
+            $validator = Validator::make($request->all(), [
+                        'first_name' => 'required|string',
+                        'last_name' => 'nullable|string',
+                        'email' => 'required|email|unique:users',
+                        'mobile' => 'nullable|numeric',
+                        'dob' => 'nullable',
+                        'address' => 'nullable|string'
+            ]);
+            if ($validator->fails()) {
+                return response()->json($validator->errors(), 500);
+            }
+
+            User::create([
+                'first_name' => $request->input('first_name'),
+                'last_name' => $request->input('last_name'),
+                'email' => $request->input('email'),
+                'password' => $request->input('password'),
+                'mobile' => $request->input('mobile', ''),
+                'dob' => $request->input('dob', ''),
+                'address' => $request->input('address', ''),
+            ]);
+            return response()->json(['status' => 200, 'data' => 'User created successfully.'], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+
 }

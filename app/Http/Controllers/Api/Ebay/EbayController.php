@@ -337,7 +337,7 @@ class EbayController extends Controller {
 
             if ($searchCard != null) {
                 $cards = Card::where('id', $searchCard)->with('details')->get();
-                UserSearch::create(['card_id' => $searchCard, 'user_id'=>auth()->user()->id]);
+                UserSearch::create(['card_id' => $searchCard, 'user_id' => auth()->user()->id]);
             } else {
                 $cards = Card::whereIn('id', $items['cards'])->with('details')->get();
             }
@@ -1336,13 +1336,13 @@ class EbayController extends Controller {
     public function addSeeProblem(Request $request) {
         try {
             $user_id = auth()->user()->id;
-//            $validator = Validator::make($request->all(), [
-//                        'id' => 'required',
-//                        'message' => 'required',
-//            ]);
-//            if ($validator->fails()) {
-//                return response()->json($validator, 500);
-//            }
+            $validator = Validator::make($request->all(), [
+                        'id' => 'required',
+                        'message' => 'required',
+            ]);
+            if ($validator->fails()) {
+                return response()->json($validator, 500);
+            }
             SeeProblem::create(['user_id' => $user_id, 'ebay_item_id' => $request->input('id'), 'message' => $request->input('message')]);
             return response()->json(['status' => 200, 'data' => ['message' => 'Added successfully.']], 200);
         } catch (\Exception $e) {
@@ -1359,8 +1359,21 @@ class EbayController extends Controller {
         try {
             $sp = SeeProblem::with(['user', 'ebay'])->orderBy('updated_at', 'desc')->get();
             $sp = $sp->skip($skip)->take($take);
+            $next = 0;
+            if ($sp->count() >0) {
+                $next = ($page + 1);
+            }
+            return response()->json(['status' => 200, 'data' => $sp, 'next' => $next], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
 
-            return response()->json(['status' => 200, 'data' => $sp, 'next' => ($page + 1)], 200);
+    public function seeProblemReject($id) {
+        try {
+            EbayItems::where('id', $id)->update(['status' => 0]);
+            SeeProblem::where(['ebay_item_id' => $id])->delete();
+            return response()->json(['status' => 200, 'message' => 'Listing status updated.'], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
