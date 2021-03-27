@@ -36,7 +36,6 @@ class CardsImport implements ToCollection, WithStartRow
                     && ($row[1]!=null || !empty($row[1]))
                     && ($row[2]!=null || !empty($row[2]))
                     && ($row[3]!=null || !empty($row[3]))
-                            && ($row[4]!=null || !empty($row[4]))
                                     && ($row[5]!=null || !empty($row[5]))
                                             && ($row[7]!=null || !empty($row[7]))
                     ){
