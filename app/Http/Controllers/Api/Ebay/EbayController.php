@@ -335,7 +335,17 @@ class EbayController extends Controller {
             } else {
                 $items = $this->_basicSearch($request);
             }
-
+$search = $request->input('search');
+$cardsId = null;
+            if ($search != null) {
+            $cardsId = Card::where(function($q) use ($search) {
+                        $search = explode(' ', $search);
+                        foreach ($search as $key => $keyword) {
+                            $q->orWhere('title', 'like', '%' . $keyword . '%');
+                        }
+                    })->pluck('id');
+        }
+        
             if ($searchCard != null) {
                 $cards = Card::where('id', $searchCard)->with('details')->get();
                 UserSearch::create(['card_id' => $searchCard, 'user_id' => auth()->user()->id]);
@@ -357,7 +367,7 @@ class EbayController extends Controller {
                 }
             }
 
-            return response()->json(['status' => 200, 'items' => $items, 'cards' => $cards], 200);
+            return response()->json(['status' => 200, 'items' => $items, 'cards' => $cards, 'cardsId'=>$search], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage() . ' - ' . $e->getLine(), 500);
         }

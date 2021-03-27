@@ -49,11 +49,7 @@ class Card extends Model
 
     public function getCardImageAttribute()
     {
-        $card_url = $this->getImageFileName($this->row_id, $this->sport);
-        if($card_url){
-            return url($card_url);
-        }
-        else if($this->image != null){
+         if($this->image != null){
             return url("storage/" . $this->image);
 //            return url("storage/".strtolower($this->sport). '/' . $this->image);
         }
