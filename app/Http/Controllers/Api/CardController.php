@@ -999,13 +999,9 @@ class CardController extends Controller {
             $cmpSfx = 'years';
         }
 
-        if ((count($data['labels']) < (int) $cmp) || $cmpSfx == 'years') {
-            // $lb_map = [];
-            // for ($i = 0; $i < count($data['labels']); $i++) {
-            //     $lb_map[$data['labels'][$i]] = $data['values'][$i];
-            // }
-
-            $last_date = Carbon::parse($data['labels'][0]);
+        $last_date = Carbon::parse($data['labels'][0]);
+        if ((count($data['labels']) < (int) $cmp) || $cmpSfx == 'years' || $last_date > Carbon::now()) {
+            $last_date = Carbon::now();
             if ($cmpSfx == 'days') {
                 $start_date = $last_date->copy()->subDays($cmp);
             } else if ($cmpSfx == 'months') {
@@ -1013,7 +1009,8 @@ class CardController extends Controller {
             } else if ($cmpSfx == 'years') {
                 $start_date = $last_date->copy()->subYears($cmp);
             }
-            $lblSfx = explode(' ', $data['labels'][0])[1];
+            $lblSfx = explode(' ', $data['labels'][0]);
+            if(count($lblSfx) > 1){ $lblSfx = $lblSfx[1]; }else{ $lblSfx = ''; }
             $period = \Carbon\CarbonPeriod::create($start_date, '1 ' . $cmpSfx, $last_date);
             $map_val = []; $map_qty = [];
             foreach ($period as $dt) {
@@ -1054,7 +1051,12 @@ class CardController extends Controller {
         if ($years != null) {
             $max = $years;
             foreach ($data['labels'] as $ind => $dt) {
-                $dt = explode('-', $dt)[0];
+                $dt = explode('-', $dt);
+                if (count($dt) > 1) {
+                    $dt = sprintf('%s-%s', $dt[0], $dt[1]);
+                } else {
+                    $dt = $dt[0];
+                }
                 if (!in_array($dt, array_keys($grouped))) {
                     $grouped[$dt] = 0;
                 }
