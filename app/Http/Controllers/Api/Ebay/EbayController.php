@@ -626,8 +626,8 @@ class EbayController extends Controller {
         $filterBy = $request->input('filterBy', null);
         $skip = $take * $page;
         $skip = $skip - $take;
-        $cardsId = null;
-        if ($search != null && $search != '') {
+       $cardsId = null;
+        if ($search != null) {
             $cardsId = Card::where(function($q) use ($search) {
                         $search = explode(' ', $search);
                         foreach ($search as $key => $keyword) {

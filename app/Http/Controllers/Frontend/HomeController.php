@@ -33,11 +33,17 @@ class HomeController extends Controller {
         $card_details = Card::where('id', $card_id)->with('details')->firstOrFail()->toArray();
 
         $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-        $card_details['sx'] = number_format((float) $sx, 2, '.', '');
-        $lastSx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-        $lastSx = count($lastSx);
-        $card_details['dollar_diff'] = number_format($sx - $lastSx, 2, '.', '');
-        $card_details['pert_diff'] = number_format($lastSx / $sx * 100, 2, '.', '');
+        if (!empty($sx)) {
+            $card_details['sx'] = number_format((float) $sx, 2, '.', '');
+            $lastSx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+            $lastSx = count($lastSx);
+            $card_details['dollar_diff'] = number_format($sx - $lastSx, 2, '.', '');
+            $card_details['pert_diff'] = number_format($lastSx / $sx * 100, 2, '.', '');
+        } else {
+            $card_details['sx'] = 0;
+            $card_details['dollar_diff'] = 0;
+            $card_details['pert_diff'] = 0;
+        }
 
         return view('frontend.card-data', compact('card_details'));
     }
@@ -68,29 +74,25 @@ class HomeController extends Controller {
         $all_cards = json_decode($board->cards);
         $total_card_value = 0;
         foreach ($all_cards as $key => $card) {
-//                $each_cards[$key]['card_data'] = Card::where('id', (int) $card)->with('details')->first();
             $sx = CardSales::where('card_id', $card)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
             $total_card_value = $total_card_value + $sx;
-//                $lastSx = CardSales::where('card_id', $card)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-//                $count = count($lastSx);
-//                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-//                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-//                $each_cards[$key]['card_data']['sx_value'] = number_format((float) $sx, 2, '.', '');
-//                $each_cards[$key]['card_data']['sx_icon'] = $sx_icon;
         }
 
         $sx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-        $lastSx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
-        $count = count($lastSx);
-        $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-        if ($sx != 0) {
-            $finalData['pert_diff'] = number_format((float) $lastSx / $sx * 100, 2, '.', '');
+        if (!empty($sx)) {
+            $lastSx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
+            $count = count($lastSx);
+            $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+            if ($sx != 0) {
+                $finalData['pert_diff'] = number_format((float) $lastSx / $sx * 100, 2, '.', '');
+            }
+            $finalData['sx_value'] = number_format((float) $sx, 2, '.', '');
+            $finalData['total_card_value'] = number_format((float) $total_card_value, 2, '.', '');
         } else {
             $finalData['pert_diff'] = 0;
+            $finalData['sx_value'] = 0;
+            $finalData['total_card_value'] = 0;
         }
-        $finalData['sx_value'] = number_format((float) $sx, 2, '.', '');
-        $finalData['total_card_value'] = number_format((float) $total_card_value, 2, '.', '');
-
         return view('frontend.stoxticker-details-data', compact('finalData'));
     }
 

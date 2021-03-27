@@ -59,11 +59,11 @@ class ListingsImport implements ToCollection, WithStartRow
                     $data = (array) json_decode($scrap_response);
                 
                     $cat = array(
-                        'Football'=>'1',
-                        'Baseball'=>'2',
-                        'Basketball'=>'3',
-                        'Soccer'=>'4',
-                        'Pokemon'=>'10',
+                        'football'=>'1',
+                        'baseball'=>'2',
+                        'basketball'=>'3',
+                        'soccer'=>'4',
+                        'pokemon'=>'10',
                     );
                     $cat_id = $cat[$row[4]];
                 

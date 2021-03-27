@@ -1294,19 +1294,19 @@ class CardController extends Controller {
                     $res = $zip->open(public_path("storage/" . $filename));
                     if ($res === TRUE) {
                         if ($request->input('for') == 'baseball') {
-                            $zip->extractTo(public_path("storage/baseball"));
+                            $zip->extractTo(public_path("storage/Baseball"));
                             $zip->close();
                         } else if ($request->input('for') == 'basketball') {
-                            $zip->extractTo(public_path("storage/basketball"));
+                            $zip->extractTo(public_path("storage/Basketball"));
                             $zip->close();
                         } else if ($request->input('for') == 'football') {
-                            $zip->extractTo(public_path("storage/football"));
+                            $zip->extractTo(public_path("storage/Football"));
                             $zip->close();
                         } else if ($request->input('for') == 'soccer') {
-                            $zip->extractTo(public_path("storage/soccer"));
+                            $zip->extractTo(public_path("storage/Soccer"));
                             $zip->close();
                         } else if ($request->input('for') == 'pokemon') {
-                            $zip->extractTo(public_path("storage/pokemon"));
+                            $zip->extractTo(public_path("storage/Pokemon"));
                             $zip->close();
                         }
                         // return response()->json(['message' => $filename], 200);
