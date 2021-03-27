@@ -39,7 +39,6 @@ class CardsImport implements ToCollection, WithStartRow
                             && ($row[4]!=null || !empty($row[4]))
                                     && ($row[5]!=null || !empty($row[5]))
                                             && ($row[7]!=null || !empty($row[7]))
-                                            && ($row[6]!=null || !empty($row[6]))
                     ){
             $card = Card::create([
                         'row_id' => ++$this->row,
