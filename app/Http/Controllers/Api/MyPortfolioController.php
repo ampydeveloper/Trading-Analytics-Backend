@@ -290,7 +290,9 @@ class MyPortfolioController extends Controller {
 
             $purchaseVal = MyPortfolio::where("user_id", $this->user_id)->selectRaw('sum(purchase_price) as total_purchases')->pluck('total_purchases');
             $myPortfolioValues = PortfolioUserValues::where('user_id', $this->user_id)->orderBy('date', 'DESC')->limit(2)->get();
+            if(!empty($myPortfolioValues)){
             $updated = $myPortfolioValues[0]->updated_at;
+            }
 
             //Calculate SX value
             $card_ids = WatchList::where('user_id', $this->user_id)->pluck('card_id');
@@ -302,14 +304,19 @@ class MyPortfolioController extends Controller {
 
             $total_purchases = (isset($purchaseVal[0]) ? $purchaseVal[0] : 0);
             $diff = ((float) $total_sx_value) - ((float) $total_purchases);
-            $diff_icon = (($diff < 0) ? 'down' : 'up');
-            $percent_diff = (100 * ($diff / ((((float) $total_sx_value) + ((float) $total_purchases)) / 2)));
+            $diff_icon = (($diff < 0) ? 'up' : 'down');
+            $sx_pur = ((float) $total_sx_value) + ((float) $total_purchases);
+            if($sx_pur>0){
+            $percent_diff = (100 * ($diff / ($sx_pur / 2)));
+            }else{
+                $percent_diff = 0;
+            }
             $diff = abs($diff);
             $diff = number_format($diff, 2, '.', '');
-            $percent_diff_icon = (($percent_diff < 0) ? 'down' : 'up');
+            $percent_diff_icon = (($percent_diff < 0) ? 'up' : 'down');
+//            $percent_diff_icon = (($percent_diff < 0) ? 'down' : 'up');
             $percent_diff = abs($percent_diff);
             $percent_diff = number_format($percent_diff, 2, '.', '');
-
 
             return response()->json([
                         'status' => 200,

@@ -393,7 +393,7 @@ class CardController extends Controller {
 
     public function getPopularPickCards(Request $request) {
         try {
-            $data = Card::with(['details'])->orderBy('views', 'desc')->orderBy('created_at', 'desc')->get()->take($request->input('take', 10));
+            $data = Card::with(['details'])->orderBy('views', 'desc')->orderBy('created_at', 'desc')->take($request->input('take', 10))->get();
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage() . ' ' . $e->getLine(), 500);
@@ -998,8 +998,9 @@ class CardController extends Controller {
             $cmp = $years;
             $cmpSfx = 'years';
         }
-
+if(isset($data['labels']) && isset($data['labels'][0])){
         $last_date = Carbon::parse($data['labels'][0]);
+}
         if ((count($data['labels']) < (int) $cmp) || $cmpSfx == 'years' || $last_date > Carbon::now()) {
             $last_date = Carbon::now();
             if ($cmpSfx == 'days') {
@@ -1009,6 +1010,7 @@ class CardController extends Controller {
             } else if ($cmpSfx == 'years') {
                 $start_date = $last_date->copy()->subYears($cmp);
             }
+            if(isset($data['labels']) && isset($data['labels'][0])){
             $lblSfx = explode(' ', $data['labels'][0]);
             if(count($lblSfx) > 1){ $lblSfx = $lblSfx[1]; }else{ $lblSfx = ''; }
             $period = \Carbon\CarbonPeriod::create($start_date, '1 ' . $cmpSfx, $last_date);
@@ -1029,6 +1031,7 @@ class CardController extends Controller {
             $data['labels'] = array_keys($map_val);
             $data['values'] = array_values($map_val);
             $data['qty'] = array_values($map_qty);
+            }
         }
 
         $grouped = [];
