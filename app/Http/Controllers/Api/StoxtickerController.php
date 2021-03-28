@@ -108,15 +108,21 @@ class StoxtickerController extends Controller {
 
     public function allBoards($days) {
         try {
-            $b_ids = BoardFollow::where('user_id', auth()->user()->id)->pluck('board_id');
-            $all_boards = Board::where('user_id', auth()->user()->id)->get();
+//            $user_id = 15;
+            $user_id = auth()->user()->id;
+            $all_boards = Board::where('user_id', $user_id)->get();
+//            dd('ewrr');
+            $b_ids = BoardFollow::where('user_id', $user_id)->pluck('board_id');
+            if(!empty($b_ids)){
             $board_follow = Board::whereIn('id', $b_ids)->get();
             $boards = $all_boards->merge($board_follow);
+            }
+            
             foreach ($boards as $key => $board) {
                 $all_cards = json_decode($board->cards);
                 $boards[$key]['board_details'] = Card::whereIn('id', $all_cards)->with('details')->get();
                 $boards[$key]['sale_details'] = CardSales::whereIn('card_id', $all_cards)->get();
-//                $boards[$key]['sales_graph'] = $this->__cardData($all_cards, $days);
+                $boards[$key]['sales_graph'] = $this->__cardData($all_cards, $days);
                 $total_card_value = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 if (!empty($total_card_value)) {
                     $boards[$key]['total_card_value'] = $total_card_value;
@@ -283,8 +289,9 @@ class StoxtickerController extends Controller {
             $cmp = $years;
             $cmpSfx = 'years';
         }
-
+if(isset($data['labels']) && isset($data['labels'][0])){
         $last_date = Carbon::parse($data['labels'][0]);
+}
         if ((count($data['labels']) < (int) $cmp) || $cmpSfx == 'years' || $last_date > Carbon::now()) {
             // $last_date = Carbon::parse($data['labels'][0]);
             $last_date = Carbon::now();
@@ -295,6 +302,7 @@ class StoxtickerController extends Controller {
             } else if ($cmpSfx == 'years') {
                 $start_date = $last_date->copy()->subYears($cmp);
             }
+            if(isset($data['labels']) && isset($data['labels'][0])){
             $lblSfx = explode(' ', $data['labels'][0]);
             if(count($lblSfx) > 1){ $lblSfx = $lblSfx[1]; }else{ $lblSfx = ''; }
             $period = \Carbon\CarbonPeriod::create($start_date, '1 ' . $cmpSfx, $last_date);
@@ -316,6 +324,7 @@ class StoxtickerController extends Controller {
             $data['labels'] = array_keys($map_val);
             $data['values'] = array_values($map_val);
             $data['qty'] = array_values($map_qty);
+            }
         }
 
         $grouped = [];

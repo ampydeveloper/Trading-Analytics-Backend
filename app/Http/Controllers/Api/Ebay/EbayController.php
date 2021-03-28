@@ -326,7 +326,6 @@ class EbayController extends Controller {
     }
 
     public function getItemsList(Request $request) {
-//        dd('in');
         try {
             $filter = $request->input('filter', null);
             $searchCard = $request->input('searchCard', null);
@@ -335,25 +334,14 @@ class EbayController extends Controller {
             } else {
                 $items = $this->_basicSearch($request);
             }
-$search = $request->input('search');
-$cardsId = null;
-            if ($search != null) {
-            $cardsId = Card::where(function($q) use ($search) {
-                        $search = explode(' ', $search);
-                        foreach ($search as $key => $keyword) {
-                            $q->orWhere('title', 'like', '%' . $keyword . '%');
-                        }
-                    })->pluck('id');
-        }
-        
-            if ($searchCard != null) {
+
+            if ($searchCard != null && $searchCard != "null") {
                 $cards = Card::where('id', $searchCard)->with('details')->get();
                 UserSearch::create(['card_id' => $searchCard, 'user_id' => auth()->user()->id]);
             } else {
-                $cards = Card::whereIn('id', $items['cards'])->with('details')->get();
+                $cards = Card::whereIn('id', $items['card_ids'])->with('details')->limit(18)->get();
             }
             foreach ($cards as $ind => $card) {
-
                 $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
@@ -367,7 +355,7 @@ $cardsId = null;
                 }
             }
 
-            return response()->json(['status' => 200, 'items' => $items, 'cards' => $cards, 'cardsId'=>$search], 200);
+            return response()->json(['status' => 200, 'items' => $items, 'cards' => $cards], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage() . ' - ' . $e->getLine(), 500);
         }
@@ -672,6 +660,7 @@ $cardsId = null;
                 return $query->sellingStatus->currentPrice;
             });
         }
+        
         $items = $items->skip($skip)->take($take)->map(function($item, $key) use(&$cardsIds) {
             $cardsIds[] = $item->card_id;
             $galleryURL = $item->galleryURL;
@@ -695,7 +684,8 @@ $cardsId = null;
                 'data' => $item,
             ];
         });
-        return ['data' => $items, 'next' => ($page + 1), 'cards' => $cardsIds];
+        
+        return ['data' => $items, 'next' => ($page + 1), 'cards' => $cardsIds, 'card_ids' => $cardsId];
     }
 
     public function createEbayItemForAdmin(Request $request) {

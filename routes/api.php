@@ -131,7 +131,13 @@ Route::group([
     Route::post('requested-slab-action-for-admin', 'CardController@markRequestedSlabForAdmin');
     Route::post('requested-slab-action-reject', 'CardController@requestedSlabReject');
     Route::get('get-single-requested-slab/{card_id}', 'CardController@getSingleRequestedSlab');
-    
+});
+Route::group([
+    // Prefixed with /auth
+    'namespace' => 'Api',
+    'prefix' => 'card',
+        ], function () {
+    Route::post('get-card-list-using-card-id/{id}', 'Ebay\EbayController@getItemsListForCard');
 });
 
 Route::group([
@@ -243,6 +249,7 @@ Route::group([
     Route::post('slab-search', 'StoxtickerController@slabSearch');
     Route::post('search-board', 'StoxtickerController@searchBoard');
     Route::get('single-graph-board/{days}/{board}', 'StoxtickerController@singleBoards');
+//    Route::get('all-boards/{days}', 'StoxtickerController@allBoards');
     Route::get('sold-listings', 'StoxtickerController@getSoldListings');
 });
 Route::group([
