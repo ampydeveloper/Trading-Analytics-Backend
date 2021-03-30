@@ -90,6 +90,7 @@ Route::group([
     Route::post('get-ebay-specific-list', 'Ebay\EbayController@getSpecificListForAdmin');
     Route::post('change-ebay-status', 'Ebay\EbayController@changeEbayStatusAdmin');
     Route::post('change-card-status', 'Ebay\EbayController@changeCardStatusAdmin');
+     Route::post('change-sales-status', 'Ebay\EbayController@changeSalesStatusAdmin');
     Route::post('save-sold-price', 'Ebay\EbayController@saveSoldPriceAdmin');
     Route::post('generate-image', 'UserController@generateImageUsingBase');
     Route::post('generate-graph-image', 'UserController@generateImageUsingBase');
@@ -177,6 +178,15 @@ Route::group([
     // Prefixed with /auth
     'namespace' => 'Api',
     'prefix' => 'search',
+         'middleware' => 'jwt.verify'
+        ], function () {
+    Route::post('get-card-list-user', 'Ebay\EbayController@getItemsListForUser');
+    
+        });
+Route::group([
+    // Prefixed with /auth
+    'namespace' => 'Api',
+    'prefix' => 'search',
         // 'middleware' => 'jwt.verify'
         ], function () {
 //    Route::post('get-card-list', 'Ebay\EbayController@getItemsList');
@@ -185,7 +195,7 @@ Route::group([
     Route::post('head-to-head', 'Ebay\EbayController@getItemsList');
 //    Route::post('recent-listing', 'Ebay\EbayController@getRecentList');
 //    Route::post('ending-soon-listing', 'Ebay\EbayController@getEndingSoonList');
-    Route::post('sample-my-listing', 'Ebay\EbayController@sampleMyListing');
+//    Route::post('sample-my-listing', 'Ebay\EbayController@sampleMyListing');
 //    Route::post('ended-listing', 'Ebay\EbayController@getEndedList');
 //    Route::post('featured-listing', 'CardController@getFeaturedList');
 //    Route::post('slab-listing', 'CardController@getRecentList');

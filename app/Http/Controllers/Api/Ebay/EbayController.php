@@ -311,7 +311,13 @@ class EbayController extends Controller {
         } else {
             Card::where('id', $idArr)->delete();
         }
-        return response()->json(['status' => 200, 'message' => 'Status Changed successfully'], 200);
+        return response()->json(['status' => 200, 'message' => 'Status changed successfully'], 200);
+    }
+    
+    public function changeSalesStatusAdmin(Request $request) {
+        $idArr = $request->input('id');
+            CardSales::where('id', $idArr)->delete();
+        return response()->json(['status' => 200, 'message' => 'Sales deleted successfully'], 200);
     }
 
     public function saveSoldPriceAdmin(Request $request) {
@@ -337,9 +343,46 @@ class EbayController extends Controller {
 
             if ($searchCard != null && $searchCard != "null") {
                 $cards = Card::where('id', $searchCard)->with('details')->get();
+                UserSearch::create(['card_id' => $searchCard]);
+            } else {
+                $cards = Card::whereIn('id', $items['card_ids'])->with('details')->limit(18)->get();
+                       UserSearch::create(['search' => $request->input('search')]);
+            }
+            foreach ($cards as $ind => $card) {
+                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+                $count = count($lastSx);
+                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                $data['sx_value'] = number_format((float) $sx, 2, '.', '');
+                $data['sx_icon'] = $sx_icon;
+                $cards[$ind]['price'] = 0;
+                if (isset($card->details->currentPrice)) {
+                    $cards[$ind]['price'] = $card->details->currentPrice;
+                }
+            }
+
+            return response()->json(['status' => 200, 'items' => $items, 'cards' => $cards], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage() . ' - ' . $e->getLine(), 500);
+        }
+    }
+    public function getItemsListForUser(Request $request) {
+        try {
+            $filter = $request->input('filter', null);
+            $searchCard = $request->input('searchCard', null);
+            if ($filter != null && $this->checkForAdvanceSearch($filter)) {
+                $items = $this->_advanceSearch($request);
+            } else {
+                $items = $this->_basicSearch($request);
+            }
+
+            if ($searchCard != null && $searchCard != "null") {
+                $cards = Card::where('id', $searchCard)->with('details')->get();
                 UserSearch::create(['card_id' => $searchCard, 'user_id' => auth()->user()->id]);
             } else {
                 $cards = Card::whereIn('id', $items['card_ids'])->with('details')->limit(18)->get();
+                UserSearch::create(['search' => $request->input('search'), 'user_id' => auth()->user()->id]);
             }
             foreach ($cards as $ind => $card) {
                 $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
@@ -1027,6 +1070,15 @@ class EbayController extends Controller {
 
     public function getAdanceSearchData(Request $request) {
         try {
+            $last_entry = AdvanceSearchOptions::latest()->first();
+            $previous_date = date('Y-m-d H:i:s', strtotime('-30 days'));
+            if(!empty($last_entry) && $last_entry['updated_at'] > $previous_date){  
+                $this->updateAdanceSearchOptions();
+            }
+            if(empty($last_entry)){  
+                $this->updateAdanceSearchOptions();
+            }           
+           
             $advanceSearchData = [
                 'sports' => [],
                 'year' => [],

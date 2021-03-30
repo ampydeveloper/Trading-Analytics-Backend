@@ -82,22 +82,20 @@ class CardController extends Controller {
         $search = $request->input('search', null);
         $skip = $take * $page;
         $skip = $skip - $take;
-        try {
 
+        try {
             $cards = Card::where(function ($q) use ($request) {
                         if ($request->has('sport') && $request->input('sport') != null) {
                             $q->where('sport', $request->input('sport'));
                         }
                         if ($request->has('search') && $request->get('search') != '' && $request->get('search') != null) {
-                            $searchTerm = strtolower($request->get('search'));
-                            foreach (['player', 'year', 'brand', 'card', 'rc', 'variation', 'grade'] as $fl) {
-                                $q->orWhere($fl, 'like', '%' . $searchTerm . '%');
+                            $keyword_list = explode(' ', $request->input('search'));
+                            foreach ($keyword_list as $kw) {
+                                $q->where('title', 'like', "%$kw%");
                             }
                             $q->orWhere('id', $request->get('search'));
                         }
-                    })->get();
-            $cards = $cards->skip($skip)->take($take);
-//            die('sd');
+                    })->distinct('player')->skip($skip)->take($take)->get();
             $data = [];
             foreach ($cards as $card) {
                 $data[] = [
@@ -190,14 +188,14 @@ class CardController extends Controller {
         try {
             $rank = 'N/A';
             $card_sales = CardSales::where('card_id', $id)->pluck('id')->toArray();
-            if(!empty($card_sales)){
-            $cs = CardSales::groupBy('card_id')->select('id', 'card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->get()->map(function($item, $key) use($id, &$rank) {
-                // dump($item['card_id'], $id);
-                if ($item['card_id'] == $id) {
-                    $rank = ++$key;
-                    return;
-                }
-            });
+            if (!empty($card_sales)) {
+                $cs = CardSales::groupBy('card_id')->select('id', 'card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->get()->map(function($item, $key) use($id, &$rank) {
+                    // dump($item['card_id'], $id);
+                    if ($item['card_id'] == $id) {
+                        $rank = ++$key;
+                        return;
+                    }
+                });
             }
             $cards = Card::where('id', $id)->with('details')->firstOrFail()->toArray();
             $cards['rank'] = $rank;
@@ -211,10 +209,10 @@ class CardController extends Controller {
             $cards['sx_icon'] = $sx_icon;
 
 //            $card_sales = CardSales::groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
-            if(!empty($card_sales)){
-            $trender_cards = Card::has('sales')->where('active', 1)->with('details')->orderByRaw('FIELD (id, ' . implode(', ', $card_sales) . ') ASC')->get();
-            $trender_cards = $trender_cards->unique('sport')->toArray();
-            $cards['trender_cards'] = array_values($trender_cards);
+            if (!empty($card_sales)) {
+                $trender_cards = Card::has('sales')->where('active', 1)->with('details')->orderByRaw('FIELD (id, ' . implode(', ', $card_sales) . ') ASC')->get();
+                $trender_cards = $trender_cards->unique('sport')->toArray();
+                $cards['trender_cards'] = array_values($trender_cards);
             }
 
             return response()->json(['status' => 200, 'data' => $cards], 200);
@@ -347,17 +345,17 @@ class CardController extends Controller {
             $keyword_list = explode(' ', $request->input('keyword'));
             $list = [];
             $data = Card::where(function ($query) use($keyword_list) {
-                        foreach($keyword_list as $kw) {
+                        foreach ($keyword_list as $kw) {
                             $query->where('title', 'like', "%$kw%");
                         }
-                    })->distinct('player')->where('active', 1)->get()->take(10)->map(function($res) use(&$list){
-                        $name = explode(' ', $res->player);
-                        $list[] = [
-                            'id' => $res->id,
-                            'player' => $name[0],
-                            'title' => $res->title
-                        ];
-                    });
+                    })->distinct('player')->where('active', 1)->take(10)->get()->map(function($res) use(&$list) {
+                $name = explode(' ', $res->player);
+                $list[] = [
+                    'id' => $res->id,
+                    'player' => $name[0],
+                    'title' => $res->title
+                ];
+            });
             //                    whereIn('title', 'like', '%' . $keyword_list . '%')
             //                    ->orWhere('variation', 'like', '%' . $request->input('keyword') . '%')
             //                    ->orWhere('grade', 'like', '%' . $request->input('keyword') . '%')
@@ -371,20 +369,11 @@ class CardController extends Controller {
     public function getSmartKeywordWithData(Request $request) {
         try {
             $keyword_list = explode(' ', $request->input('search'));
-            $data = Card::with(['details'])->where(function($q) use ($request, $keyword_list) {
-                        // $search = explode(' ', $request->input('search'));
-//                        $search = $request->input('search');
-//                        $q->orWhere('title', 'like', '%' . $search . '%');
-                        // foreach ($search as $key => $keyword) {
-                        // }
-                        for ($i = 0; $i < count($keyword_list); $i++) {
-                            $q->orwhere('title', 'like', '%' . $keyword_list[$i] . '%');
+            $data = Card::where(function($query) use ($keyword_list) {
+                        foreach ($keyword_list as $kw) {
+                            $query->where('title', 'like', "%$kw%");
                         }
-                    })->where('active', 1)->get()->take(10)->map(function($item, $key) {
-                $temp = $item;
-                $temp['rank'] = 0;
-                return $temp;
-            });
+                    })->distinct('player')->where('active', 1)->take(10)->get();
             return response()->json(['status' => 200, 'data' => $data, 'keyword' => $request->input('search')], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage() . ' ' . $e->getLine(), 500);
@@ -679,7 +668,8 @@ class CardController extends Controller {
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }
 
-            $data = ['values' => [], 'labels' => []]; $tempDate = [];
+            $data = ['values' => [], 'labels' => []];
+            $tempDate = [];
             $cvs = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->groupBy('timestamp')->orderBy('timestamp', 'DESC');
             $data['values'] = $cvs->pluck('cost')->toArray();
             $data['labels'] = $cvs->pluck('timestamp')->toArray();
@@ -941,8 +931,8 @@ class CardController extends Controller {
             $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
             $finalData['slabstoxValue'] = number_format($sx, 2, '.', '');
             $lastSaleData = CardSales::where('card_id', $card_id)->latest()->first();
-            $finalData['lastSalePrice'] = (!empty($lastSaleData)?$lastSaleData->cost:0);
-            $finalData['lastSaleDate'] = (!empty($lastSaleData)?$lastSaleData['timestamp']:0);
+            $finalData['lastSalePrice'] = (!empty($lastSaleData) ? $lastSaleData->cost : 0);
+            $finalData['lastSaleDate'] = (!empty($lastSaleData) ? $lastSaleData['timestamp'] : 0);
             $finalData['highestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'DESC')->first();
             $finalData['lowestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'ASC')->first();
 
@@ -976,18 +966,22 @@ class CardController extends Controller {
         }
     }
 
-    public function lbl_dt($a, $b){
+    public function lbl_dt($a, $b) {
         $a = Carbon::parse($a);
         $b = Carbon::parse($b);
-        if($a->greaterThan($b)){ return -1; }
-        else if($a->lessThan($b)){ return 1; }
-        else 0;
+        if ($a->greaterThan($b)) {
+            return -1;
+        } else if ($a->lessThan($b)) {
+            return 1;
+        } else
+            0;
     }
 
     public function __groupGraphData($days, $data) {
         $months = null;
         $years = null;
-        $cmp = $days; $cmpSfx = 'days';
+        $cmp = $days;
+        $cmpSfx = 'days';
         if ($days > 30 && $days <= 365) {
             $months = (int) ($days / 30);
             $cmp = $months;
@@ -998,9 +992,9 @@ class CardController extends Controller {
             $cmp = $years;
             $cmpSfx = 'years';
         }
-if(isset($data['labels']) && isset($data['labels'][0])){
-        $last_date = Carbon::parse($data['labels'][0]);
-}
+        if (isset($data['labels']) && isset($data['labels'][0])) {
+            $last_date = Carbon::parse($data['labels'][0]);
+        }
         if ((count($data['labels']) < (int) $cmp) || $cmpSfx == 'years' || $last_date > Carbon::now()) {
             $last_date = Carbon::now();
             if ($cmpSfx == 'days') {
@@ -1010,27 +1004,32 @@ if(isset($data['labels']) && isset($data['labels'][0])){
             } else if ($cmpSfx == 'years') {
                 $start_date = $last_date->copy()->subYears($cmp);
             }
-            if(isset($data['labels']) && isset($data['labels'][0])){
-            $lblSfx = explode(' ', $data['labels'][0]);
-            if(count($lblSfx) > 1){ $lblSfx = $lblSfx[1]; }else{ $lblSfx = ''; }
-            $period = \Carbon\CarbonPeriod::create($start_date, '1 ' . $cmpSfx, $last_date);
-            $map_val = []; $map_qty = [];
-            foreach ($period as $dt) {
-                $dt = $dt->format('Y-m-d') . ' ' . $lblSfx;
-                $map_val[$dt] = 0;
-                $map_qty[$dt] = 0;
-                $ind = array_search($dt, $data['labels']);
-                if (gettype($ind) == "integer") {
-                    $map_val[$dt] = $data['values'][$ind];
-                    $map_qty[$dt] = $data['qty'][$ind];
+            if (isset($data['labels']) && isset($data['labels'][0])) {
+                $lblSfx = explode(' ', $data['labels'][0]);
+                if (count($lblSfx) > 1) {
+                    $lblSfx = $lblSfx[1];
+                } else {
+                    $lblSfx = '';
                 }
-            }
-            uksort($map_val, [$this, "lbl_dt"]);
-            uksort($map_qty, [$this, "lbl_dt"]);
+                $period = \Carbon\CarbonPeriod::create($start_date, '1 ' . $cmpSfx, $last_date);
+                $map_val = [];
+                $map_qty = [];
+                foreach ($period as $dt) {
+                    $dt = $dt->format('Y-m-d') . ' ' . $lblSfx;
+                    $map_val[$dt] = 0;
+                    $map_qty[$dt] = 0;
+                    $ind = array_search($dt, $data['labels']);
+                    if (gettype($ind) == "integer") {
+                        $map_val[$dt] = $data['values'][$ind];
+                        $map_qty[$dt] = $data['qty'][$ind];
+                    }
+                }
+                uksort($map_val, [$this, "lbl_dt"]);
+                uksort($map_qty, [$this, "lbl_dt"]);
 
-            $data['labels'] = array_keys($map_val);
-            $data['values'] = array_values($map_val);
-            $data['qty'] = array_values($map_qty);
+                $data['labels'] = array_keys($map_val);
+                $data['values'] = array_values($map_val);
+                $data['qty'] = array_values($map_qty);
             }
         }
 
@@ -1073,7 +1072,7 @@ if(isset($data['labels']) && isset($data['labels'][0])){
             $data['values'] = array_splice($data['values'], 0, $max);
             $data['labels'] = array_splice($data['labels'], 0, $max);
         }
-        
+
         return $data;
     }
 
@@ -1102,9 +1101,10 @@ if(isset($data['labels']) && isset($data['labels'][0])){
                 'rc' => $request->input('rc'),
                 'variation' => $request->input('variation'),
                 'grade' => $request->input('grade'),
-                'image' => $filename
+                'image' => $filename,
+                     'status' => 1
             ]);
-            return response()->json(['status' => 200, 'data' => ['message' => 'Request added']], 200);
+            return response()->json(['status' => 200, 'data' => ['message' => 'Submitted Successfully.']], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }

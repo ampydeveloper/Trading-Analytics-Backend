@@ -240,11 +240,11 @@ class MyPortfolioController extends Controller {
     }
 
     public function search(Request $request) {
-        $page = $request->input('page', 1);
-        $take = $request->input('take', 30);
+//        $page = $request->input('page', 1);
+//        $take = $request->input('take', 30);
         $filter = $request->input('filter');
-        $skip = $take * $page;
-        $skip = $skip - $take;
+//        $skip = $take * $page;
+//        $skip = $skip - $take;
         try {
             $this->user_id = auth()->user()->id;
 //            $card_ids = MyPortfolio::where("user_id", $this->user_id)->pluck('card_id');
@@ -273,10 +273,11 @@ class MyPortfolioController extends Controller {
                         if ($filter['grade'] != '') {
                             $q->where('grade', $filter['grade']);
                         }
-                    })->get();
+                    })->get();;
 //                    })->whereNotIn('id', $card_ids)->get();
-            $cards = $cards->skip($skip)->take($take);
-            return response()->json(['status' => 200, 'data' => $cards, 'next' => ($page + 1)], 200);
+//            $cards = $cards->skip($skip)->take($take)->get();
+//            return response()->json(['status' => 200, 'data' => $cards, 'next' => ($page + 1)], 200);
+            return response()->json(['status' => 200, 'data' => $cards], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }

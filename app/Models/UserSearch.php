@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Auth\User;
+//use App\Models\card;
 
 class UserSearch extends Model
 {
@@ -19,14 +21,15 @@ class UserSearch extends Model
     protected $fillable = [
         'card_id',
         'user_id',
+        'search',
     ];
     
     public function userDetails()
     {
-        return $this->hasOne(Auth\User::class, 'id');
+            return $this->belongsTo(User::class, 'user_id');
     }
     public function cardDetails()
     {
-        return $this->hasOne(Card::class, 'id');
+            return $this->belongsTo(Card::class, 'card_id');
     }
 }
