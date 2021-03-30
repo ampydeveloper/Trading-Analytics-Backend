@@ -1076,7 +1076,7 @@ class EbayController extends Controller {
                 $this->updateAdanceSearchOptions();
             }
             if(empty($last_entry)){  
-                $this->updateAdanceSearchOptions();
+                $this->updateAdanceSearchOptions($request);
             }           
            
             $advanceSearchData = [
