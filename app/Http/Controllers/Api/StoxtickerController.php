@@ -19,7 +19,7 @@ class StoxtickerController extends Controller {
 
     public function slabSearch(Request $request) {
         try {
-            $data = Card::where('player', 'like', '%' . $request->input('keyword') . '%')->distinct('player')->where('active', 1)->with('details')->get()->take(12);
+            $data = Card::where('player', 'like', '%' . $request->input('keyword') . '%')->distinct('player')->where('active', 1)->with('details')->get();
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -68,7 +68,11 @@ class StoxtickerController extends Controller {
 
     public function searchBoard(Request $request) {
         try {
-            $boards = Board::where('name', 'like', '%' . $request->input('keyword') . '%')->get()->take(4);
+             $page = $request->input('page', 1);
+        $take = 4;
+        $takeout = $take * $page;
+//        $skip = $skip - $take;
+            $boards = Board::where('name', 'like', '%' . $request->input('keyword') . '%')->take($takeout)->get();
             if(!empty($request->input('sport'))){
                 foreach ($boards as $key => $board) {
                     $all_cards = json_decode($board->cards);
@@ -100,7 +104,7 @@ class StoxtickerController extends Controller {
                 $boards[$key]['total_card_value'] = number_format((float) $total_card_value, 2, '.', '');
             }
 
-            return response()->json(['status' => 200, 'data' => $boards], 200);
+            return response()->json(['status' => 200, 'data' => $boards, 'page' => ((int)$page+1)], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }

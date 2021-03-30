@@ -98,16 +98,20 @@ class ListingsImport implements ToCollection, WithStartRow
                         foreach ($data['specifics'] as $key=>$speci) {
                             if (isset($speci['Value'])) {
                                 if ($speci['Value'] != "N/A") {
+                                   $speci_name =  isset($speci['Name']) ? $speci['Name'] : null;
+                                   $speci_name = str_replace(':','',$speci_name);
                                     EbayItemSpecific::create([
                                         'itemId' => $data['ebay_id'],
-                                        'name' => isset($speci['Name']) ? $speci['Name'] : null,
+                                        'name' => $speci_name,
                                         'value' => is_array($speci['Value']) ? implode(',', $speci['Value']) : $speci['Value']
                                     ]);
                                 }
                             } else {
+                                $speci_name =  isset($key) ? $key : null;
+                                   $speci_name = str_replace(':','',$speci_name);
                                 EbayItemSpecific::create([
                                     'itemId' => $data['ebay_id'],
-                                    'name' => $key,
+                                    'name' => $speci_name,
                                     'value' => is_array($speci) ? implode(',', $speci) : $speci
                                 ]);
                             }
