@@ -1072,8 +1072,8 @@ class EbayController extends Controller {
         try {
             $last_entry = AdvanceSearchOptions::latest()->first();
             $previous_date = date('Y-m-d H:i:s', strtotime('-30 days'));
-            if(!empty($last_entry) && $last_entry['updated_at'] > $previous_date){  
-                $this->updateAdanceSearchOptions();
+            if(!empty($last_entry) && $last_entry['updated_at'] < $previous_date){  
+                $this->updateAdanceSearchOptions($request);
             }
             if(empty($last_entry)){  
                 $this->updateAdanceSearchOptions($request);
@@ -1123,7 +1123,7 @@ class EbayController extends Controller {
                     }
                 }
             }
-            echo response()->json('Done', 200);
+            return true;
         } catch (\Exception $e) {
             echo response()->json($e->getMessage(), 500);
         }
