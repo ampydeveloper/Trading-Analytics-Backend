@@ -684,7 +684,7 @@ class EbayController extends Controller {
                         foreach ($search as $key => $keyword) {
                             $q->orWhere('title', 'like', '%' . $keyword . '%');
                         }
-                    })->pluck('id');
+                    })->distinct('player')->pluck('id');
         }
         $items = EbayItems::with(['category', 'card', 'card.value', 'details', 'playerDetails', 'condition', 'sellerInfo', 'listingInfo', 'sellingStatus', 'shippingInfo', 'specifications'])->where(function ($q) use ($cardsId, $searchCard, $filterBy) {
             if ($searchCard != null) {
