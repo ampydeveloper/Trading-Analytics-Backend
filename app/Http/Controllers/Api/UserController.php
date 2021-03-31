@@ -237,13 +237,13 @@ class UserController extends Controller {
             return response()->json(['error' => 'Unauthorised'], 301);
         }
         $validator = Validator::make($request->all(), [
-                    'id' => 'required|exists:users,id',
-                    'first_name' => 'required|string',
-                    'last_name' => 'nullable|string',
-                    'email' => 'required|email|unique:users,email,' . $request->get('id'),
-                    'mobile' => 'nullable|numeric',
-                    'dob' => 'nullable',
-                    'address' => 'nullable|string'
+            'id' => 'required|exists:users,id',
+            'first_name' => 'required|string',
+            'last_name' => 'nullable|string',
+            'email' => 'required|email|unique:users,email,' . $request->get('id'),
+            'mobile' => 'nullable|numeric',
+            'dob' => 'nullable',
+            'address' => 'nullable|string'
         ]);
 
         if ($validator->fails()) {
@@ -256,7 +256,7 @@ class UserController extends Controller {
 //            $user->roles()->attach($request->input('user_roles'));
 //            return response()->json(['status' => 200, 'data' => ['message' => $user]], 200);
 
-            $user = User::where('id', $request->input('id'))->first();
+            $user = User::where('id', $request->input('id'))->withTrashed()->first();
             $data = [
                 'first_name' => $request->input('first_name'),
                 'last_name' => $request->input('last_name'),
@@ -266,6 +266,16 @@ class UserController extends Controller {
                 'address' => $request->input('address', ''),
             ];
             $user->update($data);
+
+            if($request->has('user_roles')){
+                $role = Role::whereId($request->get('user_roles'))->first();
+                if($role){
+                    $user->roles()->detach();
+                    $user->forgetCachedPermissions();
+                    $user->assignRole($role->name);                    
+                }
+            }
+
 
 //            return response()->json(['status' => 200, 'data' => ['message' => $user]], 200);
             return response()->json(['status' => 200, 'data' => ['message' => 'User saved successfully.']], 200);
