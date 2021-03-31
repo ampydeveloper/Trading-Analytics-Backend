@@ -620,6 +620,10 @@ class CardController extends Controller {
         try {
             $data = ['total' => 0, 'sale' => 0, 'avg_sale' => 0, 'change' => 0, 'change_arrow' => 'up', 'last_updated' => ''];
             $data['total'] = Card::count();
+//            $all_cards = Card::pluck('id');
+//            $data['all_sales_value'] = CardSales::whereIn('card_id', $all_cards)->groupBy('card_id')->orderBy('timestamp', 'DESC')->get();
+                    
+//                    ->limit(3)->avg('cost');
             $cs_cost = CardSales::sum('cost');
             $data['sale'] = number_format((float) $cs_cost, 2, '.', '');
 //            $last_updated = CardSales::orderBy('timestamp', 'DESC')->first();
@@ -933,6 +937,7 @@ class CardController extends Controller {
             $lastSaleData = CardSales::where('card_id', $card_id)->latest()->first();
             $finalData['lastSalePrice'] = (!empty($lastSaleData) ? $lastSaleData->cost : 0);
             $finalData['lastSaleDate'] = (!empty($lastSaleData) ? $lastSaleData['timestamp'] : 0);
+//            $finalData['highestSale'] = CardSales::where('card_id', $card_id)->select('cost', 'timestamp')->max('cost');
             $finalData['highestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'DESC')->first();
             $finalData['lowestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'ASC')->first();
 

@@ -576,6 +576,16 @@ class EbayController extends Controller {
                     }
                 })->pluck('card_id');
 
+                $cardsId = null;
+        if ($search != null) {
+            $cardsId = Card::where(function($q) use ($search) {
+                        $search = explode(' ', $search);
+                        foreach ($search as $key => $keyword) {
+                            $q->orWhere('title', 'like', '%' . $keyword . '%');
+                        }
+                    })->pluck('id');
+        }
+                
         if ($filter['team'] != null) {
             $ids = EbayItemSpecific::where('name', 'Team')->where('value', 'like', '%' . $filter['team'] . '%')->groupBy('itemId')->pluck('itemId');
             foreach ($ids as $key => $id) {
@@ -655,7 +665,7 @@ class EbayController extends Controller {
                 'data' => $item,
             ];
         });
-        return ['data' => $ebayitems, 'next' => ($page + 1), 'cards' => $cardsIds];
+        return ['data' => $ebayitems, 'next' => ($page + 1), 'cards' => $cardsIds, 'card_ids' => $cardsId];
     }
 
     private function _basicSearch($request) {
@@ -761,12 +771,17 @@ class EbayController extends Controller {
                     $pictureURLLarge = null;
                     $pictureURLSuperSize = null;
                 }
+                $auction_end = null;
+                if(!empty($data['auction_end'])){
+                    $auction_end_str = $data['auction_end']/1000;
+                    $auction_end = date('Y-m-d H:i:s', $auction_end_str);
+                }
                 $selling_status = EbayItemSellingStatus::create([
                             'itemId' => $data['details']['ebay_id'],
                             'currentPrice' => $data['price'],
                             'convertedCurrentPrice' => $data['price'],
                             'sellingState' => $data['price'],
-                            'timeLeft' => isset($data['auction_end']) ? $data['auction_end'] : null,
+                            'timeLeft' => $auction_end,
                 ]);
                 $seller_info = EbayItemSellerInfo::create([
                             'itemId' => $data['details']['ebay_id'],
@@ -778,7 +793,7 @@ class EbayController extends Controller {
                 $listing_info = EbayItemListingInfo::create([
                             'itemId' => $data['details']['ebay_id'],
                             'startTime' => '',
-                            'endTime' => $data['auction_end'],
+                            'endTime' => $auction_end,
                             'listingType' => (isset($data['listing_type']) && $data['listing_type'] == true ? 'Auction' : 'Listing'),
                 ]);
 
@@ -798,7 +813,7 @@ class EbayController extends Controller {
                     'condition_id' => isset($data['details']['ConditionID']) ? $data['details']['ConditionID'] : 1,
                     'pictureURLLarge' => $pictureURLLarge,
                     'pictureURLSuperSize' => $pictureURLSuperSize,
-                    'listing_ending_at' => isset($data['auction_end']) ? $data['auction_end'] : null,
+                    'listing_ending_at' => $auction_end,
                     'is_random_bin' => array_key_exists('random_bin', $data) ? (bool) $data['random_bin'] : 0,
                     'seller_info_id' => isset($seller_info) ? $seller_info->id : null,
                     'selling_status_id' => isset($selling_status) ? $selling_status->id : null,
@@ -828,14 +843,18 @@ class EbayController extends Controller {
 
                 return response()->json(['status' => 200, 'data' => ['message' => 'Added successfully.']], 200);
             } else {
-
+$auction_end = null;
+                if(!empty($data['auction_end'])){
+                    $auction_end_str = $data['auction_end']/1000;
+                    $auction_end = date('Y-m-d H:i:s', $auction_end_str);
+                }
                 EbayItems::where('id', $item['id'])->update([
                     'title' => $data['title'],
                     'viewItemURL' => $data['web_link'],
                     'location' => $data['location'],
                     'returnsAccepted' => $data['ReturnPolicy'],
                     'pictureURLLarge' => $data['image'],
-                    'listing_ending_at' => $data['auction_end'],
+                    'listing_ending_at' => $auction_end,
                 ]);
                 EbayItemSellerInfo::where('id', $item['seller_info_id'])->update([
                     'sellerUserName' => $data['seller_name'],
@@ -850,7 +869,7 @@ class EbayController extends Controller {
 //                }
                 EbayItemListingInfo::where('id', $item['listing_info_id'])->update([
                     'startTime' => '',
-                    'endTime' => $data['auction_end'],
+                    'endTime' => $auction_end,
                     'listingType' => (isset($data['listing_type']) && $data['listing_type'] == true ? 'Auction' : 'Listing'),
                 ]);
 
