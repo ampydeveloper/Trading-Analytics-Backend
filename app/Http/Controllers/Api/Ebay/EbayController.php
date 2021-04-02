@@ -1269,13 +1269,13 @@ class EbayController extends Controller {
             if ($filterBy == 'ending_soon') {
                 $date_one = Carbon::now()->addDay();
                 $date_one->setTimezone('UTC');
-                // $date_two = Carbon::now()->setTimezone('UTC');
-                //$items = $items->where("listing_ending_at", ">", $date_one);//->where("listing_ending_at", "<", $date_one);
+                 $date_two = Carbon::now()->setTimezone('UTC');
+                $items = $items->where("listing_ending_at", ">", $date_one);//->where("listing_ending_at", "<", $date_one);
             }
             $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
             if ($filterBy == 'price_low_to_high') {
                 $items = $items->sortBy(function($query) {
-                    return $query->sellingStatus->currentPrice;
+                    return ($query->sellingStatus ? $query->sellingStatus->currentPrice : null);
                 });
             }
 

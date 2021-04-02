@@ -209,7 +209,6 @@ class CardController extends Controller {
 //             $cards['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
 //            $cards['sx'] = number_format((float) $sx, 2, '.', '');
 //            $cards['sx_icon'] = $sx_icon;
-
 //            $card_sales = CardSales::groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
 //            if (!empty($card_sales)) {
 //                $trender_cards = Card::has('sales')->where('active', 1)->with('details')->orderByRaw('FIELD (id, ' . implode(', ', $card_sales) . ') ASC')->get();
@@ -223,7 +222,7 @@ class CardController extends Controller {
         }
     }
 
-    public function getRecentList(Request $request){
+    public function getRecentList(Request $request) {
         $page = $request->input('page', 1);
         $take = $request->input('take', 30);
         $search = $request->input('search', null);
@@ -235,16 +234,16 @@ class CardController extends Controller {
             // ->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
             // $card_sales = CardSales::orderBy('timestamp', 'DESC')->groupBy('card_id')->select('card_id', 'cost', DB::raw('COUNT(*) as grp_count'), DB::raw('SUM(cost) as avg_cost'))->having('grp_count', '<=', 3)->orderBy('avg_cost', 'DESC')->get()->toArray();
             $card_sales = CardSales::orderBy('timestamp', 'DESC')->select('card_id', 'cost')->get()->groupBy('card_id')->map(function ($cs) {
-                return ['avg' => $cs->splice(0, 3)->avg('cost')];
-            })->sortByDesc('avg')->keys()->toArray();
+                        return ['avg' => $cs->splice(0, 3)->avg('cost')];
+                    })->sortByDesc('avg')->keys()->toArray();
             $cards = Card::where(function ($q) use ($request, $search) {
-                if ($request->has('sport') && $request->input('sport') != null) {
-                    $q->where('sport', $request->input('sport'));
-                }
-                if ($search != null) {
-                    $q->where('title', 'like', '%' . $search . '%');
-                }
-            })->has('sales')->where('active', 1)->with('details')->orderByRaw('FIELD (id, ' . implode(', ', $card_sales) . ') ASC');
+                        if ($request->has('sport') && $request->input('sport') != null) {
+                            $q->where('sport', $request->input('sport'));
+                        }
+                        if ($search != null) {
+                            $q->where('title', 'like', '%' . $search . '%');
+                        }
+                    })->has('sales')->where('active', 1)->with('details')->orderByRaw('FIELD (id, ' . implode(', ', $card_sales) . ') ASC');
             if (!$top_trend) {
                 $cards = $cards->skip($skip)->take($take);
             }
@@ -253,16 +252,16 @@ class CardController extends Controller {
             if (!$top_trend && count($cards) < $take) {
                 $take = $take - count($cards);
                 $no_sale_cards = Card::where(function ($q) use ($request, $search) {
-                    if ($request->has('sport') && $request->input('sport') != null) {
-                        $q->where('sport', $request->input('sport'));
-                    }
-                    if ($search != null) {
-                        $q->where('title', 'like', '%' . $search . '%');
-                    }
-                })->whereNotIn('id', $card_sales)->where('active', 1)->with('details')->skip($skip)->take($take)->get();
+                            if ($request->has('sport') && $request->input('sport') != null) {
+                                $q->where('sport', $request->input('sport'));
+                            }
+                            if ($search != null) {
+                                $q->where('title', 'like', '%' . $search . '%');
+                            }
+                        })->whereNotIn('id', $card_sales)->where('active', 1)->with('details')->skip($skip)->take($take)->get();
                 $cards = $cards->merge($no_sale_cards);
             }
-                        
+
             // }
             // dd($cards->get()->toArray());
             $cards = $cards->map(function ($card, $key) {
@@ -627,11 +626,10 @@ class CardController extends Controller {
             $data = ['total' => 0, 'sale' => 0, 'avg_sale' => 0, 'change' => 0, 'change_arrow' => 'up', 'last_updated' => ''];
             $data['total'] = Card::count();
             $data['sale'] = number_format(CardSales::leftJoin('cards', 'cards.id', '=', 'card_sales.card_id')->where('cards.deleted_at', null)->orderBy('timestamp', 'DESC')->select('card_sales.card_id', 'card_sales.cost')->get()->groupBy('card_id')->map(function ($cs) {
-                return ['avg' => $cs->splice(0, 3)->avg('cost')];
-            })->sum('avg'), 2, '.', '');
+                        return ['avg' => $cs->splice(0, 3)->avg('cost')];
+                    })->sum('avg'), 2, '.', '');
 //            $all_cards = Card::pluck('id');
 //            $data['all_sales_value'] = CardSales::whereIn('card_id', $all_cards)->groupBy('card_id')->orderBy('timestamp', 'DESC')->get();
-                    
 //                    ->limit(3)->avg('cost');
             // $cs_cost = CardSales::sum('cost');
             // $data['sale'] = number_format((float) $cs_cost, 2, '.', '');
@@ -641,15 +639,15 @@ class CardController extends Controller {
                 $data['last_updated'] = Carbon::create($last_updated->timestamp)->format('F d Y \- h:i:s A');
             }
 
-//            if (count($updateDates) > 1) {
             // Diff sum in latest and latest-1 
-//                $data['change'] = $data['sale'] - CardValues::where('date', $updateDates[1])->sum('avg_value');
-            $data['change'] = 0;
-            if ($data['change'] < 0) {
-                $data['change_arrow'] = 'down';
-            }
-            $data['change'] = abs($data['change']);
-//            }
+            $sx = CardSales::orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+            $lastSx = CardSales::orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+            $count = count($lastSx);
+            $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+            $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
+            $data['change'] = str_replace('-', '', number_format((float) $lastSx - $sx, 2, '.', ''));
+            $data['change_arrow'] = $sx_icon;
+            
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -718,7 +716,7 @@ class CardController extends Controller {
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                 $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
-                
+
                 $data['doller_diff'] = number_format((float) ($lastSx - $sx), 2, '.', '');
                 $data['perc_diff'] = number_format($lastSx / $sx * 100, 2, '.', '');
                 $data['last_timestamp'] = Carbon::create($last_timestamp->timestamp)->format('F d Y \- h:i:s A');
@@ -926,7 +924,7 @@ class CardController extends Controller {
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                 $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
-                $finalData['dollar_diff'] = str_replace('-', '', number_format($lastSx-$sx, 2, '.', ''));
+                $finalData['dollar_diff'] = str_replace('-', '', number_format($lastSx - $sx, 2, '.', ''));
                 $finalData['pert_diff'] = number_format($lastSx / $sx * 100, 2, '.', '');
                 $finalData['sx_icon'] = $sx_icon;
             } else {
@@ -988,7 +986,7 @@ class CardController extends Controller {
             0;
     }
 
-    public function __groupGraphData($days, $data){
+    public function __groupGraphData($days, $data) {
         $months = null;
         $years = null;
         $cmp = $days;
@@ -1090,8 +1088,8 @@ class CardController extends Controller {
                 uksort($map_qty, [$this, "lbl_dt"]);
 
                 $data['labels'] = Collect(array_keys($map_val))->map(function ($lbl) use ($cmpFormat) {
-                    return Carbon::createFromFormat($cmpFormat, explode(' ', $lbl)[0])->format('M/d/Y');
-                })->toArray();
+                            return Carbon::createFromFormat($cmpFormat, explode(' ', $lbl)[0])->format('M/d/Y');
+                        })->toArray();
                 $data['values'] = array_values($map_val);
                 $data['qty'] = array_values($map_qty);
             }
@@ -1126,7 +1124,7 @@ class CardController extends Controller {
                 'variation' => $request->input('variation'),
                 'grade' => $request->input('grade'),
                 'image' => $filename,
-                     'status' => 1
+                'status' => 1
             ]);
             return response()->json(['status' => 200, 'data' => ['message' => 'Submitted Successfully.']], 200);
         } catch (\Exception $e) {
