@@ -717,7 +717,7 @@ class CardController extends Controller {
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                 $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
 
-                $data['doller_diff'] = number_format((float) ($lastSx - $sx), 2, '.', '');
+                $data['doller_diff'] = str_replace('-', '', number_format((float) ($lastSx - $sx), 2, '.', ''));
                 $data['perc_diff'] = number_format($lastSx / $sx * 100, 2, '.', '');
                 $data['last_timestamp'] = Carbon::create($last_timestamp->timestamp)->format('F d Y \- h:i:s A');
                 $data['sx_icon'] = $sx_icon;
