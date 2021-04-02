@@ -277,8 +277,7 @@ class StoxtickerController extends Controller {
         } else 0;
     }
 
-    public function __groupGraphData($days, $data)
-    {
+    public function __groupGraphData($days, $data){
         $months = null;
         $years = null;
         $cmp = $days;
@@ -293,45 +292,10 @@ class StoxtickerController extends Controller {
             $cmp = $years;
             $cmpSfx = 'years';
         }
-if(isset($data['labels']) && isset($data['labels'][0])){
-        $last_date = Carbon::parse($data['labels'][0]);
-}
-        if ((count($data['labels']) < (int) $cmp) || $cmpSfx == 'years' || $last_date > Carbon::now()) {
-            // $last_date = Carbon::parse($data['labels'][0]);
-            $last_date = Carbon::now();
-            if ($cmpSfx == 'days') {
-                $start_date = $last_date->copy()->subDays($cmp);
-            } else if ($cmpSfx == 'months') {
-                $start_date = $last_date->copy()->subMonths($cmp);
-            } else if ($cmpSfx == 'years') {
-                $start_date = $last_date->copy()->subYears($cmp);
-            }
-            if(isset($data['labels']) && isset($data['labels'][0])){
-            $lblSfx = explode(' ', $data['labels'][0]);
-            if(count($lblSfx) > 1){ $lblSfx = $lblSfx[1]; }else{ $lblSfx = ''; }
-            $period = \Carbon\CarbonPeriod::create($start_date, '1 ' . $cmpSfx, $last_date);
-            $map_val = [];
-            $map_qty = [];
-            foreach ($period as $dt) {
-                $dt = $dt->format('Y-m-d') . ' ' . $lblSfx;
-                $map_val[$dt] = 0;
-                $map_qty[$dt] = 0;
-                $ind = array_search($dt, $data['labels']);
-                if (gettype($ind) == "integer") {
-                    $map_val[$dt] = $data['values'][$ind];
-                    $map_qty[$dt] = $data['qty'][$ind];
-                }
-            }
-            uksort($map_val, [$this, "lbl_dt"]);
-            uksort($map_qty, [$this, "lbl_dt"]);
 
-            $data['labels'] = array_keys($map_val);
-            $data['values'] = array_values($map_val);
-            $data['qty'] = array_values($map_qty);
-            }
-        }
 
         $grouped = [];
+        $grouped_qty = [];
         $max = 0;
         if ($months != null) {
             $max = $months;
@@ -344,31 +308,82 @@ if(isset($data['labels']) && isset($data['labels'][0])){
                 }
                 if (!in_array($dt, array_keys($grouped))) {
                     $grouped[$dt] = 0;
+                    $grouped_qty[$dt] = 0;
                 }
                 $grouped[$dt] += round($data['values'][$ind]);
+                $grouped_qty[$dt] += round($data['qty'][$ind]);
             }
         }
         if ($years != null) {
             $max = $years;
             foreach ($data['labels'] as $ind => $dt) {
                 $dt = explode('-', $dt);
-                if (count($dt) > 1) {
-                    $dt = sprintf('%s-%s', $dt[0], $dt[1]);
-                } else {
-                    $dt = $dt[0];
-                }
+                $dt = $dt[0];
                 if (!in_array($dt, array_keys($grouped))) {
                     $grouped[$dt] = 0;
+                    $grouped_qty[$dt] = 0;
                 }
                 $grouped[$dt] += round($data['values'][$ind]);
+                $grouped_qty[$dt] += round($data['qty'][$ind]);
             }
         }
 
         if ($grouped != []) {
+            $data['qty'] = array_values($grouped_qty);
             $data['values'] = array_values($grouped);
             $data['labels'] = array_keys($grouped);
+            $data['qty'] = array_splice($data['qty'], 0, $max);
             $data['values'] = array_splice($data['values'], 0, $max);
             $data['labels'] = array_splice($data['labels'], 0, $max);
+        }
+
+        if (isset($data['labels']) && isset($data['labels'][0])) {
+            $last_date = Carbon::parse($data['labels'][0]);
+        }
+
+        if ((count($data['labels']) < (int) $cmp) || $cmpSfx == 'years' || $last_date > Carbon::now()) {
+            $cmpFormat = 'Y-m-d';
+            $last_date = Carbon::now();
+            if ($cmpSfx == 'days') {
+                $start_date = $last_date->copy()->subDays($cmp - 1);
+            } else if ($cmpSfx == 'months') {
+                $cmpFormat = 'Y-m';
+                $start_date = $last_date->copy()->subMonths($cmp - 1);
+            } else if ($cmpSfx == 'years') {
+                $cmpFormat = 'Y';
+                $start_date = $last_date->copy()->subYears($cmp - 1);
+            }
+
+            if (isset($data['labels']) && isset($data['labels'][0])) {
+                $lblSfx = explode(' ', $data['labels'][0]);
+                if (count($lblSfx) > 1) {
+                    $lblSfx = $lblSfx[1];
+                } else {
+                    $lblSfx = '';
+                }
+                $period = \Carbon\CarbonPeriod::create($start_date, '1 ' . $cmpSfx, $last_date);
+                $map_val = [];
+                $map_qty = [];
+                foreach ($period as $dt) {
+                    $dt = $dt->format($cmpFormat) . ' ' . $lblSfx;
+                    $dt = trim($dt);
+                    $map_val[$dt] = 0;
+                    $map_qty[$dt] = 0;
+                    $ind = array_search($dt, $data['labels']);
+                    if (gettype($ind) == "integer") {
+                        $map_val[$dt] = $data['values'][$ind];
+                        $map_qty[$dt] = $data['qty'][$ind];
+                    }
+                }
+                uksort($map_val, [$this, "lbl_dt"]);
+                uksort($map_qty, [$this, "lbl_dt"]);
+
+                $data['labels'] = Collect(array_keys($map_val))->map(function ($lbl) use ($cmpFormat) {
+                    return Carbon::createFromFormat($cmpFormat, explode(' ', $lbl)[0])->format('M/d/Y');
+                })->toArray();
+                $data['values'] = array_values($map_val);
+                $data['qty'] = array_values($map_qty);
+            }
         }
 
         return $data;

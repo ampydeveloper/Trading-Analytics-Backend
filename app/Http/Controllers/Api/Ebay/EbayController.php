@@ -1040,7 +1040,7 @@ class EbayController extends Controller {
         try {
             // $itemsSpecsIds = EbayItemSpecific::where('value', 'like', '%' . $search . '%')->groupBy('itemId')->pluck('itemId');
             $itemsSpecsIds = [];
-            $items = EbayItems::with(['sellingStatus', 'card', 'card.value', 'listingInfo'])->where('card_id', '=', $card_id)->where(function ($q) use ($card_id, $itemsSpecsIds, $search, $request, $filterBy) {
+            $items = EbayItems::with(['sellingStatus', 'card', 'card.value', 'listingInfo'])->where('card_id', '=', $card_id)->where('id', '!=', $id)->where(function ($q) use ($card_id, $itemsSpecsIds, $search, $request, $filterBy) {
 //                if ($card_id != null) {
 //                    $q->where('card_id', $card_id);
 //                }
