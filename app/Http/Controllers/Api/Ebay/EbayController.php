@@ -388,7 +388,7 @@ class EbayController extends Controller {
                 $cards = Card::where('id', $searchCard)->with('details')->get();
                 UserSearch::create(['card_id' => $searchCard, 'user_id' => auth()->user()->id]);
             } else {
-                $cards = Card::whereIn('id', $items['card_ids'])->with('details')->limit(18)->get();
+                $cards = Card::whereIn('id', $items['cards'])->with('details')->limit(18)->get();
                 UserSearch::create(['search' => $request->input('search'), 'user_id' => auth()->user()->id]);
             }
             foreach ($cards as $ind => $card) {
@@ -581,7 +581,7 @@ class EbayController extends Controller {
                     if ($filter['season'] != null) {
                         $q->where('season', $filter['season']);
                     }
-                })->pluck('card_id');
+                })->pluck('card_id')->toArray();
 
 //        $search = $request->input('search', null);
         $cardsId = null;
@@ -637,6 +637,7 @@ class EbayController extends Controller {
                 });
             }
         });
+        
         if ($filterBy == 'ending_soon') {
             $date_one = Carbon::now()->addDay();
             $date_one->setTimezone('UTC');
