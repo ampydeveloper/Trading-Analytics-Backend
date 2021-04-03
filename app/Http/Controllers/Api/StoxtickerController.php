@@ -92,7 +92,7 @@ class StoxtickerController extends Controller {
                 $lastSx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
                 if ($sx != 0) {
                     $boards[$key]['pert_diff'] = number_format((float) $lastSx / $sx * 100, 2, '.', '');
                 } else {
@@ -100,7 +100,8 @@ class StoxtickerController extends Controller {
                 }
                 $boards[$key]['sx_value'] = number_format((float) $sx, 2, '.', '');
                 $boards[$key]['sx_icon'] = $sx_icon;
-                $total_card_value = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+//                $total_card_value = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $total_card_value = CardSales::whereIn('card_id', $all_cards)->sum('cost');
                 $boards[$key]['total_card_value'] = number_format((float) $total_card_value, 2, '.', '');
             }
 
@@ -192,25 +193,25 @@ class StoxtickerController extends Controller {
             $board = Board::where('id', $board)->first();
             $follow = BoardFollow::where('board_id', '=', $board->id)->where('user_id', '=', auth()->user()->id)->first();
             $all_cards = json_decode($board->cards);
-            $total_card_value = 0;
+//            $total_card_value = 0;
             foreach ($all_cards as $key => $card) {
                 $each_cards[$key]['card_data'] = Card::where('id', (int) $card)->with('details')->first();
                 $sx = CardSales::where('card_id', $card)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                $total_card_value = $total_card_value + $sx;
+//                $total_card_value = $total_card_value + $sx;
                 $lastSx = CardSales::where('card_id', $card)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
                 $each_cards[$key]['card_data']['sx_value'] = number_format((float) $sx, 2, '.', '');
                 $each_cards[$key]['card_data']['sx_icon'] = $sx_icon;
             }
             $finalData['sales_graph'] = $this->__cardData($all_cards, $days);
 
             $sx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-            $lastSx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->pluck('cost');
+            $lastSx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
             $count = count($lastSx);
             $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-            $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+            $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
             if ($sx != 0) {
                 $finalData['pert_diff'] = number_format((float) $lastSx / $sx * 100, 2, '.', '');
             } else {
@@ -218,6 +219,7 @@ class StoxtickerController extends Controller {
             }
             $finalData['sx_value'] = number_format((float) $sx, 2, '.', '');
             $finalData['sx_icon'] = $sx_icon;
+            $total_card_value = CardSales::whereIn('card_id', $all_cards)->sum('cost');
             $finalData['total_card_value'] = number_format((float) $total_card_value, 2, '.', '');
 
             return response()->json(['status' => 200, 'board' => $board, 'cards' => $each_cards, 'card_data' => $finalData, 'follow' => $follow], 200);
