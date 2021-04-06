@@ -172,8 +172,12 @@ class MyPortfolioController extends Controller {
             })->toArray();
             $data = [];
             foreach ($cards as $key => $card) {
-                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                $sx = ($sx == null) ? 0 : $sx;
+//                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+            $sx_count = count($sx);
+            $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+            
+//                $sx = ($sx == null) ? 0 : $sx;
                 foreach ($ptempcards[$card->id] as $ptempcard) {
                     $purchase_price = (isset($ptempcard) ? $ptempcard->purchase_price : 0);
                     $portfolio_id = (isset($ptempcard) ? $ptempcard->id : 0);
