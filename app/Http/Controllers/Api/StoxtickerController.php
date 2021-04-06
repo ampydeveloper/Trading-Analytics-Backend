@@ -247,23 +247,66 @@ class StoxtickerController extends Controller {
     }
 
     public function __cardData($card_ids, $days) {
-//        $card_id = 12;
-//        $days = 2;
-        $cvs = CardSales::whereIn('card_id', $card_ids)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
+        //        $card_id = 12;
+        //        $days = 2;
+        if ($days == 2) {
+            $grpFormat = 'H:i';
+            $from = date('Y-m-d H:i:s');
+            $to = date('Y-m-d H:i:s', strtotime('-1 day'));
+        } elseif ($days == 7) {
+            $grpFormat = 'Y-m-d';
+            $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+            $to = date('Y-m-d H:i:s', strtotime('-8 days'));
+        } elseif ($days == 30) {
+            $grpFormat = 'Y-m-d';
+            $lblFormat = 'H:i';
+            $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+            $to = date('Y-m-d H:i:s', strtotime('-30 days'));
+        } elseif ($days == 90) {
+            $grpFormat = 'Y-m';
+            $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+            $to = date('Y-m-d H:i:s', strtotime('-90 days'));
+        } elseif ($days == 180) {
+            $grpFormat = 'Y-m';
+            $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+            $to = date('Y-m-d H:i:s', strtotime('-180 days'));
+        } elseif ($days == 365) {
+            $grpFormat = 'Y-m';
+            $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+            $to = date('Y-m-d H:i:s', strtotime('-365 days'));
+        } elseif ($days == 1825) {
+            $grpFormat = 'Y';
+            $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+            $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
+        }
+        // $cvs = CardSales::whereIn('card_id', $card_ids)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
+        $cvs = CardSales::whereIn('card_id', $card_ids)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
+            return Carbon::parse($cs->timestamp)->format($grpFormat);
+        })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
+            return [
+                'cost' => (clone $cs)->splice(0, 3)->avg('cost'),
+                'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : 'Y-m-d 00:00:00'),
+                'quantity' => $cs->splice(0, 3)->map(function ($qty) {
+                    return (int) $qty->quantity;
+                })->avg()
+            ];
+        });
         $data['values'] = $cvs->pluck('cost')->toArray();
         $data['labels'] = $cvs->pluck('timestamp')->toArray();
         $data['qty'] = $cvs->pluck('quantity')->toArray();
 
-        $data = $this->__groupGraphData($days, $data);
-        $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
+        if($days > 2){ $data = $this->__groupGraphData($days, $data);}
+        // $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
         if ($days == 2) {
             $labels = [];
             $values = [];
             $qty = [];
             for ($i = 0; $i <= 23; $i++) {
                 $labels[] = ($i < 10) ? '0' . $i . ':00' : $i . ':00';
-                $values[] = (count($data['values']) > 0 ) ? $data['values'][0] : 0;
-                $qty[] = (count($data['qty']) > 0 ) ? $data['qty'][0] : 0;
+                $ind = array_search($labels[$i], $data['labels']);
+                $values[] = is_integer($ind) && array_key_exists($ind, $data['values']) ? $data['values'][$ind] : 0;
+                $qty[] = is_integer($ind) && array_key_exists($ind, $data['qty']) ? $data['qty'][$ind] : 0;
+                // (count($data['qty']) > 0 ) ? $data['qty'][0] : 0;
             }
             $data['labels'] = $labels;
             $data['values'] = $values;
@@ -313,48 +356,14 @@ class StoxtickerController extends Controller {
             $cmpSfx = 'years';
         }
 
-
         $grouped = [];
         $grouped_qty = [];
         $max = 0;
         if ($months != null) {
             $max = $months;
-            foreach ($data['labels'] as $ind => $dt) {
-                $dt = explode('-', $dt);
-                if (count($dt) > 1) {
-                    $dt = sprintf('%s-%s', $dt[0], $dt[1]);
-                } else {
-                    $dt = $dt[0];
-                }
-                if (!in_array($dt, array_keys($grouped))) {
-                    $grouped[$dt] = 0;
-                    $grouped_qty[$dt] = 0;
-                }
-                $grouped[$dt] += round($data['values'][$ind]);
-                $grouped_qty[$dt] += round($data['qty'][$ind]);
-            }
         }
         if ($years != null) {
             $max = $years;
-            foreach ($data['labels'] as $ind => $dt) {
-                $dt = explode('-', $dt);
-                $dt = $dt[0];
-                if (!in_array($dt, array_keys($grouped))) {
-                    $grouped[$dt] = 0;
-                    $grouped_qty[$dt] = 0;
-                }
-                $grouped[$dt] += round($data['values'][$ind]);
-                $grouped_qty[$dt] += round($data['qty'][$ind]);
-            }
-        }
-
-        if ($grouped != []) {
-            $data['qty'] = array_values($grouped_qty);
-            $data['values'] = array_values($grouped);
-            $data['labels'] = array_keys($grouped);
-            $data['qty'] = array_splice($data['qty'], 0, $max);
-            $data['values'] = array_splice($data['values'], 0, $max);
-            $data['labels'] = array_splice($data['labels'], 0, $max);
         }
 
         if (isset($data['labels']) && isset($data['labels'][0])) {
@@ -375,18 +384,11 @@ class StoxtickerController extends Controller {
             }
 
             if (isset($data['labels']) && isset($data['labels'][0])) {
-                $lblSfx = explode(' ', $data['labels'][0]);
-                if (count($lblSfx) > 1) {
-                    $lblSfx = $lblSfx[1];
-                } else {
-                    $lblSfx = '';
-                }
                 $period = \Carbon\CarbonPeriod::create($start_date, '1 ' . $cmpSfx, $last_date);
                 $map_val = [];
                 $map_qty = [];
                 foreach ($period as $dt) {
-                    $dt = $dt->format($cmpFormat) . ' ' . $lblSfx;
-                    $dt = trim($dt);
+                    $dt = trim($dt->format($cmpFormat));
                     $map_val[$dt] = 0;
                     $map_qty[$dt] = 0;
                     $ind = array_search($dt, $data['labels']);
