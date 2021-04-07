@@ -64,6 +64,7 @@ class MyPortfolioController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
+
     public function delete(MyPortfolioCreateRequest $request) {
         try {
 //            $is_edit = $request->input('isedit', 'no');
@@ -78,9 +79,9 @@ class MyPortfolioController extends Controller {
             }
 
             $this->user_id = auth()->user()->id;
-                $myPortfolio = MyPortfolio::where('id', $cardId)->delete();
+            $myPortfolio = MyPortfolio::where('id', $cardId)->delete();
 
-                return response()->json(['status' => 200, 'data' => 'Portfolio has been deleted.'], 200);
+            return response()->json(['status' => 200, 'data' => 'Portfolio has been deleted.'], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -134,7 +135,7 @@ class MyPortfolioController extends Controller {
                     'cardImage' => $card->cardImage,
                     'sx_value' => $sx,
                     'sx_icon' => $sx_icon,
-                    'price' => (isset($card->details->currentPrice)?$card->details->currentPrice:''),
+                    'price' => (isset($card->details->currentPrice) ? $card->details->currentPrice : ''),
                     'purchase_price' => $purchase_price,
                     'differ' => $differ,
                     'portfolio_id' => $portfolio_id,
@@ -165,31 +166,31 @@ class MyPortfolioController extends Controller {
                         if ($filterBy != 'price_low_to_high' && $filterBy != null) {
                             $q->where('sport', $filterBy);
                         }
-                    })->with('details')->get();
-            $cards = $cards->skip($skip)->take($take);
+                    })->with('details')->skip($skip)->take($take)->get();
+//            $cards = $cards->skip($skip)->take($take);
             $card_grades = MyPortfolio::where("user_id", auth()->user()->id)->get(['card_id', 'grade'])->mapWithKeys(function ($crd) {
-                return [$crd->card_id => $crd->grade];
-            })->toArray();
+                        return [$crd->card_id => $crd->grade];
+                    })->toArray();
             $data = [];
             foreach ($cards as $key => $card) {
 //                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-            $sx_count = count($sx);
-            $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
-            
+                $sx_count = count($sx);
+                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+
 //                $sx = ($sx == null) ? 0 : $sx;
                 foreach ($ptempcards[$card->id] as $ptempcard) {
                     $purchase_price = (isset($ptempcard) ? $ptempcard->purchase_price : 0);
                     $portfolio_id = (isset($ptempcard) ? $ptempcard->id : 0);
                     $differ = str_replace('-', '', number_format((float) ($sx - $purchase_price), 2, '.', ''));
-                    $sx_icon = (($differ < 0) ? 'down' : 'up');
+                    $sx_icon = ((($sx - $purchase_price) < 0) ? 'down' : 'up');
                     $data[] = [
                         'id' => $card->id,
                         'title' => $card->title,
                         'cardImage' => $card->cardImage,
                         'sx_value' => $sx,
                         'sx_icon' => $sx_icon,
-                                'price' => (isset($card->details->currentPrice)?$card->details->currentPrice:''),
+                        'price' => (isset($card->details->currentPrice) ? $card->details->currentPrice : ''),
                         'purchase_price' => $purchase_price,
                         'differ' => $differ,
                         'portfolio_id' => $portfolio_id,
@@ -218,7 +219,7 @@ class MyPortfolioController extends Controller {
                 $data[] = [
                     'id' => $card->id,
                     'title' => $card->title,
-                    'price' => (isset($card->details->currentPrice)?$card->details->currentPrice:''),
+                    'price' => (isset($card->details->currentPrice) ? $card->details->currentPrice : ''),
                 ];
             }
             return response()->json(['status' => 200, 'data' => $data], 200);
@@ -277,7 +278,8 @@ class MyPortfolioController extends Controller {
                         if ($filter['grade'] != '') {
                             $q->where('grade', $filter['grade']);
                         }
-                    })->get();;
+                    })->get();
+            ;
 //                    })->whereNotIn('id', $card_ids)->get();
 //            $cards = $cards->skip($skip)->take($take)->get();
 //            return response()->json(['status' => 200, 'data' => $cards, 'next' => ($page + 1)], 200);
@@ -289,50 +291,49 @@ class MyPortfolioController extends Controller {
 
     public function portfolioValue(Request $request) {
         try {
-            self::calculateAllUserRank();
+//            self::calculateAllUserRank();
             $this->user_id = auth()->user()->id;
             $user = User::where("id", $this->user_id)->first();
 
             $purchaseVal = MyPortfolio::where("user_id", $this->user_id)->selectRaw('sum(purchase_price) as total_purchases')->pluck('total_purchases');
-            $myPortfolioValues = PortfolioUserValues::where('user_id', $this->user_id)->orderBy('date', 'DESC')->limit(2)->get();
-            if(!empty($myPortfolioValues)){
-            $updated = $myPortfolioValues[0]->updated_at;
-            }
+            $total_purchases = (isset($purchaseVal[0]) ? $purchaseVal[0] : 0);
+
+//            $myPortfolioValues = PortfolioUserValues::where('user_id', $this->user_id)->orderBy('date', 'DESC')->limit(2)->get();
+//            $myPortfolioValues = MyPortfolio::where('user_id', $this->user_id)->orderBy('updated_at', 'DESC')->first();
+//            if (!empty($myPortfolioValues)) {
+//                $updated = $myPortfolioValues->updated_at;
+//            }
 
             //Calculate SX value
-            $card_ids = WatchList::where('user_id', $this->user_id)->pluck('card_id');
+            $card_ids = MyPortfolio::where('user_id', $this->user_id)->pluck('card_id');
             $total_sx_value = 0;
             foreach ($card_ids as $card_id) {
-                $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+//                $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+                $sx_count = count($sx);
+                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
                 $total_sx_value += $sx;
             }
 
-            $total_purchases = (isset($purchaseVal[0]) ? $purchaseVal[0] : 0);
+
             $diff = ((float) $total_sx_value) - ((float) $total_purchases);
-            $diff_icon = (($diff < 0) ? 'up' : 'down');
-            $sx_pur = ((float) $total_sx_value) + ((float) $total_purchases);
-            if($sx_pur>0){
-            $percent_diff = (100 * ($diff / ($sx_pur / 2)));
-            }else{
-                $percent_diff = 0;
-            }
-            $diff = abs($diff);
-            $diff = number_format($diff, 2, '.', '');
-            $percent_diff_icon = (($percent_diff < 0) ? 'up' : 'down');
-//            $percent_diff_icon = (($percent_diff < 0) ? 'down' : 'up');
-            $percent_diff = abs($percent_diff);
-            $percent_diff = number_format($percent_diff, 2, '.', '');
+            $diff_icon = (($diff >= 0) ? 'up' : 'down');
+            $diff = number_format(abs($diff), 2, '.', '');
+
+            $percent_diff =  ($diff / $total_purchases)* 100;
+//            $percent_diff_icon = (($percent_diff >= 0) ? 'up' : 'down');
+            $percent_diff = number_format(abs($percent_diff), 2, '.', '');
 
             return response()->json([
                         'status' => 200,
                         'value' => number_format($total_sx_value, 2, '.', ''), //$user->slab_value, 
-                        'rank' => $user->overall_rank,
+//                        'rank' => $user->overall_rank,
                         'diff_value' => $diff,
                         'diff_icon' => $diff_icon,
-                        'updated' => $updated,
+//                        'updated' => $updated,
                         'total_purchases' => $total_purchases,
                         'percent_differ' => $percent_diff,
-                        'percent_diff_icon' => $percent_diff_icon
+                        'percent_diff_icon' => $diff_icon
                             ], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -398,9 +399,9 @@ class MyPortfolioController extends Controller {
         }
     }
 
-    public function gradeCard(Request $request){
+    public function gradeCard(Request $request) {
         try {
-            if($request->has('my_portfolio_id') && $request->has('grade')){
+            if ($request->has('my_portfolio_id') && $request->has('grade')) {
                 MyPortfolio::whereId($request->get('my_portfolio_id'))->update(['grade' => $request->get('grade')]);
                 return response()->json(['status' => 200, 'data' => 'Grading Successful!'], 200);
             }
@@ -409,4 +410,5 @@ class MyPortfolioController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
+
 }

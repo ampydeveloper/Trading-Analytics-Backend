@@ -362,7 +362,7 @@ class EbayController extends Controller {
                 $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-                $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
+                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                 $data['sx_value'] = number_format((float) $sx, 2, '.', '');
                 $data['sx_icon'] = $sx_icon;
                 $cards[$ind]['price'] = 0;
@@ -402,7 +402,7 @@ class EbayController extends Controller {
                 $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-                $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
+                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                 $data['sx_value'] = number_format((float) $sx, 2, '.', '');
                 $data['sx_icon'] = $sx_icon;
                 $cards[$ind]['price'] = 0;
@@ -1022,9 +1022,9 @@ class EbayController extends Controller {
             $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
             $sx_icon = null;
             if ($sx != null && $lastSx != null) {
-                $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
+                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
             }
-            $data['sx_value'] = str_replace('-', '', number_format((float) $lastSx - $sx, 2, '.', ''));
+            $data['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
             $data['sx'] = number_format((float) $sx, 2, '.', '');
             $data['sx_icon'] = $sx_icon;
             return response()->json(['status' => 200, 'data' => $data], 200);

@@ -83,22 +83,27 @@ class WatchListController extends Controller {
 
                 $ids = WatchList::where('user_id', $this->user_id)->pluck('card_id');
                 $cards = Card::whereIn('id', $ids)->where(function ($q) use ($filterBy) {
-                if ($filterBy != 'price_low_to_high' && $filterBy != null) {
-                    $q->where('sport', $filterBy);
-                }
-            })->with('details')->get();
-            $cards = $cards->skip($skip)->take($take);
-            $data = [];
-            foreach ($cards as $key => $card) {
-                
-                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->avg('cost');
-//                $count = count($lastSx);
-//                $lastSx = ($count > 0) ? array_sum($lastSx->toArray())/$count : 0;
-                $sx_icon = (($sx-$lastSx) >= 0) ? 'up':'down';
-                $sx = number_format((float) $sx, 2, '.', '');
-                
-                
+                            if ($filterBy != 'price_low_to_high' && $filterBy != null) {
+                                $q->where('sport', $filterBy);
+                            }
+                        })->with('details')->skip($skip)->take($take)->get();
+//            $cards = $cards->skip($skip)->take($take);
+                $data = [];
+                foreach ($cards as $key => $card) {
+
+//                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+                    $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+                    $sx_count = count($sx);
+                    $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+
+//                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->avg('cost');
+                    $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+                    $count = count($lastSx);
+                    $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                    $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                    $sx = number_format((float) $sx, 2, '.', '');
+
+
 //                $cardValues = CardValues::where('card_id', $card->id)->orderBy('date', 'DESC')->limit(2)->get('avg_value');
 //                $sx = 0;
 //                $sx_icon = 'up';
@@ -114,28 +119,28 @@ class WatchListController extends Controller {
 //                        $sx_icon = 'down';
 //                    }
 
-                    $purchase_price = (isset($ptempcards[$card->id])?$ptempcards[$card->id]->purchase_price:0);
-                $purchase_quantity = (isset($ptempcards[$card->id])?$ptempcards[$card->id]->purchase_quantity:1);
-                $portfolio_id = (isset($ptempcards[$card->id])?$ptempcards[$card->id]->id:0);
-                $differ = number_format((float) ($sx - $purchase_price),2,'.','');
+//                    $purchase_price = (isset($ptempcards[$card->id]) ? $ptempcards[$card->id]->purchase_price : 0);
+//                    $purchase_quantity = (isset($ptempcards[$card->id]) ? $ptempcards[$card->id]->purchase_quantity : 1);
+//                    $portfolio_id = (isset($ptempcards[$card->id]) ? $ptempcards[$card->id]->id : 0);
+//                    $differ = number_format((float) ($sx - $purchase_price), 2, '.', '');
 //                $sx_icon = (($differ < 0)?'down':'up');
-                $data[] = [
-                    'id' => $card->id,
-                    'title' => $card->title,
-                    'cardImage' => $card->cardImage,
-                    'sx_value' => str_replace('-', '',number_format((float) $lastSx - $sx, 2, '.', '')),
-                    'sx_icon' => $sx_icon,
-                    'price' => $sx,
-                    'purchase_price' => $purchase_price,
-                    'differ' => $differ,
-                    'portfolio_id' => $portfolio_id,
-                    'purchase_quantity' => $purchase_quantity
-                ];
-            }
-            
-            usort($data, function($a, $b) {
-                return $a['purchase_price'] <=> $b['purchase_price'];
-            });
+                    $data[] = [
+                        'id' => $card->id,
+                        'title' => $card->title,
+                        'cardImage' => $card->cardImage,
+                        'sx_value' => str_replace('-', '', number_format((float)$sx - $lastSx, 2, '.', '')),
+                        'sx_icon' => $sx_icon,
+                        'price' => $sx,
+//                        'purchase_price' => $purchase_price,
+//                        'differ' => $differ,
+//                        'portfolio_id' => $portfolio_id,
+//                        'purchase_quantity' => $purchase_quantity
+                    ];
+                }
+
+//                usort($data, function($a, $b) {
+//                    return $a['purchase_price'] <=> $b['purchase_price'];
+//                });
                 return response()->json(['status' => 200, 'data' => $data, 'next' => ($page + 1)], 200);
             } catch (\Exception $e) {
                 return response()->json($e->getMessage(), 500);

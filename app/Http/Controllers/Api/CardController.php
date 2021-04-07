@@ -252,10 +252,11 @@ class CardController extends Controller {
                 $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-                $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
+                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                 $data['price'] = number_format((float) $sx, 2, '.', '');
-                $data['sx_value'] = (float) str_replace('-', '', number_format((float) $lastSx - $sx, 2, '.', ''));
-                $data['sx_percent'] = (float) (($lastSx - $sx) / $sx);
+                $data['sx_value'] = (float) str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                $sx_percent = ($lastSx>0? (($sx - $lastSx)/$lastSx) : 0);
+                $data['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
                 $data['sx_icon'] = $sx_icon;
                 $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
                 return $data;
@@ -330,9 +331,9 @@ class CardController extends Controller {
                 $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-                $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
+                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                 $data['price'] = number_format((float) $sx, 2, '.', '');
-                $data['sx_value'] = str_replace('-', '', number_format((float) $lastSx - $sx, 2, '.', ''));
+                $data['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
                 $data['sx_icon'] = $sx_icon;
 //                $data['price'] = 0;
 //                if (isset($card->details)) {
@@ -655,8 +656,8 @@ class CardController extends Controller {
             $lastSx = CardSales::orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
             $count = count($lastSx);
             $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-            $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
-            $data['change'] = str_replace('-', '', number_format((float) $lastSx - $sx, 2, '.', ''));
+            $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+            $data['change'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
             $data['change_arrow'] = $sx_icon;
 
             return response()->json(['status' => 200, 'data' => $data], 200);
@@ -755,10 +756,11 @@ class CardController extends Controller {
                 $lastSx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-                $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
+                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
 
-                $data['doller_diff'] = str_replace('-', '', number_format((float) ($lastSx - $sx), 2, '.', ''));
-                $data['perc_diff'] = str_replace('-', '', number_format(($lastSx - $sx) / $sx * 100, 2, '.', ''));
+                $data['doller_diff'] = str_replace('-', '', number_format((float) ($sx - $lastSx), 2, '.', ''));
+                $perc_diff = ($lastSx>0? (($sx - $lastSx)/$lastSx)* 100 : 0);
+                $data['perc_diff'] = str_replace('-', '', number_format($perc_diff, 2, '.', ''));
                 $data['last_timestamp'] = Carbon::create($last_timestamp->timestamp)->format('F d Y \- h:i:s A');
                 $data['sx_icon'] = $sx_icon;
             } else {
@@ -861,10 +863,10 @@ class CardController extends Controller {
                 $lastSx = CardSales::orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-                $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
+                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
 
-                $data['doller_diff'] = str_replace('-', '', number_format((float) ($lastSx - $sx), 2, '.', ''));
-                $data['perc_diff'] = str_replace('-', '', number_format(($lastSx - $sx) / $sx * 100, 2, '.', ''));
+                $data['doller_diff'] = str_replace('-', '', number_format((float) ($sx - $lastSx), 2, '.', ''));
+                $data['perc_diff'] = str_replace('-', '', number_format((($sx - $lastSx)/$lastSx) * 100, 2, '.', ''));
                 $data['last_timestamp'] = Carbon::create($last_timestamp->timestamp)->format('F d Y \- h:i:s A');
                 $data['change_arrow'] = $sx_icon;
             } else {
@@ -1078,9 +1080,10 @@ class CardController extends Controller {
                 $lastSx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
                 $count = count($lastSx);
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-                $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
-                $finalData['dollar_diff'] = str_replace('-', '', number_format($lastSx - $sx, 2, '.', ''));
-                $finalData['pert_diff'] = str_replace('-', '', number_format(($lastSx - $sx) / $sx * 100, 2, '.', ''));
+                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                $finalData['dollar_diff'] = str_replace('-', '', number_format($sx - $lastSx, 2, '.', ''));
+                $pert_diff = ($lastSx>0? (($sx - $lastSx)/$lastSx)* 100 : 0);
+                $finalData['pert_diff'] = str_replace('-', '', number_format($pert_diff, 2, '.', ''));
                 $finalData['sx_icon'] = $sx_icon;
             } else {
                 $finalData['values'] = [];
