@@ -12,7 +12,7 @@ use App\Models\CardSales;
 //use App\Jobs\ProcessCardsForRetrivingDataFromEbay;
 //use App\Jobs\ProcessCardsComplieData;
 //use App\Jobs\CompareEbayImagesWithCardImages;
-//use App\Models\Ebay\EbayItems;
+use App\Models\Ebay\EbayItems;
 use Carbon\Carbon;
 use App\Models\Board;
 
@@ -110,6 +110,32 @@ class HomeController extends Controller {
             $finalData['total_card_value'] = 0;
         }
         return view('frontend.stoxticker-details-data', compact('finalData'));
+    }
+    
+    public function getSoldListings(Request $request) {
+            $items['basketball'] = EbayItems::whereHas('card', function($q) use($request) {
+                        $q->where('sport', 'basketball');
+                    })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(1)->get();
+            $items['football'] = EbayItems::whereHas('card', function($q) use($request) {
+                        $q->where('sport', 'football');
+                    })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(1)->get();
+            $items['baseball'] = EbayItems::whereHas('card', function($q) use($request) {
+                        $q->where('sport', 'baseball');
+                    })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(1)->get();
+            $items['soccer'] = EbayItems::whereHas('card', function($q) use($request) {
+                        $q->where('sport', 'soccer');
+                    })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(1)->get();
+            $items['pokemon'] = EbayItems::whereHas('card', function($q) use($request) {
+                        $q->where('sport', 'pokemon');
+                    })->where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(1)->get();
+//            $board = Board::where('id', $board)->first();
+//            $all_cards = json_decode($board->cards);
+//            foreach ($all_cards as $card) {
+//                $each_cards[] = Card::where('id', (int) $card)->with('details')->first();
+//            }
+//            $finalData = $this->__cardData();
+//            return response()->json(['status' => 200, 'data' => $items], 200);
+            return view('frontend.stoxticker-sx-data', compact('items'));
     }
 
 }

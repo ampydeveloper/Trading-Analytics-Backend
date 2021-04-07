@@ -709,8 +709,9 @@ class CardController extends Controller {
                         return Carbon::parse($cs->timestamp)->format($grpFormat);
                     })->map(function($cs, $timestamp) use($grpFormat, $days) {
                         return [
-                            'cost' => (clone $cs)->splice(0, 3)->avg('cost'),
-                            'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : 'Y-m-d 00:00:00'),
+                            'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
+                            'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
+                            // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
                             'quantity' => $cs->splice(0, 3)->map(function ($qty) { return (int) $qty->quantity; })->avg()
                         ];
                     });
@@ -718,7 +719,7 @@ class CardController extends Controller {
             $data['values'] = $cvs->pluck('cost')->toArray();
             $data['labels'] = $cvs->pluck('timestamp')->toArray();
             $data['qty'] = $cvs->pluck('quantity')->toArray();
-            // dd($data);x
+            // dd($data);
             
             // $data = $this->__groupGraphDataN($days, $data);
             if($days > 2){
@@ -817,8 +818,8 @@ class CardController extends Controller {
                 return Carbon::parse($cs->timestamp)->format($grpFormat);
             })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
                 return [
-                    'cost' => (clone $cs)->splice(0, 3)->avg('cost'),
-                    'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : 'Y-m-d 00:00:00'),
+                    'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
+                    'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
                     'quantity' => $cs->splice(0, 3)->map(function ($qty) {
                         return (int) $qty->quantity;
                     })->avg()
@@ -827,6 +828,7 @@ class CardController extends Controller {
             $data['values'] = $cvs->pluck('cost')->toArray();
             $data['labels'] = $cvs->pluck('timestamp')->toArray();
             $data['qty'] = $cvs->pluck('quantity')->toArray();
+            // dd($data);
 
             if($days > 2){ $data = $this->__groupGraphData($days, $data);}
             if ($days == 2) {
@@ -925,8 +927,9 @@ class CardController extends Controller {
                     return Carbon::parse($cs->timestamp)->format($grpFormat);
                 })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
                     return [
-                        'cost' => (clone $cs)->splice(0, 3)->avg('cost'),
-                        'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : 'Y-m-d 00:00:00'),
+                        'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
+                        'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
+                        // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
                         'quantity' => $cs->splice(0, 3)->map(function ($qty) {
                             return (int) $qty->quantity;
                         })->avg()
@@ -1033,8 +1036,9 @@ class CardController extends Controller {
                 return Carbon::parse($cs->timestamp)->format($grpFormat);
             })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
                 return [
-                    'cost' => (clone $cs)->splice(0, 3)->avg('cost'),
-                    'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : 'Y-m-d 00:00:00'),
+                    'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
+                    'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
+                    // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
                     'quantity' => $cs->splice(0, 3)->map(function ($qty) {
                         return (int) $qty->quantity;
                     })->avg()
@@ -1177,18 +1181,18 @@ class CardController extends Controller {
             $last_date = Carbon::parse($data['labels'][0]);
         }
 
-        if ((count($data['labels']) < (int) $cmp) || $cmpSfx == 'years' || $last_date > Carbon::now()) {
-            $cmpFormat = 'Y-m-d';
-            $last_date = Carbon::now();
-            if ($cmpSfx == 'days') {
-                $start_date = $last_date->copy()->subDays($cmp - 1);
-            } else if ($cmpSfx == 'months') {
-                $cmpFormat = 'Y-m';
-                $start_date = $last_date->copy()->subMonths($cmp - 1);
-            } else if ($cmpSfx == 'years') {
-                $cmpFormat = 'Y';
-                $start_date = $last_date->copy()->subYears($cmp - 1);
-            }
+        $cmpFormat = 'Y-m-d';
+        $last_date = Carbon::now();
+        if ($cmpSfx == 'days') {
+            $start_date = $last_date->copy()->subDays($cmp - 1);
+        } else if ($cmpSfx == 'months') {
+            $cmpFormat = 'Y-m';
+            $start_date = $last_date->copy()->subMonths($cmp - 1);
+        } else if ($cmpSfx == 'years') {
+            $cmpFormat = 'Y';
+            $start_date = $last_date->copy()->subYears($cmp - 1);
+        }
+        // if ((count($data['labels']) < (int) $cmp) || $cmpSfx == 'years' || $last_date > Carbon::now()) {
 
             if (isset($data['labels']) && isset($data['labels'][0])) {
                 $period = \Carbon\CarbonPeriod::create($start_date, '1 ' . $cmpSfx, $last_date);
@@ -1213,7 +1217,7 @@ class CardController extends Controller {
                 $data['values'] = array_values($map_val);
                 $data['qty'] = array_values($map_qty);
             }
-        }
+        // }
 
         return $data;
     }

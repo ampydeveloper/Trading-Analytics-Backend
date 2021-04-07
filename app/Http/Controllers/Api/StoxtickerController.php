@@ -284,8 +284,9 @@ class StoxtickerController extends Controller {
             return Carbon::parse($cs->timestamp)->format($grpFormat);
         })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
             return [
-                'cost' => (clone $cs)->splice(0, 3)->avg('cost'),
-                'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : 'Y-m-d 00:00:00'),
+                'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
+                'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
+                // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
                 'quantity' => $cs->splice(0, 3)->map(function ($qty) {
                     return (int) $qty->quantity;
                 })->avg()
