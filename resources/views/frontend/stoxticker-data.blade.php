@@ -10,6 +10,7 @@
 <meta  data-hid="card-og-type" property="og:type" content="article">
 <meta  data-hid="card-og-type" property="fb:app_id" content="2791823984386463">
 
+<meta  data-hid="card-og-url" property="og:url" content="<?php echo env('VUE_URL'); ?>stoxticker">
 <meta  data-hid="card-og-title" property="og:title" content="Check our Stoxticker">
 <meta  data-hid="card-og-image" property="og:image" content="https://www.slabstox.com/wp-content/uploads/2020/06/logo-3.png">
 <meta  data-hid="card-og-description" property="og:description" content="Stoxticker <?php echo $data['sale']; ?> Total Slabs <?php echo $data['total']; ?> Price Change <?php echo $data['change']; ?> Percentage Change <?php echo $data['change_pert']; ?>% Stoxticker URL <?php echo env('VUE_URL').'stoxticker'; ?>">

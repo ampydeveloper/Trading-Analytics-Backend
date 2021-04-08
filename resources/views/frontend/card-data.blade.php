@@ -10,6 +10,7 @@
 <meta  data-hid="card-og-type" property="og:type" content="article">
 <meta  data-hid="card-og-type" property="fb:app_id" content="2791823984386463">
 
+<meta  data-hid="card-og-url" property="og:url" content="<?php echo env('VUE_URL'); ?>card-data/?id=<?php echo $card_details['id']; ?>">
 <meta  data-hid="card-og-title" property="og:title" content="<?php echo $card_details['title']; ?>">
 <meta  data-hid="card-og-image" property="og:image" content="<?php echo $card_details['cardImage']; ?>">
 <meta  data-hid="card-og-description" property="og:description" content="<?php echo $card_details['title']; ?> SX Value $<?php echo $card_details['sx']; ?> Price Change $<?php echo $card_details['dollar_diff']; ?> Percentage Change <?php echo $card_details['pert_diff']; ?>% Slab URL <?php echo env('VUE_URL').'card-data/?id='.$card_details['id']; ?>">

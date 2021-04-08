@@ -10,6 +10,7 @@
 <meta  data-hid="card-og-type" property="og:type" content="article">
 <meta  data-hid="card-og-type" property="fb:app_id" content="2791823984386463">
 
+<meta  data-hid="card-og-url" property="og:url" content="<?php echo env('VUE_URL'); ?>stox-details?board=<?php echo $finalData['board']->id; ?>">
 <meta  data-hid="card-og-title" property="og:title" content="Check StoxTicker: <?php echo $finalData['board']->name; ?>">
 <meta  data-hid="card-og-image" property="og:image" content="https://www.slabstox.com/wp-content/uploads/2020/06/logo-3.png">
 <meta  data-hid="card-og-description" property="og:description" content="StoxTicker: <?php echo $finalData['board']->name; ?> Stoxticker Value $<?php echo $finalData['total_card_value']; ?> SX Change $<?php echo $finalData['sx_value']; ?> Percentage Change <?php echo $finalData['pert_diff']; ?>%">
