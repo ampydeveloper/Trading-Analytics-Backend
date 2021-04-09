@@ -565,31 +565,17 @@ class EbayController extends Controller {
         $itemsIds = [];
         $cardsIds = [];
         $cards = [];
-        $cards = CardDetails::where(function ($q) use ($filter) {
-                    if ($filter['year'] != null) {
-                        $q->where('year', $filter['year']);
+        
+        $itemIds = EbayItemSpecific::where(function ($q) use ($filter) {
+                    foreach($filter as $k => $v){
+                        if($v != null && $v != "null"){
+                            $q->orWhere('value', 'like', "%$v");
+                        }
                     }
-                    if ($filter['number'] != null) {
-                        $q->where('number', '#' . $filter['number']);
-                    }
-                    if ($filter['card'] != null) {
-                        $q->where('manufacturer', $filter['card']);
-                    }
-                    if ($filter['series'] != null) {
-                        $q->where('series', $filter['series']);
-                    }
-                    if ($filter['grade'] != null) {
-                        $q->where('grade', $filter['grade']);
-                    }
-                    if ($filter['rookie'] != null && $filter['rookie'] == '1') {
-                        $q->where('rookie', 1);
-                    }
-                    if ($filter['season'] != null) {
-                        $q->where('season', $filter['season']);
-                    }
-                })->pluck('card_id')->toArray();
+                })->pluck('itemId')->unique()->toArray();
+        $cards = EbayItems::whereIn('itemId', $itemIds)->pluck('card_id')->unique()->values()->toArray();
 
-//        $search = $request->input('search', null);
+        // $search = $request->input('search', null);
         $cardsId = null;
         if ($filter['player'] != null) {
             $search = $filter['player'];

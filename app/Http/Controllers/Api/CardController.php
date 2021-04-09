@@ -1469,9 +1469,8 @@ class CardController extends Controller {
 //                return response()->json(['message' => 'File uploaded unsuccessfully'], 500);
             }
             if ($request->has('file')) {
-                if ($request->has('card_id')) {
-//                    die('rede');
                      $filename = $request->file('file')->getClientOriginalName();
+                if ($request->has('card_id')) {
                     // if(Storage::disk('public')->put($filename, file_get_contents($request->file('file')->getRealPath()))){
                     $path = $request->file('file')->store('temp');
                     ExcelImports::dispatch(['file' => $path, 'type' => 'listings', 'filename' => $filename]);
@@ -1480,7 +1479,7 @@ class CardController extends Controller {
                     return response()->json(['message' => 'Listings imported successfully.'], 200);
                 } else {
                     $path = $request->file('file')->store('temp');
-                    ExcelImports::dispatch(['file' => $path, 'type' => 'slabs']);
+                    ExcelImports::dispatch(['file' => $path, 'type' => 'slabs', 'filename' => $filename]);
                     // Excel::import(new CardsImport, request()->file('file'));
                     return response()->json(['message' => 'Slabs imported successfully.'], 200);
                 }
