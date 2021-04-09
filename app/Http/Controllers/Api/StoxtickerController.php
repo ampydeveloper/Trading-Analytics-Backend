@@ -287,9 +287,9 @@ class StoxtickerController extends Controller {
                 'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
                 'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
                 // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
-                'quantity' => $cs->splice(0, 3)->map(function ($qty) {
+                'quantity' => $cs->map(function ($qty) {
                     return (int) $qty->quantity;
-                })->avg()
+                })->sum()
             ];
         });
         $data['values'] = $cvs->pluck('cost')->toArray();

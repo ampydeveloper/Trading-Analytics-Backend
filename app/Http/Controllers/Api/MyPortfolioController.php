@@ -320,7 +320,7 @@ class MyPortfolioController extends Controller {
             $diff_icon = (($diff >= 0) ? 'up' : 'down');
             $diff = number_format(abs($diff), 2, '.', '');
 
-            $percent_diff =  ($diff / $total_purchases)* 100;
+            $percent_diff =  ($total_purchases>0? (($diff / $total_purchases)* 100): 0 ) ;
 //            $percent_diff_icon = (($percent_diff >= 0) ? 'up' : 'down');
             $percent_diff = number_format(abs($percent_diff), 2, '.', '');
 

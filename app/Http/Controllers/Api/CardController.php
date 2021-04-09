@@ -254,8 +254,10 @@ class CardController extends Controller {
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                 $data['price'] = number_format((float) $sx, 2, '.', '');
+                $data['sx_value_signed'] = (float) $sx - $lastSx;
                 $data['sx_value'] = (float) str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
                 $sx_percent = ($lastSx>0? (($sx - $lastSx)/$lastSx) : 0);
+                $data['sx_percent_signed'] = $sx_percent;
                 $data['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
                 $data['sx_icon'] = $sx_icon;
                 $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
@@ -263,16 +265,16 @@ class CardController extends Controller {
             });
 
             if ($request->input('orderby') == 'priceup') {
-                $cards = $cards->sortByDesc('sx_value');
+                $cards = $cards->sortByDesc('sx_value_signed');
                 $cards = $cards->values()->all();
             } elseif ($request->input('orderby') == 'pricedown') {
-                $cards = $cards->sortBy('sx_value');
+                $cards = $cards->sortBy('sx_value_signed');
                 $cards = $cards->values()->all();
             } else if ($request->input('orderby') == 'percentup') {
-                $cards = $cards->sortByDesc('sx_percent');
+                $cards = $cards->sortByDesc('sx_percent_signed');
                 $cards = $cards->values()->all();
             } else if ($request->input('orderby') == 'percentdown') {
-                $cards = $cards->sortBy('sx_percent');
+                $cards = $cards->sortBy('sx_percent_signed');
                 $cards = $cards->values()->all();
             }
 
@@ -712,7 +714,7 @@ class CardController extends Controller {
                             'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
                             'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
                             // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
-                            'quantity' => $cs->splice(0, 3)->map(function ($qty) { return (int) $qty->quantity; })->avg()
+                            'quantity' => $cs->map(function ($qty) { return (int) $qty->quantity; })->sum()
                         ];
                     });
 
@@ -820,9 +822,9 @@ class CardController extends Controller {
                 return [
                     'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
                     'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
-                    'quantity' => $cs->splice(0, 3)->map(function ($qty) {
+                    'quantity' => $cs->map(function ($qty) {
                         return (int) $qty->quantity;
-                    })->avg()
+                    })->sum()
                 ];
             });
             $data['values'] = $cvs->pluck('cost')->toArray();
@@ -930,9 +932,9 @@ class CardController extends Controller {
                         'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
                         'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
                         // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
-                        'quantity' => $cs->splice(0, 3)->map(function ($qty) {
+                        'quantity' => $cs->map(function ($qty) {
                             return (int) $qty->quantity;
-                        })->avg()
+                        })->sum()
                     ];
                 });
 
@@ -1039,9 +1041,9 @@ class CardController extends Controller {
                     'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
                     'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
                     // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
-                    'quantity' => $cs->splice(0, 3)->map(function ($qty) {
+                    'quantity' => $cs->map(function ($qty) {
                         return (int) $qty->quantity;
-                    })->avg()
+                    })->sum()
                 ];
             });
 
@@ -1076,7 +1078,7 @@ class CardController extends Controller {
                 $finalData['values'] = $data['values'];
                 $finalData['labels'] = $data['labels'];
                 $finalData['qty'] = $data['qty'];
-
+            }
 //                $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
                 $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
                 $sx_count = count($sx);
@@ -1089,14 +1091,14 @@ class CardController extends Controller {
                 $pert_diff = ($lastSx>0? (($sx - $lastSx)/$lastSx)* 100 : 0);
                 $finalData['pert_diff'] = str_replace('-', '', number_format($pert_diff, 2, '.', ''));
                 $finalData['sx_icon'] = $sx_icon;
-            } else {
-                $finalData['values'] = [];
-                $finalData['labels'] = [];
-                $finalData['qty'] = [];
-                $finalData['dollar_diff'] = 0;
-                $finalData['pert_diff'] = 0;
-                $finalData['sx_icon'] = 0;
-            }
+//            } else {
+//                $finalData['values'] = [];
+//                $finalData['labels'] = [];
+//                $finalData['qty'] = [];
+//                $finalData['dollar_diff'] = 0;
+//                $finalData['pert_diff'] = 0;
+//                $finalData['sx_icon'] = 0;
+//            }
 
             $finalData['rank'] = $this->getCardRank($card_id);
             $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
@@ -1468,10 +1470,11 @@ class CardController extends Controller {
             }
             if ($request->has('file')) {
                 if ($request->has('card_id')) {
-                    // $filename = $request->file('file')->getClientOriginalName();
+//                    die('rede');
+                     $filename = $request->file('file')->getClientOriginalName();
                     // if(Storage::disk('public')->put($filename, file_get_contents($request->file('file')->getRealPath()))){
                     $path = $request->file('file')->store('temp');
-                    ExcelImports::dispatch(['file' => $path, 'type' => 'listings']);
+                    ExcelImports::dispatch(['file' => $path, 'type' => 'listings', 'filename' => $filename]);
                     // }
                     // Excel::queueImport(new ListingsImport, request()->file('file'));
                     return response()->json(['message' => 'Listings imported successfully.'], 200);

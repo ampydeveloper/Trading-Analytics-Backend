@@ -20,6 +20,7 @@ class ExcelImports implements ShouldQueue
 
     protected $file;
     protected $type;
+    protected $filename;
     /**
      * Create a new job instance.
      *
@@ -29,6 +30,7 @@ class ExcelImports implements ShouldQueue
     {
         $this->file = $data['file'];
         $this->type = $data['type'];
+        $this->filename = $data['filename'];
     }
 
     /**
@@ -38,11 +40,14 @@ class ExcelImports implements ShouldQueue
      */
     public function handle()
     {
+//        var_dump('edd');
         try{
+//            $filename = explode('/', $this->file->getClientOriginalName());
+//            $filename = $filename[count($filename)-1];
             if($this->type == 'listings'){
-                Excel::import(new ListingsImport, storage_path('app') . '/' . $this->file);
+                Excel::import(new ListingsImport($this->filename), storage_path('app') . '/' . $this->file);
             }else if($this->type == 'slabs'){
-                Excel::import(new CardsImport, storage_path('app') . '/' . $this->file);
+                Excel::import(new CardsImport($this->filename), storage_path('app') . '/' . $this->file);
             }
             Storage::disk('local')->delete($this->file);
 

@@ -18,7 +18,11 @@ use App\Models\ExcelUploads;
 class ListingsImport implements ToCollection, WithStartRow
 {
     private $row = 1;
+    private $filename;
     
+    public function __construct($name){
+        $this->filename = $name;
+    }
     /**
      * @return int
      */
@@ -35,7 +39,8 @@ class ListingsImport implements ToCollection, WithStartRow
     public function collection(Collection $rows)
     {
         $eu_ids = ExcelUploads::create([
-            'file_name' => 'LISTING_'.substr(md5(mt_rand()), 0, 7).'.csv',
+//            'file_name' => 'LISTING_'.substr(md5(mt_rand()), 0, 7).'.csv',
+            'file_name' => $this->filename,
             'status' => 0,
         ]);
         
@@ -45,6 +50,7 @@ class ListingsImport implements ToCollection, WithStartRow
                     CardSales::create([
                         'card_id' => $row[1],
                         'excel_uploads_id' => $eu_ids->id,
+//                        'timestamp' => '',
 //                        'timestamp' => $row[6],
                         'timestamp' => \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($row[6]),
                         'quantity' => 1,

@@ -11,6 +11,11 @@ use App\Models\ExcelUploads;
 class CardsImport implements ToCollection, WithStartRow
 {
     private $row = 1;
+    private $filename;
+    
+    public function __construct($name){
+        $this->filename = $name;
+    }
     
     /**
      * @return int
@@ -28,7 +33,8 @@ class CardsImport implements ToCollection, WithStartRow
     public function collection(Collection $rows)
     {
         $eu_ids = ExcelUploads::create([
-                'file_name' => 'CARD_'.substr(md5(mt_rand()), 0, 7).'.csv',
+//                'file_name' => 'CARD_'.substr(md5(mt_rand()), 0, 7). $this->filename.'.csv',
+                'file_name' => $this->filename,
                 'status' => 0,
         ]);
         foreach($rows as $row) {

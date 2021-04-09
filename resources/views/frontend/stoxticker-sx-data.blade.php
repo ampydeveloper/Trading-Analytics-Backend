@@ -3,7 +3,7 @@
 @section('title', app_name() . ' | ' . __('navs.general.home'))
 
 @section('meta')
-<meta name="title" content="Check SX Stoxticker">
+<meta name="title" content="SX Stoxticker">
 <meta name="description" content="
 <?php if(isset($items['basketball'][0])){ ?>
 Basketball: <?php echo $items['basketball'][0]->card->title; ?> <?php echo env('VUE_URL').'card-data/?id='. $items['basketball'][0]->card->id; ?> 
@@ -26,7 +26,7 @@ Pokemon: <?php echo $items['pokemon'][0]->card->title; ?> <?php echo env('VUE_UR
 <meta  data-hid="card-og-type" property="fb:app_id" content="2791823984386463">
 
 <meta  data-hid="card-og-url" property="og:url" content="<?php echo env('VUE_URL'); ?>stoxticker">
-<meta  data-hid="card-og-title" property="og:title" content="Check SX Stoxticker">
+<meta  data-hid="card-og-title" property="og:title" content="SX Stoxticker">
 <meta  data-hid="card-og-image" property="og:image" content="https://www.slabstox.com/wp-content/uploads/2020/06/logo-3.png">
 <meta  data-hid="card-og-description" property="og:description" content="
 <?php if(isset($items['basketball'][0])){ ?>
@@ -50,7 +50,7 @@ Pokemon: <?php echo $items['pokemon'][0]->card->title; ?> <?php echo env('VUE_UR
 
 <meta property="twitter:card" content="summary_large_image">
 <meta  data-hid="card-twitter-url" property="twitter:url" content="<?php echo env('VUE_URL'); ?>stoxticker">
-<meta  data-hid="card-twitter-title" property="twitter:title" content="Check SX Stoxticker">
+<meta  data-hid="card-twitter-title" property="twitter:title" content="SX Stoxticker">
 <meta  data-hid="card-twitter-image" property="twitter:image" content="https://www.slabstox.com/wp-content/uploads/2020/06/logo-3.png">
 <meta  data-hid="card-twitter-description" property="twitter:description" content="
 <?php if(isset($items['basketball'][0])){ ?>
