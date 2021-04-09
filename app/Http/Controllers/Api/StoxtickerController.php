@@ -19,7 +19,15 @@ class StoxtickerController extends Controller {
 
     public function slabSearch(Request $request) {
         try {
-            $data = Card::where('player', 'like', '%' . $request->input('keyword') . '%')->distinct('player')->where('active', 1)->with('details')->get();
+            $search = $request->input('keyword', null);
+            $data = Card::where(function($q) use ($search) {
+                        $search = explode(' ', $search);
+                        foreach ($search as $key => $keyword) {
+                            $q->Where('title', 'like', '%' . $keyword . '%');
+                        }
+                    })->distinct('player')->where('active', 1)->with('details')->get();
+
+//            $data = Card::where('player', 'like', '%' . $request->input('keyword') . '%')->distinct('player')->where('active', 1)->with('details')->get();
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -68,28 +76,30 @@ class StoxtickerController extends Controller {
 
     public function searchBoard(Request $request) {
         try {
-             $page = $request->input('page', 1);
-        $take = 4;
-        $takeout = $take * $page;
+            $page = $request->input('page', 1);
+            $take = 4;
+            $takeout = $take * $page;
 //        $skip = $skip - $take;
             $boards = Board::where('name', 'like', '%' . $request->input('keyword') . '%')->take($takeout)->get();
-            if(!empty($request->input('sport'))){
+            if (!empty($request->input('sport'))) {
                 foreach ($boards as $key => $board) {
                     $all_cards = json_decode($board->cards);
                     $card_details = Card::whereIn('id', $all_cards)->whereIn('sport', $request->input('sport'))->count();
-                    if(empty($card_details) && $card_details == 0){
+                    if (empty($card_details) && $card_details == 0) {
                         $boards->forget($key);
                     }
                 }
             }
             $days = 2;
-            if($request->has('days')){ $days = $request->get('days'); }
+            if ($request->has('days')) {
+                $days = $request->get('days');
+            }
             foreach ($boards as $key => $board) {
                 $all_cards = json_decode($board->cards);
                 $boards[$key]['sales_graph'] = $this->__cardData($all_cards, $days);
 
 //                $sx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                 $sx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+                $sx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
                 $sx_count = count($sx);
                 $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
                 $lastSx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
@@ -97,7 +107,8 @@ class StoxtickerController extends Controller {
                 $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                 if ($sx != 0) {
-                    $boards[$key]['pert_diff'] = number_format((float) (($sx - $lastSx)/$lastSx) * 100, 2, '.', '');
+                    $pert_diff = ($lastSx>0? ((($sx - $lastSx) / $lastSx) * 100) : 0);
+                    $boards[$key]['pert_diff'] = number_format((float) $pert_diff, 2, '.', '');
                 } else {
                     $boards[$key]['pert_diff'] = 0;
                 }
@@ -108,7 +119,7 @@ class StoxtickerController extends Controller {
                 $boards[$key]['total_card_value'] = number_format((float) $total_card_value, 2, '.', '');
             }
 
-            return response()->json(['status' => 200, 'data' => $boards, 'page' => ((int)$page+1)], 200);
+            return response()->json(['status' => 200, 'data' => $boards, 'page' => ((int) $page + 1)], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -121,11 +132,11 @@ class StoxtickerController extends Controller {
             $all_boards = Board::where('user_id', $user_id)->get();
 //            dd('ewrr');
             $b_ids = BoardFollow::where('user_id', $user_id)->pluck('board_id');
-            if(!empty($b_ids)){
-            $board_follow = Board::whereIn('id', $b_ids)->get();
-            $boards = $all_boards->merge($board_follow);
+            if (!empty($b_ids)) {
+                $board_follow = Board::whereIn('id', $b_ids)->get();
+                $boards = $all_boards->merge($board_follow);
             }
-            
+
             foreach ($boards as $key => $board) {
                 $all_cards = json_decode($board->cards);
                 $boards[$key]['board_details'] = Card::whereIn('id', $all_cards)->with('details')->get();
@@ -148,7 +159,7 @@ class StoxtickerController extends Controller {
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                 $boards[$key]['sx_value'] = number_format((float) $sx, 2, '.', '');
                 if ($sx != 0) {
-                    $boards[$key]['pert_diff'] = number_format((float) (($sx - $lastSx)/$lastSx) * 100, 2, '.', '');
+                    $boards[$key]['pert_diff'] = number_format((float) (($sx - $lastSx) / $lastSx) * 100, 2, '.', '');
                 } else {
                     $boards[$key]['pert_diff'] = 0;
                 }
@@ -170,30 +181,30 @@ class StoxtickerController extends Controller {
 
 //            $total_card_value = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
             $total_card_value = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-                $sx_count = count($total_card_value);
-                $total_card_value = ($sx_count > 0) ? array_sum($total_card_value->toArray()) / $sx_count : 0;
-                if (!empty($total_card_value)) {
-                    $boards['total_card_value'] = $total_card_value;
-                } else {
-                    $boards['total_card_value'] = 0;
-                }
+            $sx_count = count($total_card_value);
+            $total_card_value = ($sx_count > 0) ? array_sum($total_card_value->toArray()) / $sx_count : 0;
+            if (!empty($total_card_value)) {
+                $boards['total_card_value'] = $total_card_value;
+            } else {
+                $boards['total_card_value'] = 0;
+            }
 
 //                $sx = CardSales::where('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                $sx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-                $sx_count = count($sx);
-                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
-                $lastSx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-                $count = count($lastSx);
-                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-                $boards['sx_value'] = number_format((float) $sx, 2, '.', '');
-                if ($sx != 0) {
-                    $boards['pert_diff'] = number_format((float) (($sx - $lastSx)/$lastSx) * 100, 2, '.', '');
-                } else {
-                    $boards['pert_diff'] = 0;
-                }
-                $boards['sx_icon'] = $sx_icon;
-            
+            $sx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+            $sx_count = count($sx);
+            $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+            $lastSx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+            $count = count($lastSx);
+            $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+            $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+            $boards['sx_value'] = number_format((float) $sx, 2, '.', '');
+            if ($sx != 0) {
+                $boards['pert_diff'] = number_format((float) (($sx - $lastSx) / $lastSx) * 100, 2, '.', '');
+            } else {
+                $boards['pert_diff'] = 0;
+            }
+            $boards['sx_icon'] = $sx_icon;
+
             return response()->json(['status' => 200, 'data' => $boards], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -223,15 +234,15 @@ class StoxtickerController extends Controller {
             $finalData['sales_graph'] = $this->__cardData($all_cards, $days);
 
 //            $sx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-             $sx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-                $sx_count = count($sx);
-                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+            $sx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+            $sx_count = count($sx);
+            $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
             $lastSx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
             $count = count($lastSx);
             $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
             $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
             if ($sx != 0) {
-                $finalData['pert_diff'] = number_format((float) (($sx - $lastSx)/$lastSx) * 100, 2, '.', '');
+                $finalData['pert_diff'] = number_format((float) (($sx - $lastSx) / $lastSx) * 100, 2, '.', '');
             } else {
                 $finalData['pert_diff'] = 0;
             }
@@ -281,22 +292,24 @@ class StoxtickerController extends Controller {
         }
         // $cvs = CardSales::whereIn('card_id', $card_ids)->groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
         $cvs = CardSales::whereIn('card_id', $card_ids)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
-            return Carbon::parse($cs->timestamp)->format($grpFormat);
-        })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
+                    return Carbon::parse($cs->timestamp)->format($grpFormat);
+                })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
             return [
-                'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
-                'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
-                // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
-                'quantity' => $cs->map(function ($qty) {
-                    return (int) $qty->quantity;
-                })->sum()
+            'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
+            'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
+            // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
+            'quantity' => $cs->map(function ($qty) {
+            return (int) $qty->quantity;
+            })->sum()
             ];
         });
         $data['values'] = $cvs->pluck('cost')->toArray();
         $data['labels'] = $cvs->pluck('timestamp')->toArray();
         $data['qty'] = $cvs->pluck('quantity')->toArray();
 
-        if($days > 2){ $data = $this->__groupGraphData($days, $data);}
+        if ($days > 2) {
+            $data = $this->__groupGraphData($days, $data);
+        }
         // $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
         if ($days == 2) {
             $labels = [];
@@ -330,18 +343,18 @@ class StoxtickerController extends Controller {
         return $finalData;
     }
 
-    public function lbl_dt($a, $b)
-    {
+    public function lbl_dt($a, $b) {
         $a = Carbon::parse($a);
         $b = Carbon::parse($b);
         if ($a->greaterThan($b)) {
             return -1;
         } else if ($a->lessThan($b)) {
             return 1;
-        } else 0;
+        } else
+            0;
     }
 
-    public function __groupGraphData($days, $data){
+    public function __groupGraphData($days, $data) {
         $months = null;
         $years = null;
         $cmp = $days;
@@ -402,8 +415,8 @@ class StoxtickerController extends Controller {
                 uksort($map_qty, [$this, "lbl_dt"]);
 
                 $data['labels'] = Collect(array_keys($map_val))->map(function ($lbl) use ($cmpFormat) {
-                    return Carbon::createFromFormat($cmpFormat, explode(' ', $lbl)[0])->format('M/d/Y');
-                })->toArray();
+                            return Carbon::createFromFormat($cmpFormat, explode(' ', $lbl)[0])->format('M/d/Y');
+                        })->toArray();
                 $data['values'] = array_values($map_val);
                 $data['qty'] = array_values($map_qty);
             }

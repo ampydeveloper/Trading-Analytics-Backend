@@ -820,7 +820,7 @@ class CardController extends Controller {
                 return Carbon::parse($cs->timestamp)->format($grpFormat);
             })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
                 return [
-                    'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
+                    'cost' => round((clone $cs)->avg('cost'), 2),
                     'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
                     'quantity' => $cs->map(function ($qty) {
                         return (int) $qty->quantity;
@@ -1101,7 +1101,10 @@ class CardController extends Controller {
 //            }
 
             $finalData['rank'] = $this->getCardRank($card_id);
-            $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+//            $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
+             $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+                $sx_count = count($sx);
+                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
             $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
             $sx_count = count($sx);
             $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
