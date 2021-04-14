@@ -138,7 +138,7 @@ class UserController extends Controller {
         }
         try {
             $user_id = auth()->user()->id;
-            $u = User::where('id', $user_id)->update(['password' => $request->input('password')]);
+            $u = (User::where('id', $user_id)->first())->update(['password' => $request->input('password')]);
             if (!$u) {
                 throw new Exception('Unable to update password');
             }
@@ -167,7 +167,7 @@ class UserController extends Controller {
                 if (!$a) {
                     throw new Exception('Unable to upload image');
                 }
-                User::where('id', $user_id)->update(['avatar_type' => 'storage', 'avatar_location' => $name]);
+                (User::where('id', $user_id)->first())->update(['avatar_type' => 'storage', 'avatar_location' => $name]);
                 return response()->json(['status' => 200, 'message' => 'Image Updated'], 200);
             }
         } catch (\Exception $e) {
@@ -234,7 +234,7 @@ class UserController extends Controller {
     }
 
     public function saveUserForAdmin(Request $request) {
-        if (!auth()->user()->isAdmin()) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->isModerator()) {
             return response()->json(['error' => 'Unauthorised'], 301);
         }
         $validator = Validator::make($request->all(), [
@@ -286,7 +286,7 @@ class UserController extends Controller {
     }
 
     public function updateUserAttributeForAdmin(User $user, $action) {
-        if (!auth()->user()->isAdmin()) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->isModerator()) {
             return response()->json(['error' => 'Unauthorised'], 301);
         }
         try {
@@ -310,7 +310,7 @@ class UserController extends Controller {
     }
 
     public function changeUSerPasswordForAdmin(User $user, Request $request) {
-        if (!auth()->user()->isAdmin()) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->isModerator()) {
             return response()->json(['error' => 'Unauthorised'], 301);
         }
         try {

@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class CardDetails extends Model
 {
     use SoftDeletes;
+    use LogsActivity;
     public $timestamps = true;
 
     protected $table = 'card_details'; 
@@ -32,6 +34,9 @@ class CardDetails extends Model
         'brand',
         'currentPrice',
     ];
+
+    protected static $logFillable = true;
+    protected static $logOnlyDirty = true;
 
     protected $hidden = [
         'id',

@@ -441,9 +441,9 @@ class CardController extends Controller {
                 $cardSport = trim($data->sport);
                 //echo $cardSport.' : '.$is_featured;
                 /** update is featured start * */
-                Card::where('id', $request->input('id'))->update(array('is_featured' => $is_featured));
+                (Card::where('id', $request->input('id'))->first())->update(array('is_featured' => $is_featured));
                 if ($is_featured) {
-                    Card::where('sport', $cardSport)->where('id', '<>', $request->input('id'))->update(array('is_featured' => 0));
+                    (Card::where('sport', $cardSport)->where('id', '<>', $request->input('id'))->first())->update(array('is_featured' => 0));
                 }
                 /** update is featured end * */
                 return response()->json(['status' => 200, 'message' => (($is_featured) ? 'Card set as featured' : 'Card remove from featured')], 200);
@@ -462,7 +462,7 @@ class CardController extends Controller {
             if (isset($data->id)) {
                 //echo $cardSport.' : '.$status;
                 /** update is featured start * */
-                Card::where('id', $request->input('id'))->update(array('active' => $status));
+                (Card::where('id', $request->input('id'))->first())->update(array('active' => $status));
                 /** update is featured end * */
                 return response()->json(['status' => 200, 'message' => (($status) ? 'Card active successfully' : 'Card in-active successfully')], 200);
             } else {
@@ -478,7 +478,7 @@ class CardController extends Controller {
             $is_sx = (bool) $request->input('is_sx');
             $data = Card::where('id', $request->input('id'))->first();
             if (isset($data->id)) {
-                Card::where('id', $request->input('id'))->update(array('is_sx' => $is_sx));
+                (Card::where('id', $request->input('id'))->first())->update(array('is_sx' => $is_sx));
 
                 return response()->json(['status' => 200, 'message' => ('Card SX pro value updated.')], 200);
             } else {
@@ -521,7 +521,7 @@ class CardController extends Controller {
                 'is_featured' => ((bool) $request->input('is_featured')),
                 'image' => $request->hasFile('image') ? $filename : null,
             ]);
-            if ($request->has('request_slab')) {
+            if ($request->has('request_slab') && strlen(trim($request->get('request_slab'))) > 0) {
                 $req = RequestSlab::whereId($request->input('request_slab'))->first();
                 $req->update(['status' => 0]);
             }
@@ -551,7 +551,7 @@ class CardController extends Controller {
                 $filename = 'F' . $request->image->getClientOriginalName();
                 Storage::disk('public')->put($save_filename, file_get_contents($request->image->getRealPath()));
             }
-            Card::where('id', $request->input('id'))->update([
+            (Card::where('id', $request->input('id'))->first())->update([
                 'sport' => $request->input('sport'),
                 'player' => $request->input('player'),
                 'year' => $request->input('year'),
@@ -618,7 +618,7 @@ class CardController extends Controller {
         try {
 //            $data = Card::where('sport', $request->input('sport'))->orderBy('updated_at', 'desc')->first();
 
-            CardSales::where('id', $request->input('id'))->update([
+            (CardSales::where('id', $request->input('id'))->first())->update([
 //                'card_id'=> $request->input('card_id'),
                 'timestamp' => Carbon::create($request->input('timestamp'))->format('Y-m-d h:i:s'),
                 'quantity' => $request->input('quantity'),
@@ -945,7 +945,7 @@ class CardController extends Controller {
 
                 $views = Card::where('id', $cid)->pluck('views');
                 $view = ($views[0] == null) ? $view = 1 : $view = $views[0] + 1;
-                Card::where('id', $cid)->update(['views' => $view]);
+                (Card::where('id', $cid)->first())->update(['views' => $view]);
                 $data['values'] = $cvs->pluck('cost')->toArray();
                 $data['labels'] = $cvs->pluck('timestamp')->toArray();
                 $data['qty'] = $cvs->pluck('quantity')->toArray();
@@ -1506,11 +1506,11 @@ class CardController extends Controller {
         try {
             if (is_array($request->id)) {
                 foreach ($request->id as $id) {
-                    Card::whereId($id)->update(['active' => 0]);
+                    (Card::whereId($id)->first())->update(['active' => 0]);
                 }
                 return response()->json(['message' => 'Cards inactive successfully'], 200);
             } else {
-                Card::whereId($request->id)->update(['active' => 0]);
+                (Card::whereId($request->id)->first())->update(['active' => 0]);
                 return response()->json(['message' => 'Card inactive successfully'], 200);
             }
         } catch (Exception $e) {
@@ -1531,8 +1531,8 @@ class CardController extends Controller {
     public function deleteUploads($excel_id) {
         try {
             ExcelUploads::whereId($excel_id)->delete();
-            Card::where('excel_uploads_id', $excel_id)->delete();
-            EbayItems::where('excel_uploads_id', $excel_id)->delete();
+            (Card::where('excel_uploads_id', $excel_id)->first())->delete();
+            (EbayItems::where('excel_uploads_id', $excel_id)->first())->delete();
             $data = ExcelUploads::get();
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {

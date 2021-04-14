@@ -6,9 +6,11 @@ use App\Models\Auth\User;
 use App\Models\Ebay\EbayItems;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class SeeProblem extends Model
 {
+    use LogsActivity;
     public $timestamps = true;
 
     protected $table = 'see_problem'; 
@@ -22,6 +24,9 @@ class SeeProblem extends Model
         'ebay_item_id',
         'message',
     ];
+
+    protected static $logFillable = true;
+    protected static $logOnlyDirty = true;
 
     public function user()
     {

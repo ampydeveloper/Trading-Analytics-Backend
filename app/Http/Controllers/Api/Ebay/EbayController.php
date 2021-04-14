@@ -298,11 +298,11 @@ class EbayController extends Controller {
         if (is_array($idArr)) {
             $idArr = $request->input('id');
             foreach ($idArr as $id) {
-                EbayItems::where('id', $id)->update(['status' => $request->input('status')]);
+                (EbayItems::where('id', $id)->first())->update(['status' => $request->input('status')]);
             }
         } else {
             $idArr = $request->input('id');
-            EbayItems::where('id', $idArr)->update(['status' => $request->input('status')]);
+            (EbayItems::where('id', $idArr)->first())->update(['status' => $request->input('status')]);
         }
 
         return response()->json(['status' => 200, 'message' => 'Status Changed successfully'], 200);
@@ -313,26 +313,26 @@ class EbayController extends Controller {
         if ($request->input('status') != 4) {
             if (is_array($idArr)) {
                 foreach ($idArr as $id) {
-                    Card::where('id', $id)->update(['active' => $request->input('status')]);
+                    (Card::where('id', $id)->first())->update(['active' => $request->input('status')]);
                 }
             } else {
-                Card::where('id', $idArr)->update(['active' => $request->input('status')]);
+                (Card::where('id', $idArr)->first())->update(['active' => $request->input('status')]);
             }
         } else {
-            Card::where('id', $idArr)->delete();
+            (Card::where('id', $idArr)->first())->delete();
         }
         return response()->json(['status' => 200, 'message' => 'Status changed successfully'], 200);
     }
 
     public function changeSalesStatusAdmin(Request $request) {
         $idArr = $request->input('id');
-        CardSales::where('id', $idArr)->delete();
+        (CardSales::where('id', $idArr)->first())->delete();
         return response()->json(['status' => 200, 'message' => 'Sales deleted successfully'], 200);
     }
 
     public function saveSoldPriceAdmin(Request $request) {
         try {
-            if (EbayItems::where('id', $request->input('id'))->update(['sold_price' => $request->input('sold_price'), 'status' => 2])) {
+            if ((EbayItems::where('id', $request->input('id'))->first())->update(['sold_price' => $request->input('sold_price'), 'status' => 2])) {
                 return response()->json(['status' => 200, 'message' => 'Sold price Chnaged successfully'], 200);
             }
             return response()->json(['status' => 400, 'message' => 'Status change failed'], 400);
@@ -881,7 +881,7 @@ class EbayController extends Controller {
 //                        'value' => $speci['value']
 //                    ]);
 //                }
-                EbayItemListingInfo::where('id', $item['listing_info_id'])->update([
+                (EbayItemListingInfo::where('id', $item['listing_info_id'])->first())->update([
                     'startTime' => '',
                     'endTime' => $auction_end,
                     'listingType' => (isset($data['listing_type']) && $data['listing_type'] == true ? 'Auction' : 'Listing'),
@@ -1491,8 +1491,8 @@ class EbayController extends Controller {
 
     public function seeProblemReject($id) {
         try {
-            EbayItems::where('id', $id)->update(['status' => 0]);
-            SeeProblem::where(['ebay_item_id' => $id])->delete();
+            (EbayItems::where('id', $id)->first())->update(['status' => 0]);
+            (SeeProblem::where(['ebay_item_id' => $id])->first())->delete();
             return response()->json(['status' => 200, 'message' => 'Listing status updated.'], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);

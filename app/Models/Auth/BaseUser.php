@@ -13,6 +13,7 @@ use Illuminate\Notifications\Notifiable;
 use Lab404\Impersonate\Models\Impersonate;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * Class User.
@@ -26,7 +27,8 @@ abstract class BaseUser extends Authenticatable implements Recordable, JWTSubjec
         RecordableTrait,
         SendUserPasswordReset,
         SoftDeletes,
-        Uuid;
+        Uuid,
+        LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -58,6 +60,9 @@ abstract class BaseUser extends Authenticatable implements Recordable, JWTSubjec
         'overall_rank',
         'slab_value'
     ];
+
+    protected static $logFillable = true;
+    protected static $logOnlyDirty = true;
 
     /**
      * The dynamic attributes from mutators that should be returned with the user object.
