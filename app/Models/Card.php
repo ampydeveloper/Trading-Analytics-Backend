@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\AppSettings;
 
 class Card extends Model
 {
@@ -54,7 +55,12 @@ class Card extends Model
 //            return url("storage/".strtolower($this->sport). '/' . $this->image);
         }
         else{
-            return asset('/img/default-image.jpg');
+            $settings = AppSettings::first();
+            if ($settings) {
+                return $settings->slab_image;
+            }else{
+                return asset('/img/default-image.jpg');
+            }
         }
     }
 

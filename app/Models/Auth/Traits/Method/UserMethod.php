@@ -77,6 +77,14 @@ trait UserMethod
     }
 
     /**
+     * @return mixed
+     */
+    public function isModerator()
+    {
+        return $this->hasRole('moderator');
+    }
+
+    /**
      * @return bool
      */
     public function isActive()

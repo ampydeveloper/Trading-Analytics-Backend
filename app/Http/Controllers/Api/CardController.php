@@ -22,6 +22,7 @@ use App\Models\Ebay\EbayItems;
 use App\Models\RequestSlab;
 use App\Models\RequestListing;
 use App\Models\ExcelUploads;
+use App\Models\AppSettings;
 use Carbon\Carbon;
 use Excel;
 use Validator;
@@ -306,9 +307,13 @@ class CardController extends Controller {
                 $cards = array_values($cards);
             }
 
+            $AppSettings = AppSettings::first();
+            $order = ['basketball', 'soccer', 'baseball', 'football', 'pokemon'];
+            if($AppSettings){
+                $order = $AppSettings->trenders_order;
+            }
 
-
-            return response()->json(['status' => 200, 'data' => $cards, 'next' => ($page + 1)], 200);
+            return response()->json(['status' => 200, 'data' => $cards, 'next' => ($page + 1), 'order' => $order], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }

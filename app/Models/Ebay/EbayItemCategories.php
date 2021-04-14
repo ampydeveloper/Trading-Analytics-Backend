@@ -4,11 +4,15 @@ namespace App\Models\Ebay;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
+
 use App\Models\Ebay\EbayItems;
 
 class EbayItemCategories extends Model
 {
+    use LogsActivity;
     use SoftDeletes;
+
     public $timestamps = true;
 
     protected $table = 'ebay_item_categories'; 
@@ -21,6 +25,9 @@ class EbayItemCategories extends Model
         'categoryId',
         'name',
     ];
+
+    protected static $logFillable = true;
+    protected static $logOnlyDirty = true;
 
     public function items()
     {

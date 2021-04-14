@@ -4,6 +4,8 @@ namespace App\Models\Ebay;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
+
 use App\Models\Ebay\EbayItemCategories;
 use App\Models\Card;
 use App\Models\CardDetails;
@@ -12,6 +14,8 @@ use App\Models\CardPlayerDetails;
 class EbayItems extends Model
 {
     use SoftDeletes;
+    use LogsActivity;
+
     public $timestamps = true;
 
     protected $table = 'ebay_items'; 
@@ -47,6 +51,9 @@ class EbayItems extends Model
         'listing_ending_at',
         'is_random_bin'
     ];
+
+    protected static $logFillable = true;
+    protected static $logOnlyDirty = true;
 
 
     public function category()

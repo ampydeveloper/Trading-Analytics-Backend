@@ -19,8 +19,18 @@ use Validator;
 use App\Models\Ebay\EbayItemCategories;
 use App\Models\Ebay\EbayItemListingInfo;
 use App\Models\Ebay\EbayItemSellingStatus;
+use App\Models\AppSettings;
 
 class EbayController extends Controller {
+    private $defaultListingImage;
+    
+    public function __construct(){
+        $this->defaultListingImage = $this->defaultListingImage;
+        $settings = AppSettings::first();
+        if($settings){
+            $this->defaultListingImage = $settings->listing_image;
+        }
+    }
 
     public function getItemsListForAdmin(Request $request) {
 //        dump(Carbon::now()->toDateTimeString());
@@ -62,7 +72,7 @@ class EbayController extends Controller {
                 } else if ($item->pictureURLSuperSize != null) {
                     $galleryURL = $item->pictureURLSuperSize;
                 } else if ($galleryURL == null) {
-                    $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                    $galleryURL = $this->defaultListingImage;
                 }
                 $data[] = [
                     'id' => $item->id,
@@ -116,7 +126,7 @@ class EbayController extends Controller {
                 } else if ($item->pictureURLSuperSize != null) {
                     $galleryURL = $item->pictureURLSuperSize;
                 } else if ($galleryURL == null) {
-                    $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                    $galleryURL = $this->defaultListingImage;
                 }
                 $data[] = [
                     'id' => $item->id,
@@ -152,7 +162,7 @@ class EbayController extends Controller {
 //                } else if ($item->pictureURLSuperSize != null) {
 //                    $galleryURL = $item->pictureURLSuperSize;
 //                } else if ($galleryURL == null) {
-//                    $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+//                    $galleryURL = $this->defaultListingImage;
 //                }
 //                $data[] = [
 //                    'id' => $item->id,
@@ -205,7 +215,7 @@ class EbayController extends Controller {
                 } else if ($item->pictureURLSuperSize != null) {
                     $galleryURL = $item->pictureURLSuperSize;
                 } else if ($galleryURL == null) {
-                    $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                    $galleryURL = $this->defaultListingImage;
                 }
                 $data[] = [
                     'id' => $item->id,
@@ -256,7 +266,7 @@ class EbayController extends Controller {
                 } else if ($item->pictureURLSuperSize != null) {
                     $galleryURL = $item->pictureURLSuperSize;
                 } else if ($galleryURL == null) {
-                    $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                    $galleryURL = $this->defaultListingImage;
                 }
                 $data[] = [
                     'id' => $item->id,
@@ -496,7 +506,7 @@ class EbayController extends Controller {
                 } else if ($item->pictureURLSuperSize != null) {
                     $galleryURL = $item->pictureURLSuperSize;
                 } else if ($galleryURL == null) {
-                    $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                    $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeval = ($item->listingInfo ? $item->listingInfo->listingType : '');
                 return [
@@ -653,7 +663,7 @@ class EbayController extends Controller {
             } else if ($item->pictureURLSuperSize != null) {
                 $galleryURL = $item->pictureURLSuperSize;
             } else if ($galleryURL == null) {
-                $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                $galleryURL = $this->defaultListingImage;
             }
             $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
             return [
@@ -726,7 +736,7 @@ class EbayController extends Controller {
             } else if ($item->pictureURLSuperSize != null) {
                 $galleryURL = $item->pictureURLSuperSize;
             } else if ($galleryURL == null) {
-                $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                $galleryURL = $this->defaultListingImage;
             }
             $listingTypeval = ($item->listingInfo ? $item->listingInfo->listingType : '');
             return [
@@ -852,7 +862,7 @@ class EbayController extends Controller {
                     $auction_end_str = $data['auction_end'] / 1000;
                     $auction_end = date('Y-m-d H:i:s', $auction_end_str);
                 }
-                EbayItems::where('id', $item['id'])->update([
+                (EbayItems::where('id', $item['id'])->first())->update([
                     'title' => $data['title'],
                     'viewItemURL' => $data['web_link'],
                     'location' => $data['location'],
@@ -860,7 +870,7 @@ class EbayController extends Controller {
                     'pictureURLLarge' => $data['image'],
                     'listing_ending_at' => $auction_end,
                 ]);
-                EbayItemSellerInfo::where('id', $item['seller_info_id'])->update([
+                (EbayItemSellerInfo::where('id', $item['seller_info_id'])->first())->update([
                     'sellerUserName' => $data['seller_name'],
                     'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
                     'seller_contact_link' => $data['seller_contact_link'],
@@ -976,7 +986,7 @@ class EbayController extends Controller {
             } else if ($item->pictureURLSuperSize != null) {
                 $galleryURL = $item->pictureURLSuperSize;
             } else if ($galleryURL == null) {
-                $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                $galleryURL = $this->defaultListingImage;
             }
             $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
             return [
@@ -1079,7 +1089,7 @@ class EbayController extends Controller {
                 } else if ($item->pictureURLSuperSize != null) {
                     $galleryURL = $item->pictureURLSuperSize;
                 } else if ($galleryURL == null) {
-                    $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                    $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
 
@@ -1203,7 +1213,7 @@ class EbayController extends Controller {
                 } else if ($item->pictureURLSuperSize != null) {
                     $galleryURL = $item->pictureURLSuperSize;
                 } else if ($galleryURL == null) {
-                    $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                    $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
                 return [
@@ -1285,7 +1295,7 @@ class EbayController extends Controller {
                 } else if ($item->pictureURLSuperSize != null) {
                     $galleryURL = $item->pictureURLSuperSize;
                 } else if ($galleryURL == null) {
-                    $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                    $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
                 return [
@@ -1324,7 +1334,7 @@ class EbayController extends Controller {
                 } else if ($item->pictureURLSuperSize != null) {
                     $galleryURL = $item->pictureURLSuperSize;
                 } else if ($galleryURL == null) {
-                    $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                    $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
                 return [
@@ -1339,7 +1349,14 @@ class EbayController extends Controller {
                     'data' => $item,
                 ];
             });
-            return response()->json(['status' => 200, 'data' => $items, 'next' => ($page + 1)], 200);
+
+            $AppSettings = AppSettings::first();
+            $order = ['basketball', 'soccer', 'baseball', 'football', 'pokemon'];
+            if ($AppSettings) {
+                $order = $AppSettings->live_listings_order;
+            }
+
+            return response()->json(['status' => 200, 'data' => $items, 'next' => ($page + 1), 'order' => $order], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -1364,7 +1381,7 @@ class EbayController extends Controller {
                 } else if ($item->pictureURLSuperSize != null) {
                     $galleryURL = $item->pictureURLSuperSize;
                 } else if ($galleryURL == null) {
-                    $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                    $galleryURL = $this->defaultListingImage;
                 }
                 $data[] = [
                     'id' => $item->id,
@@ -1398,7 +1415,7 @@ class EbayController extends Controller {
                 } else if ($item->pictureURLSuperSize != null) {
                     $galleryURL = $item->pictureURLSuperSize;
                 } else if ($galleryURL == null) {
-                    $galleryURL = env('APP_URL') . '/img/default-image.jpg';
+                    $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
                 return [

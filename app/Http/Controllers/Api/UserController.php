@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Auth\SocialAccount;
 use App\Models\Auth\User;
 use App\Models\Auth\Role;
+use App\Models\AppSettings;
 use Exception;
 use Illuminate\Http\Request;
 use Storage;
@@ -205,7 +206,7 @@ class UserController extends Controller {
     }
 
     public function getAllUsersForAdmin(Request $request) {
-        if (!auth()->user()->isAdmin()) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->isModerator()) {
             return response()->json(['error' => 'Unauthorised'], 301);
         }
         try {
@@ -323,18 +324,18 @@ class UserController extends Controller {
     public function createUser(Request $request) {
         try {
             $validator = Validator::make($request->all(), [
-                        'first_name' => 'required|string',
-                        'last_name' => 'nullable|string',
-                        'email' => 'required|email|unique:users',
-                        'mobile' => 'nullable|numeric',
-                        'dob' => 'nullable',
-                        'address' => 'nullable|string'
+                'first_name' => 'required|string',
+                'last_name' => 'nullable|string',
+                'email' => 'required|email|unique:users',
+                'mobile' => 'nullable|numeric',
+                'dob' => 'nullable',
+                'address' => 'nullable|string'
             ]);
             if ($validator->fails()) {
                 return response()->json($validator->errors(), 500);
             }
 
-            User::create([
+            $user = User::create([
                 'first_name' => $request->input('first_name'),
                 'last_name' => $request->input('last_name'),
                 'email' => $request->input('email'),
@@ -343,7 +344,44 @@ class UserController extends Controller {
                 'dob' => $request->input('dob', ''),
                 'address' => $request->input('address', ''),
             ]);
+
+            if ($request->has('user_roles')) {
+                $role = Role::whereId($request->get('user_roles'))->first();
+                if ($role) {
+                    $user->roles()->detach();
+                    $user->forgetCachedPermissions();
+                    $user->assignRole($role->name);
+                }
+            }
+
             return response()->json(['status' => 200, 'data' => 'User created successfully.'], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+
+    public function settings(Request $request){
+        try{
+            if (!auth()->user()->isAdmin()){
+                return response()->json(['error' => 'Unauthorised'], 301);
+            }
+            if($request->method() == 'GET'){
+                $settings = AppSettings::first();
+                return response()->json(['status' => 200, 'data' => $settings], 200);
+            }
+            $data = $request->all();
+            if($request->file('slab_image')){
+                $filename = 'Default-Slab-'.$request->slab_image->getClientOriginalName();
+                Storage::disk('public')->put($filename, file_get_contents($request->slab_image->getRealPath()));
+                $data['slab_image'] = $filename;
+            }
+            if($request->file('listing_image')){
+                $filename = 'Default-Listing-'.$request->slab_image->getClientOriginalName();
+                Storage::disk('public')->put($filename, file_get_contents($request->listing_image->getRealPath()));
+                $data['listing_image'] = $filename;
+            }
+            AppSettings::updateOrCreate(['id' => 1],$data);
+            return response()->json(['status' => 200, 'message' => 'Settings saved successfully.'], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }

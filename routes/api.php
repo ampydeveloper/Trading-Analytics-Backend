@@ -115,6 +115,8 @@ Route::group([
         ], function () {
     Route::post('add-see-problem', 'Ebay\EbayController@addSeeProblem');
     Route::get('see-problem-reject/{id}', 'Ebay\EbayController@seeProblemReject');
+    Route::get('settings', 'UserController@settings');
+    Route::post('settings', 'UserController@settings');
 });
 
 Route::group([
