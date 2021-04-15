@@ -1,6 +1,6 @@
 @extends('frontend.layouts.app')
 
-@section('title', app_name() . ' | ' . __('navs.general.home'))
+@section('title', $card_details['title'])
 
 @section('meta')
 <meta name="title" content="<?php echo $card_details['title']; ?>">

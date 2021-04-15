@@ -1,9 +1,9 @@
 @extends('frontend.layouts.app')
 
-@section('title', app_name() . ' | ' . __('navs.general.home'))
+@section('title', 'Check our Stoxticker')
 
 @section('meta')
-<meta name="title" content="Check our Stoxticker@">
+<meta name="title" content="Check our Stoxticker">
 <meta name="description" content="Stoxticker <?php echo $data['sale']; ?> Total Slabs <?php echo $data['total']; ?> Price Change <?php echo $data['change']; ?> Percentage Change <?php echo $data['change_pert']; ?>% Stoxticker URL <?php echo env('VUE_URL').'stoxticker'; ?>">
 
 <meta  data-hid="card-og-site_name" property="og:site_name" content="Slabstox">

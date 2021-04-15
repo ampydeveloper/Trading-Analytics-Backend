@@ -1,6 +1,6 @@
 @extends('frontend.layouts.app')
 
-@section('title', app_name() . ' | ' . __('navs.general.home'))
+@section('title','SX Stoxticker')
 
 @section('meta')
 <meta name="title" content="SX Stoxticker">

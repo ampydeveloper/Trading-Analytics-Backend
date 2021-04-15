@@ -498,6 +498,12 @@ class CardController extends Controller {
                 $filename = 'F' . ((int) $data->row_id + 1) . '.' . $request->image->extension();
                 Storage::disk('public')->put($save_filename, file_get_contents($request->image->getRealPath()));
             }
+            else {
+                $ext = pathinfo(parse_url($request->input('image'), PHP_URL_PATH), PATHINFO_EXTENSION);
+                $save_filename = $request->input('sport') . '/F' . ((int) $data->row_id + 1) . '.' . $ext;
+                $filename = 'F' . ((int) $data->row_id + 1) . '.' . $ext;
+                Storage::disk('public')->put($save_filename, $request->input('image'));
+            }
             Card::create([
                 'row_id' => (int) $data->row_id + 1,
                 'sport' => $request->input('sport'),
@@ -519,7 +525,7 @@ class CardController extends Controller {
                 'qualifiers7' => $request->input('qualifiers7'),
                 'qualifiers8' => $request->input('qualifiers8'),
                 'is_featured' => ((bool) $request->input('is_featured')),
-                'image' => $request->hasFile('image') ? $filename : null,
+                'image' => $request->hasFile('image') || $request->has('image') ? $save_filename : null,
             ]);
             if ($request->has('request_slab') && strlen(trim($request->get('request_slab'))) > 0) {
                 $req = RequestSlab::whereId($request->input('request_slab'))->first();
@@ -1533,6 +1539,7 @@ class CardController extends Controller {
             ExcelUploads::whereId($excel_id)->delete();
             (Card::where('excel_uploads_id', $excel_id)->first())->delete();
             (EbayItems::where('excel_uploads_id', $excel_id)->first())->delete();
+            (CardSales::where('excel_uploads_id', $excel_id)->first())->delete();
             $data = ExcelUploads::get();
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {

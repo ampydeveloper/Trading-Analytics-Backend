@@ -1,6 +1,6 @@
 @extends('frontend.layouts.app')
 
-@section('title', app_name() . ' | ' . __('navs.general.home'))
+@section('title', 'Check StoxTicker: ' .$finalData['board']->name )
 
 @section('meta')
 <meta name="title" content="Check StoxTicker: <?php echo $finalData['board']->name; ?>">
