@@ -49,7 +49,9 @@ class EbayItems extends Model
         'isMultiVariationListing',
         'topRatedListing',
         'listing_ending_at',
-        'is_random_bin'
+        'is_random_bin',
+        'sold_price',
+        'status'
     ];
 
     protected static $logFillable = true;

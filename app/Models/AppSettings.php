@@ -25,14 +25,14 @@ class AppSettings extends Model
     ];
 
     public function getSlabImageAttribute($value){
-        if(strpos($value, "storage") == -1){
+        if(!strpos($value, "storage") !== false){
             $value = "storage/" . $value;
         }
         return $value != null ? url($value) : '';
     }
 
     public function getListingImageAttribute($value){
-        if (strpos($value, "storage") == -1) {
+        if (!strpos($value, "storage") !== false) {
             $value = "storage/" . $value;
         }
         return $value != null ? url($value) : '';

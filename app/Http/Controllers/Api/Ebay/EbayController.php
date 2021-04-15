@@ -862,30 +862,40 @@ class EbayController extends Controller {
                     $auction_end_str = $data['auction_end'] / 1000;
                     $auction_end = date('Y-m-d H:i:s', $auction_end_str);
                 }
-                (EbayItems::where('id', $item['id'])->first())->update([
-                    'title' => $data['title'],
-                    'viewItemURL' => $data['web_link'],
-                    'location' => $data['location'],
-                    'returnsAccepted' => $data['ReturnPolicy'],
-                    'pictureURLLarge' => $data['image'],
-                    'listing_ending_at' => $auction_end,
-                ]);
-                (EbayItemSellerInfo::where('id', $item['seller_info_id'])->first())->update([
-                    'sellerUserName' => $data['seller_name'],
-                    'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
-                    'seller_contact_link' => $data['seller_contact_link'],
-                    'seller_store_link' => $data['seller_store_link']
-                ]);
-//                foreach ($data['specifics'] as $speci) {
-//                    EbayItemSpecific::where('id', $speci['id'])->update([
-//                        'value' => $speci['value']
-//                    ]);
-//                }
-                (EbayItemListingInfo::where('id', $item['listing_info_id'])->first())->update([
-                    'startTime' => '',
-                    'endTime' => $auction_end,
-                    'listingType' => (isset($data['listing_type']) && $data['listing_type'] == true ? 'Auction' : 'Listing'),
-                ]);
+                $ebayItem = EbayItems::where('id', $item['id'])->first();
+                if($ebayItem){
+                    $ebayItem->update([
+                        'title' => $data['title'],
+                        'viewItemURL' => $data['web_link'],
+                        'location' => $data['location'],
+                        'returnsAccepted' => $data['ReturnPolicy'],
+                        'pictureURLLarge' => $data['image'],
+                        'listing_ending_at' => $auction_end,
+                    ]);
+                }
+
+                $ebayItemSellerInfo = EbayItemSellerInfo::where('id', $item['seller_info_id'])->first();
+                if($ebayItemSellerInfo){
+                    $ebayItemSellerInfo->update([
+                        'sellerUserName' => $data['seller_name'],
+                        'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
+                        'seller_contact_link' => $data['seller_contact_link'],
+                        'seller_store_link' => $data['seller_store_link']
+                    ]);
+                }
+                //                foreach ($data['specifics'] as $speci) {
+                //                    EbayItemSpecific::where('id', $speci['id'])->update([
+                //                        'value' => $speci['value']
+                //                    ]);
+                //                }
+                $ebayItemListingInfo = EbayItemListingInfo::where('id', $item['listing_info_id'])->first();
+                if($ebayItemListingInfo){
+                    $ebayItemListingInfo->update([
+                        'startTime' => '',
+                        'endTime' => $auction_end,
+                        'listingType' => (isset($data['listing_type']) && $data['listing_type'] == true ? 'Auction' : 'Listing'),
+                    ]);
+                }
 
                 \DB::commit();
                 return response()->json(['status' => 200, 'data' => ['message' => 'Updated successfully.']], 200);

@@ -28,6 +28,7 @@ class Card extends Model
         'brand',
         'card',
         'rc',
+        'is_sx',
         'variation',
         'grade',
         'qualifiers',

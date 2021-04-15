@@ -478,7 +478,7 @@ class CardController extends Controller {
             $is_sx = (bool) $request->input('is_sx');
             $data = Card::where('id', $request->input('id'))->first();
             if (isset($data->id)) {
-                (Card::where('id', $request->input('id'))->first())->update(array('is_sx' => $is_sx));
+                $data->update(array('is_sx' => $is_sx));
 
                 return response()->json(['status' => 200, 'message' => ('Card SX pro value updated.')], 200);
             } else {
@@ -502,7 +502,7 @@ class CardController extends Controller {
                 $ext = pathinfo(parse_url($request->input('image'), PHP_URL_PATH), PATHINFO_EXTENSION);
                 $save_filename = $request->input('sport') . '/F' . ((int) $data->row_id + 1) . '.' . $ext;
                 $filename = 'F' . ((int) $data->row_id + 1) . '.' . $ext;
-                Storage::disk('public')->put($save_filename, $request->input('image'));
+                Storage::disk('public')->move($request->input('image'), $save_filename);
             }
             Card::create([
                 'row_id' => (int) $data->row_id + 1,
