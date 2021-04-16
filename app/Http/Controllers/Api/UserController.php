@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Storage;
 use Validator;
 use App\Repositories\Backend\Auth\UserRepository;
+use \Spatie\Activitylog\Models\Activity;
 
 class UserController extends Controller {
 
@@ -382,6 +383,54 @@ class UserController extends Controller {
             }
             AppSettings::updateOrCreate(['id' => 1],$data);
             return response()->json(['status' => 200, 'message' => 'Settings saved successfully.'], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+
+    public function getUsersForActivityLogs(){
+        try {
+            if (!auth()->user()->isAdmin()) {
+                return response()->json(['error' => 'Unauthorised'], 301);
+            }
+            $users = User::role([config('access.users.moderator_role'), config('access.users.data_entry_role')])->get()->map(function($us){
+                return ['id' => $us->id, 'name' => $us->full_name];
+            });
+            $models = Activity::select('subject_type')->distinct()->pluck('subject_type')->map(function($model){
+                $orig = $model;
+                $model = explode('\\', $model);
+                $model = $model[count($model) - 1];
+                if (strtolower($model) == 'ebayitems') {
+                    $model = 'Listings';
+                }
+                return ['id' => $orig, 'name' => $model];
+            });
+            return response()->json(['status' => 200, 'data' => ['users' => $users, 'models' => $models]], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+
+    public function getActivityLogs(User $user, Request $request){
+        try {
+            if (!auth()->user()->isAdmin()) {
+                return response()->json(['error' => 'Unauthorised'], 301);
+            }
+
+            
+            $logs = Activity::where('causer_id', $user->id);
+            if($request->has('model') && strlen(trim($request->query('model'))) > 0 && $request->query('model') != 'null'){
+                $logs = $logs->where('subject_type', $request->query('model'));
+            }
+            $logs = $logs->paginate(20);
+            $items = Collect($logs->items())->map(function($log){
+                $model = explode('\\', $log->subject_type);
+                $log->subject_type = $model[count($model) - 1];
+                if(strtolower($log->subject_type) == 'ebayitems'){ $log->subject_type = 'Listings'; } 
+                return $log;
+            });
+            
+            return response()->json(['status' => 200, 'data' => $logs], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }

@@ -154,6 +154,8 @@ Route::group([
     Route::post('create-user', 'UserController@createUser');
     Route::post('update-user-by-admin/{user}/{type}', 'UserController@updateUserAttributeForAdmin');
     Route::post('change-user-password-by-admin/{user}', 'UserController@changeUSerPasswordForAdmin');
+    Route::get('get-users-for-activity-logs', 'UserController@getUsersForActivityLogs');
+    Route::get('get-activity-logs-for-admin/{user}', 'UserController@getActivityLogs');
 });
 
 Route::group([

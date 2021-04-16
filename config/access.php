@@ -23,6 +23,10 @@ return [
         // The name of the super administrator role
         'admin_role' => 'administrator',
 
+        'moderator_role' => 'moderator',
+
+        'data_entry_role' => 'data entry',
+
         // The default role all new registered users get added to
         'default_role' => 'user',
 
