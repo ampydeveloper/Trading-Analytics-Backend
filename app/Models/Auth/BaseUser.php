@@ -71,6 +71,7 @@ abstract class BaseUser extends Authenticatable implements Recordable, JWTSubjec
     protected $appends = [
         'full_name',
         'picture',
+        'roles_label'
     ];
 
     /**

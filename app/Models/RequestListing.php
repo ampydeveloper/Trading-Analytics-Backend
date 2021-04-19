@@ -5,9 +5,11 @@ namespace App\Models;
 use App\Models\Auth\User;
 use App\Models\Card;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class RequestListing extends Model
 {
+    use LogsActivity;
     public $timestamps = true;
 
     protected $table = 'request_listing'; 
@@ -22,6 +24,8 @@ class RequestListing extends Model
         'link',
         'approved'
     ];
+    protected static $logFillable = true;
+    protected static $logOnlyDirty = true;
 
     public function user()
     {

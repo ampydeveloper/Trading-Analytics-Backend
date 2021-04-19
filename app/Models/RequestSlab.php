@@ -4,9 +4,11 @@ namespace App\Models;
 
 use App\Models\Auth\User;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class RequestSlab extends Model
 {
+    use LogsActivity;
     public $timestamps = true;
 
     protected $table = 'request_slab'; 
@@ -28,6 +30,9 @@ class RequestSlab extends Model
         'image',
         'status'
     ];
+
+    protected static $logFillable = true;
+    protected static $logOnlyDirty = true;
 
     public function user()
     {

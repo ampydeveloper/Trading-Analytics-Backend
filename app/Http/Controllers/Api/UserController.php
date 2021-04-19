@@ -416,11 +416,13 @@ class UserController extends Controller {
             if (!auth()->user()->isAdmin()) {
                 return response()->json(['error' => 'Unauthorised'], 301);
             }
-
             
             $logs = Activity::where('causer_id', $user->id);
             if($request->has('model') && strlen(trim($request->query('model'))) > 0 && $request->query('model') != 'null'){
                 $logs = $logs->where('subject_type', $request->query('model'));
+            }
+            if ($request->has('sts') && strlen(trim($request->query('sts'))) > 0 && $request->query('sts') != 'null' && strpos($request->query('model'), 'RequestListing') !== false) {
+                $logs = $logs->where('properties->attributes->approved', $request->query('sts'));
             }
             $logs = $logs->paginate(20);
             $items = Collect($logs->items())->map(function($log){
