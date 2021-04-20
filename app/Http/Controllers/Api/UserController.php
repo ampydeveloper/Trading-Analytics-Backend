@@ -239,13 +239,13 @@ class UserController extends Controller {
             return response()->json(['error' => 'Unauthorised'], 301);
         }
         $validator = Validator::make($request->all(), [
-            'id' => 'required|exists:users,id',
-            'first_name' => 'required|string',
-            'last_name' => 'nullable|string',
-            'email' => 'required|email|unique:users,email,' . $request->get('id'),
-            'mobile' => 'nullable|numeric',
-            'dob' => 'nullable',
-            'address' => 'nullable|string'
+                    'id' => 'required|exists:users,id',
+                    'first_name' => 'required|string',
+                    'last_name' => 'nullable|string',
+                    'email' => 'required|email|unique:users,email,' . $request->get('id'),
+                    'mobile' => 'nullable|numeric',
+                    'dob' => 'nullable',
+                    'address' => 'nullable|string'
         ]);
 
         if ($validator->fails()) {
@@ -269,12 +269,12 @@ class UserController extends Controller {
             ];
             $user->update($data);
 
-            if($request->has('user_roles')){
+            if ($request->has('user_roles')) {
                 $role = Role::whereId($request->get('user_roles'))->first();
-                if($role){
+                if ($role) {
                     $user->roles()->detach();
                     $user->forgetCachedPermissions();
-                    $user->assignRole($role->name);                    
+                    $user->assignRole($role->name);
                 }
             }
 
@@ -325,25 +325,25 @@ class UserController extends Controller {
     public function createUser(Request $request) {
         try {
             $validator = Validator::make($request->all(), [
-                'first_name' => 'required|string',
-                'last_name' => 'nullable|string',
-                'email' => 'required|email|unique:users',
-                'mobile' => 'nullable|numeric',
-                'dob' => 'nullable',
-                'address' => 'nullable|string'
+                        'first_name' => 'required|string',
+                        'last_name' => 'nullable|string',
+                        'email' => 'required|email|unique:users',
+                        'mobile' => 'nullable|numeric',
+                        'dob' => 'nullable',
+                        'address' => 'nullable|string'
             ]);
             if ($validator->fails()) {
                 return response()->json($validator->errors(), 500);
             }
 
             $user = User::create([
-                'first_name' => $request->input('first_name'),
-                'last_name' => $request->input('last_name'),
-                'email' => $request->input('email'),
-                'password' => $request->input('password'),
-                'mobile' => $request->input('mobile', ''),
-                'dob' => $request->input('dob', ''),
-                'address' => $request->input('address', ''),
+                        'first_name' => $request->input('first_name'),
+                        'last_name' => $request->input('last_name'),
+                        'email' => $request->input('email'),
+                        'password' => $request->input('password'),
+                        'mobile' => $request->input('mobile', ''),
+                        'dob' => $request->input('dob', ''),
+                        'address' => $request->input('address', ''),
             ]);
 
             if ($request->has('user_roles')) {
@@ -361,77 +361,116 @@ class UserController extends Controller {
         }
     }
 
-    public function settings(Request $request){
-        try{
-            if (!auth()->user()->isAdmin()){
+    public function settings(Request $request) {
+        try {
+            if (!auth()->user()->isAdmin()) {
                 return response()->json(['error' => 'Unauthorised'], 301);
             }
-            if($request->method() == 'GET'){
+            if ($request->method() == 'GET') {
                 $settings = AppSettings::first();
                 return response()->json(['status' => 200, 'data' => $settings], 200);
             }
             $data = $request->all();
-            if($request->file('slab_image')){
-                $filename = 'Default-Slab-'.$request->slab_image->getClientOriginalName();
+            if ($request->file('slab_image')) {
+                $filename = 'Default-Slab-' . $request->slab_image->getClientOriginalName();
                 Storage::disk('public')->put($filename, file_get_contents($request->slab_image->getRealPath()));
                 $data['slab_image'] = $filename;
             }
-            if($request->file('listing_image')){
-                $filename = 'Default-Listing-'.$request->slab_image->getClientOriginalName();
+            if ($request->file('listing_image')) {
+                $filename = 'Default-Listing-' . $request->slab_image->getClientOriginalName();
                 Storage::disk('public')->put($filename, file_get_contents($request->listing_image->getRealPath()));
                 $data['listing_image'] = $filename;
             }
-            AppSettings::updateOrCreate(['id' => 1],$data);
+            AppSettings::updateOrCreate(['id' => 1], $data);
             return response()->json(['status' => 200, 'message' => 'Settings saved successfully.'], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
     }
 
-    public function getUsersForActivityLogs(){
+    public function getUsersForActivityLogs() {
         try {
             if (!auth()->user()->isAdmin()) {
                 return response()->json(['error' => 'Unauthorised'], 301);
             }
-            $users = User::role([config('access.users.moderator_role'), config('access.users.data_entry_role')])->get()->map(function($us){
+            $users = User::role([config('access.users.moderator_role'), config('access.users.data_entry_role')])->get()->map(function($us) {
                 return ['id' => $us->id, 'name' => $us->full_name];
             });
-            $models = Activity::select('subject_type')->distinct()->pluck('subject_type')->map(function($model){
-                $orig = $model;
-                $model = explode('\\', $model);
-                $model = $model[count($model) - 1];
-                if (strtolower($model) == 'ebayitems') {
-                    $model = 'Listings';
-                }
-                return ['id' => $orig, 'name' => $model];
+            $models = Activity::select('subject_type')->distinct()->pluck('subject_type')->map(function($model) {
+                        $orig = $model;
+                        $model = explode('\\', $model);
+                        $model = $model[count($model) - 1];
+                        if (strtolower($model) == 'ebayitems') {
+                            $model = 'Listings';
+                        }
+                        if (strtolower($model) == 'requestlisting') {
+                            $model = 'Listing Requests';
+                        }
+                        if (strtolower($model) == 'card') {
+                            $model = 'Slabs';
+                        }
+                        if (strtolower($model) == 'ebayitemsellingstatus') {
+                            return false;
+                        }
+                        if (strtolower($model) == 'ebayitemsellerinfo') {
+                            return false;
+                        }
+                        if (strtolower($model) == 'ebayitemspecific') {
+                            return false;
+                        }
+                        if (strtolower($model) == 'cardsales') {
+                            return false;
+                        }
+                        if (strtolower($model) == 'ebayitemlistinginfo') {
+                            return false;
+                        }
+                        if (strtolower($model) == 'seeproblem') {
+                            $model = 'Flag A Listing';
+                        }
+                        if (strtolower($model) == 'requestslab') {
+                            $model = 'Slab Requests';
+                        }
+                        if (strtolower($model) == 'passwordhistory') {
+                            $model = 'Password History';
+                        }
+
+                        return ['id' => $orig, 'name' => $model];
+                    })
+                    ->reject(function ($value) {
+                return $value === false;
             });
+           $models = $models->toArray();
+           $models = array_values($models);
+//           array_multisort($models, SORT_ASC);
             return response()->json(['status' => 200, 'data' => ['users' => $users, 'models' => $models]], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
     }
 
-    public function getActivityLogs(User $user, Request $request){
+    public function getActivityLogs(User $user, Request $request) {
         try {
             if (!auth()->user()->isAdmin()) {
                 return response()->json(['error' => 'Unauthorised'], 301);
             }
-            
+
             $logs = Activity::where('causer_id', $user->id);
-            if($request->has('model') && strlen(trim($request->query('model'))) > 0 && $request->query('model') != 'null'){
+            if ($request->has('model') && strlen(trim($request->query('model'))) > 0 && $request->query('model') != 'null') {
                 $logs = $logs->where('subject_type', $request->query('model'));
             }
             if ($request->has('sts') && strlen(trim($request->query('sts'))) > 0 && $request->query('sts') != 'null' && strpos($request->query('model'), 'RequestListing') !== false) {
                 $logs = $logs->where('properties->attributes->approved', $request->query('sts'));
             }
             $logs = $logs->paginate(20);
-            $items = Collect($logs->items())->map(function($log){
+            $items = Collect($logs->items())->map(function($log) {
                 $model = explode('\\', $log->subject_type);
                 $log->subject_type = $model[count($model) - 1];
-                if(strtolower($log->subject_type) == 'ebayitems'){ $log->subject_type = 'Listings'; } 
+                if (strtolower($log->subject_type) == 'ebayitems') {
+                    $log->subject_type = 'Listings';
+                }
                 return $log;
             });
-            
+
             return response()->json(['status' => 200, 'data' => $logs], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
