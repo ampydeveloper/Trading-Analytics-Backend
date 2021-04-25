@@ -194,7 +194,8 @@ class MyPortfolioController extends Controller {
                         'purchase_price' => $purchase_price,
                         'differ' => $differ,
                         'portfolio_id' => $portfolio_id,
-                        'grade' => $card_grades[$card->id]
+                        'review_grade' => $card_grades[$card->id],
+                        'grade' => $card->grade
                     ];
                 }
             }

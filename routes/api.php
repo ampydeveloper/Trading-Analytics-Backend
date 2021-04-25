@@ -104,8 +104,8 @@ Route::group([
     Route::post('upload-slab-excel', 'CardController@uploadSlabForExcelImport');
     Route::post('create-new-item-from-admin', 'Ebay\EbayController@createEbayItemForAdmin');
     Route::get('get-listing-categories', 'Ebay\EbayController@getListingCategories');
-    Route::get('searched-cards', 'Ebay\EbayController@searchedCardsByUserForAdmin');
-    Route::get('csv-uploads', 'CardController@csvUploads');
+    Route::post('searched-cards', 'Ebay\EbayController@searchedCardsByUserForAdmin');
+    Route::post('csv-uploads', 'CardController@csvUploads');
     Route::get('delete-upload/{excel_id}', 'CardController@deleteUploads');
 });
 

@@ -22,12 +22,13 @@ use App\Models\Ebay\EbayItemSellingStatus;
 use App\Models\AppSettings;
 
 class EbayController extends Controller {
+
     private $defaultListingImage;
-    
-    public function __construct(){
+
+    public function __construct() {
         $this->defaultListingImage = $this->defaultListingImage;
         $settings = AppSettings::first();
-        if($settings){
+        if ($settings) {
             $this->defaultListingImage = $settings->listing_image;
         }
     }
@@ -332,7 +333,21 @@ class EbayController extends Controller {
 
     public function saveSoldPriceAdmin(Request $request) {
         try {
-            if ((EbayItems::where('id', $request->input('id'))->first())->update(['sold_price' => $request->input('sold_price'), 'status' => 2])) {
+            $item_details = EbayItems::where('id', $request->input('id'))->first();
+            if (($item_details)->update(['sold_price' => $request->input('sold_price'), 'status' => 2])) {
+                $item_type = null;
+                if ($item_details->listing_info_id != null) {
+                    $ebayItemListingInfo = EbayItemListingInfo::where('id', $item_details->listing_info_id)->first();
+                    $item_type = $ebayItemListingInfo->listingType;
+                }
+                CardSales::create([
+                    'card_id' => $item_details->card_id,
+                    'timestamp' => Carbon::now()->format('Y-m-d h:i:s'),
+                    'quantity' => 1,
+                    'cost' => $request->input('sold_price'),
+                    'source' => 'Slabstox',
+                    'type' => $item_type,
+                ]);
                 return response()->json(['status' => 200, 'message' => 'Sold price Chnaged successfully'], 200);
             }
             return response()->json(['status' => 400, 'message' => 'Status change failed'], 400);
@@ -361,12 +376,14 @@ class EbayController extends Controller {
 //                } else {
                 $cards = Card::whereIn('id', $items['card_ids'])->with('details')->limit(18)->get();
 //                }
-                UserSearch::create(['search' => $request->input('search')]);
+                if (!empty($request->input('search')) && $request->input('search') != null) {
+                    UserSearch::create(['search' => $request->input('search')]);
+                }
             }
 //            die('red2');
             foreach ($cards as $ind => $card) {
 //                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                 $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
                 $sx_count = count($sx);
                 $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
                 $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
@@ -402,11 +419,13 @@ class EbayController extends Controller {
                 UserSearch::create(['card_id' => $searchCard, 'user_id' => auth()->user()->id]);
             } else {
                 $cards = Card::whereIn('id', $items['cards'])->with('details')->limit(18)->get();
-                UserSearch::create(['search' => $request->input('search'), 'user_id' => auth()->user()->id]);
+                if (!empty($request->input('search')) && $request->input('search') != null) {
+                    UserSearch::create(['search' => $request->input('search'), 'user_id' => auth()->user()->id]);
+                }
             }
             foreach ($cards as $ind => $card) {
 //                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                 $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
                 $sx_count = count($sx);
                 $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
                 $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
@@ -509,6 +528,15 @@ class EbayController extends Controller {
                     $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeval = ($item->listingInfo ? $item->listingInfo->listingType : '');
+                
+                $sx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+                $sx_count = count($sx);
+                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+                $lastSx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+                $count = count($lastSx);
+                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                $price_diff = (float) str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
@@ -519,6 +547,9 @@ class EbayController extends Controller {
                     'listing_ending_at' => $item->listing_ending_at,
                     'showBuyNow' => ($listingTypeval != 'Auction') ? true : false,
                     'data' => $item,
+                    'sx_value' => number_format((float) $sx, 2, '.', ''),
+                    'sx_icon' => (($sx - $lastSx) >= 0) ? 'up' : 'down',
+                    'price_diff' => $price_diff,
                 ];
             });
 //        return ['data' => $items, 'next' => ($page + 1), 'cards' => $cardsIds];
@@ -575,10 +606,10 @@ class EbayController extends Controller {
         $itemsIds = [];
         $cardsIds = [];
         $cards = [];
-        
+
         $itemIds = EbayItemSpecific::where(function ($q) use ($filter) {
-                    foreach($filter as $k => $v){
-                        if($v != null && $v != "null"){
+                    foreach ($filter as $k => $v) {
+                        if ($v != null && $v != "null") {
                             $q->orWhere('value', 'like', "%$v");
                         }
                     }
@@ -639,7 +670,7 @@ class EbayController extends Controller {
                 });
             }
         });
-        
+
         if ($filterBy == 'ending_soon') {
             $date_one = Carbon::now()->addDay();
             $date_one->setTimezone('UTC');
@@ -863,7 +894,7 @@ class EbayController extends Controller {
                     $auction_end = date('Y-m-d H:i:s', $auction_end_str);
                 }
                 $ebayItem = EbayItems::where('id', $item['id'])->first();
-                if($ebayItem){
+                if ($ebayItem) {
                     $ebayItem->update([
                         'title' => $data['title'],
                         'viewItemURL' => $data['web_link'],
@@ -875,7 +906,7 @@ class EbayController extends Controller {
                 }
 
                 $ebayItemSellerInfo = EbayItemSellerInfo::where('id', $item['seller_info_id'])->first();
-                if($ebayItemSellerInfo){
+                if ($ebayItemSellerInfo) {
                     $ebayItemSellerInfo->update([
                         'sellerUserName' => $data['seller_name'],
                         'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
@@ -889,7 +920,7 @@ class EbayController extends Controller {
                 //                    ]);
                 //                }
                 $ebayItemListingInfo = EbayItemListingInfo::where('id', $item['listing_info_id'])->first();
-                if($ebayItemListingInfo){
+                if ($ebayItemListingInfo) {
                     $ebayItemListingInfo->update([
                         'startTime' => '',
                         'endTime' => $auction_end,
@@ -917,12 +948,14 @@ class EbayController extends Controller {
         }
     }
 
-    public function searchedCardsByUserForAdmin() {
+    public function searchedCardsByUserForAdmin(Request $request) {
+        $page = $request->input('page', 1);
+        $take = $request->input('take', 30);
+        $skip = $take * $page;
+        $skip = $skip - $take;
         try {
-            $data = UserSearch::with(['userDetails', 'cardDetails'])->get();
-//            $card_ids = UserSearch::pluck('card_id');
-//            $data = Card::whereIn('id', $card_ids)->get();
-            return response()->json(['status' => 200, 'data' => $data], 200);
+            $data = UserSearch::with(['userDetails', 'cardDetails'])->skip($skip)->take($take)->get();
+            return response()->json(['status' => 200, 'data' => $data, 'next' => ($page + 1)], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -1020,9 +1053,9 @@ class EbayController extends Controller {
                     ->with(['category', 'card', 'card.value', 'details', 'playerDetails', 'condition', 'sellerInfo', 'listingInfo', 'sellingStatus', 'shippingInfo', 'specifications'])
                     ->first();
 //            $sx = CardSales::where('card_id', $data['items']->card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-             $sx = CardSales::where('card_id', $data['items']->card->id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-                $sx_count = count($sx);
-                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+            $sx = CardSales::where('card_id', $data['items']->card->id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+            $sx_count = count($sx);
+            $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
             $lastSx = CardSales::where('card_id', $data['items']->card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
             $count = count($lastSx);
             $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
@@ -1308,6 +1341,16 @@ class EbayController extends Controller {
                     $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
+                
+                //Getting sx and price diff
+                $sx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+                $sx_count = count($sx);
+                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+                $lastSx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+                $count = count($lastSx);
+                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                $price_diff = (float) str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
@@ -1318,6 +1361,9 @@ class EbayController extends Controller {
                     'listing_ending_at' => $item->listing_ending_at,
                     'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
                     'data' => $item,
+                    'sx_value' => number_format((float) $sx, 2, '.', ''),
+                    'sx_icon' => (($sx - $lastSx) >= 0) ? 'up' : 'down',
+                    'price_diff' => $price_diff,
                 ];
             });
             return response()->json(['status' => 200, 'data' => $items, 'next' => ($page + 1)], 200);
@@ -1347,6 +1393,15 @@ class EbayController extends Controller {
                     $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
+                
+                $sx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+                $sx_count = count($sx);
+                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+                $lastSx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+                $count = count($lastSx);
+                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                $price_diff = (float) str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
@@ -1357,6 +1412,9 @@ class EbayController extends Controller {
                     'listing_ending_at' => $item->listing_ending_at,
                     'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
                     'data' => $item,
+                    'sx_value' => number_format((float) $sx, 2, '.', ''),
+                    'sx_icon' => (($sx - $lastSx) >= 0) ? 'up' : 'down',
+                    'price_diff' => $price_diff,
                 ];
             });
 

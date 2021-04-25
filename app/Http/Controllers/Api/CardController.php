@@ -257,7 +257,7 @@ class CardController extends Controller {
                 $data['price'] = number_format((float) $sx, 2, '.', '');
                 $data['sx_value_signed'] = (float) $sx - $lastSx;
                 $data['sx_value'] = (float) str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-                $sx_percent = ($lastSx>0? (($sx - $lastSx)/$lastSx) : 0);
+                $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) : 0);
                 $data['sx_percent_signed'] = $sx_percent;
                 $data['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
                 $data['sx_icon'] = $sx_icon;
@@ -309,7 +309,7 @@ class CardController extends Controller {
 
             $AppSettings = AppSettings::first();
             $order = ['basketball', 'soccer', 'baseball', 'football', 'pokemon'];
-            if($AppSettings){
+            if ($AppSettings) {
                 $order = $AppSettings->trenders_order;
             }
 
@@ -497,8 +497,7 @@ class CardController extends Controller {
                 $save_filename = $request->input('sport') . '/F' . ((int) $data->row_id + 1) . '.' . $request->image->extension();
                 $filename = 'F' . ((int) $data->row_id + 1) . '.' . $request->image->extension();
                 Storage::disk('public')->put($save_filename, file_get_contents($request->image->getRealPath()));
-            }
-            else {
+            } else {
                 $ext = pathinfo(parse_url($request->input('image'), PHP_URL_PATH), PATHINFO_EXTENSION);
                 $save_filename = $request->input('sport') . '/F' . ((int) $data->row_id + 1) . '.' . $ext;
                 $filename = 'F' . ((int) $data->row_id + 1) . '.' . $ext;
@@ -721,21 +720,21 @@ class CardController extends Controller {
             $cvs = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function($cs) use($grpFormat) {
                         return Carbon::parse($cs->timestamp)->format($grpFormat);
                     })->map(function($cs, $timestamp) use($grpFormat, $days) {
-                        return [
-                            'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
-                            'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
-                            // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
-                            'quantity' => $cs->map(function ($qty) { return (int) $qty->quantity; })->sum()
-                        ];
-                    });
+                return [
+                'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
+                'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
+                // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
+                'quantity' => $cs->map(function ($qty) { return (int) $qty->quantity;
+                })->sum()
+                ];
+            });
 
             $data['values'] = $cvs->pluck('cost')->toArray();
             $data['labels'] = $cvs->pluck('timestamp')->toArray();
             $data['qty'] = $cvs->pluck('quantity')->toArray();
             // dd($data);
-            
             // $data = $this->__groupGraphDataN($days, $data);
-            if($days > 2){
+            if ($days > 2) {
                 $data = $this->__groupGraphData($days, $data);
             }
 
@@ -773,7 +772,7 @@ class CardController extends Controller {
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
 
                 $data['doller_diff'] = str_replace('-', '', number_format((float) ($sx - $lastSx), 2, '.', ''));
-                $perc_diff = ($lastSx>0? (($sx - $lastSx)/$lastSx)* 100 : 0);
+                $perc_diff = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
                 $data['perc_diff'] = str_replace('-', '', number_format($perc_diff, 2, '.', ''));
                 $data['last_timestamp'] = Carbon::create($last_timestamp->timestamp)->format('F d Y \- h:i:s A');
                 $data['sx_icon'] = $sx_icon;
@@ -824,18 +823,18 @@ class CardController extends Controller {
                 $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }
-            
+
             $data = ['values' => [], 'labels' => []];
             // $cvs = CardSales::groupBy('timestamp')->orderBy('timestamp', 'DESC')->limit($days);
             $cvs = CardSales::whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
-                return Carbon::parse($cs->timestamp)->format($grpFormat);
-            })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
+                        return Carbon::parse($cs->timestamp)->format($grpFormat);
+                    })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
                 return [
-                    'cost' => round((clone $cs)->avg('cost'), 2),
-                    'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
-                    'quantity' => $cs->map(function ($qty) {
-                        return (int) $qty->quantity;
-                    })->sum()
+                'cost' => round((clone $cs)->avg('cost'), 2),
+                'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
+                'quantity' => $cs->map(function ($qty) {
+                return (int) $qty->quantity;
+                })->sum()
                 ];
             });
             $data['values'] = $cvs->pluck('cost')->toArray();
@@ -843,7 +842,9 @@ class CardController extends Controller {
             $data['qty'] = $cvs->pluck('quantity')->toArray();
             // dd($data);
 
-            if($days > 2){ $data = $this->__groupGraphData($days, $data);}
+            if ($days > 2) {
+                $data = $this->__groupGraphData($days, $data);
+            }
             if ($days == 2) {
                 $labels = [];
                 $values = [];
@@ -881,7 +882,7 @@ class CardController extends Controller {
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
 
                 $data['doller_diff'] = str_replace('-', '', number_format((float) ($sx - $lastSx), 2, '.', ''));
-                $data['perc_diff'] = str_replace('-', '', number_format((($sx - $lastSx)/$lastSx) * 100, 2, '.', ''));
+                $data['perc_diff'] = str_replace('-', '', number_format((($sx - $lastSx) / $lastSx) * 100, 2, '.', ''));
                 $data['last_timestamp'] = Carbon::create($last_timestamp->timestamp)->format('F d Y \- h:i:s A');
                 $data['change_arrow'] = $sx_icon;
             } else {
@@ -937,15 +938,15 @@ class CardController extends Controller {
 
                 // $cvs = CardSales::->whereBetween('timestamp', [$to, $from])->groupBy('timestamp')->orderBy('timestamp', 'DESC');
                 $cvs = CardSales::where('card_id', $cid)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
-                    return Carbon::parse($cs->timestamp)->format($grpFormat);
-                })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
+                            return Carbon::parse($cs->timestamp)->format($grpFormat);
+                        })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
                     return [
-                        'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
-                        'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
-                        // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
-                        'quantity' => $cs->map(function ($qty) {
-                            return (int) $qty->quantity;
-                        })->sum()
+                    'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
+                    'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
+                    // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
+                    'quantity' => $cs->map(function ($qty) {
+                    return (int) $qty->quantity;
+                    })->sum()
                     ];
                 });
 
@@ -956,7 +957,9 @@ class CardController extends Controller {
                 $data['labels'] = $cvs->pluck('timestamp')->toArray();
                 $data['qty'] = $cvs->pluck('quantity')->toArray();
 
-                if($days > 2){ $data = $this->__groupGraphData($days, $data);}
+                if ($days > 2) {
+                    $data = $this->__groupGraphData($days, $data);
+                }
                 if ($days == 2) {
                     $labels = [];
                     $values = [];
@@ -988,7 +991,7 @@ class CardController extends Controller {
             $finalData['qty2'] = $temData[1]['qty'];
             $finalData['rank1'] = $this->getCardRank($cids[0]);
             $finalData['rank2'] = $this->getCardRank($cids[1]);
-            
+
             $sx = CardSales::where('card_id', $cids[0])->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
             $sx_count = count($sx);
             $finalData['sx1'] = number_format((($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0), 2, '.', '');
@@ -1046,15 +1049,15 @@ class CardController extends Controller {
 
             // $cvs = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->groupBy('timestamp')->orderBy('timestamp', 'DESC');
             $cvs = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
-                return Carbon::parse($cs->timestamp)->format($grpFormat);
-            })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
+                        return Carbon::parse($cs->timestamp)->format($grpFormat);
+                    })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
                 return [
-                    'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
-                    'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
-                    // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
-                    'quantity' => $cs->map(function ($qty) {
-                        return (int) $qty->quantity;
-                    })->sum()
+                'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
+                'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
+                // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
+                'quantity' => $cs->map(function ($qty) {
+                return (int) $qty->quantity;
+                })->sum()
                 ];
             });
 
@@ -1064,7 +1067,9 @@ class CardController extends Controller {
                 $data['labels'] = $cvs->pluck('timestamp')->toArray();
                 $data['qty'] = $cvs->pluck('quantity')->toArray();
 
-                if($days > 2){ $data = $this->__groupGraphData($days, $data);}
+                if ($days > 2) {
+                    $data = $this->__groupGraphData($days, $data);
+                }
 //            $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
                 if ($days == 2) {
                     $labels = [];
@@ -1091,17 +1096,17 @@ class CardController extends Controller {
                 $finalData['qty'] = $data['qty'];
             }
 //                $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-                $sx_count = count($sx);
-                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
-                $lastSx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-                $count = count($lastSx);
-                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-                $finalData['dollar_diff'] = str_replace('-', '', number_format($sx - $lastSx, 2, '.', ''));
-                $pert_diff = ($lastSx>0? (($sx - $lastSx)/$lastSx)* 100 : 0);
-                $finalData['pert_diff'] = str_replace('-', '', number_format($pert_diff, 2, '.', ''));
-                $finalData['sx_icon'] = $sx_icon;
+            $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+            $sx_count = count($sx);
+            $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+            $lastSx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+            $count = count($lastSx);
+            $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+            $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+            $finalData['dollar_diff'] = str_replace('-', '', number_format($sx - $lastSx, 2, '.', ''));
+            $pert_diff = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
+            $finalData['pert_diff'] = str_replace('-', '', number_format($pert_diff, 2, '.', ''));
+            $finalData['sx_icon'] = $sx_icon;
 //            } else {
 //                $finalData['values'] = [];
 //                $finalData['labels'] = [];
@@ -1113,9 +1118,9 @@ class CardController extends Controller {
 
             $finalData['rank'] = $this->getCardRank($card_id);
 //            $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-             $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-                $sx_count = count($sx);
-                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+            $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+            $sx_count = count($sx);
+            $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
             $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
             $sx_count = count($sx);
             $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
@@ -1187,7 +1192,7 @@ class CardController extends Controller {
         $grouped_qty = [];
         $max = 0;
         if ($months != null) {
-            $max = $months;            
+            $max = $months;
         }
         if ($years != null) {
             $max = $years;
@@ -1210,29 +1215,29 @@ class CardController extends Controller {
         }
         // if ((count($data['labels']) < (int) $cmp) || $cmpSfx == 'years' || $last_date > Carbon::now()) {
 
-            if (isset($data['labels']) && isset($data['labels'][0])) {
-                $period = \Carbon\CarbonPeriod::create($start_date, '1 ' . $cmpSfx, $last_date);
-                $map_val = [];
-                $map_qty = [];
-                foreach ($period as $dt) {
-                    $dt = trim($dt->format($cmpFormat));                    
-                    $map_val[$dt] = 0;
-                    $map_qty[$dt] = 0;
-                    $ind = array_search($dt, $data['labels']);
-                    if (gettype($ind) == "integer") {
-                        $map_val[$dt] = $data['values'][$ind];
-                        $map_qty[$dt] = $data['qty'][$ind];
-                    }
+        if (isset($data['labels']) && isset($data['labels'][0])) {
+            $period = \Carbon\CarbonPeriod::create($start_date, '1 ' . $cmpSfx, $last_date);
+            $map_val = [];
+            $map_qty = [];
+            foreach ($period as $dt) {
+                $dt = trim($dt->format($cmpFormat));
+                $map_val[$dt] = 0;
+                $map_qty[$dt] = 0;
+                $ind = array_search($dt, $data['labels']);
+                if (gettype($ind) == "integer") {
+                    $map_val[$dt] = $data['values'][$ind];
+                    $map_qty[$dt] = $data['qty'][$ind];
                 }
-                uksort($map_val, [$this, "lbl_dt"]);
-                uksort($map_qty, [$this, "lbl_dt"]);
-
-                $data['labels'] = Collect(array_keys($map_val))->map(function ($lbl) use ($cmpFormat) {
-                            return Carbon::createFromFormat($cmpFormat, explode(' ', $lbl)[0])->format('M/d/Y');
-                        })->toArray();
-                $data['values'] = array_values($map_val);
-                $data['qty'] = array_values($map_qty);
             }
+            uksort($map_val, [$this, "lbl_dt"]);
+            uksort($map_qty, [$this, "lbl_dt"]);
+
+            $data['labels'] = Collect(array_keys($map_val))->map(function ($lbl) use ($cmpFormat) {
+                        return Carbon::createFromFormat($cmpFormat, explode(' ', $lbl)[0])->format('M/d/Y');
+                    })->toArray();
+            $data['values'] = array_values($map_val);
+            $data['qty'] = array_values($map_qty);
+        }
         // }
 
         return $data;
@@ -1483,7 +1488,7 @@ class CardController extends Controller {
 //                return response()->json(['message' => 'File uploaded unsuccessfully'], 500);
             }
             if ($request->has('file')) {
-                     $filename = $request->file('file')->getClientOriginalName();
+                $filename = $request->file('file')->getClientOriginalName();
                 if ($request->has('card_id')) {
                     // if(Storage::disk('public')->put($filename, file_get_contents($request->file('file')->getRealPath()))){
                     $path = $request->file('file')->store('temp');
@@ -1507,8 +1512,6 @@ class CardController extends Controller {
     }
 
     public function inactiveSlab(Request $request) {
-
-
         try {
             if (is_array($request->id)) {
                 foreach ($request->id as $id) {
@@ -1526,22 +1529,31 @@ class CardController extends Controller {
     }
 
     public function csvUploads(Request $request) {
+        $page = $request->input('page', 1);
+        $take = $request->input('take', 30);
+        $skip = $take * $page;
+        $skip = $skip - $take;
         try {
-            $data = ExcelUploads::get();
-            return response()->json(['status' => 200, 'data' => $data], 200);
+            $data = ExcelUploads::skip($skip)->take($take)->get();
+            return response()->json(['status' => 200, 'data' => $data, 'next' => ($page + 1)], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
     }
 
-    public function deleteUploads($excel_id) {
+    public function deleteUploads(Request $request, $excel_id) {
         try {
             ExcelUploads::whereId($excel_id)->delete();
-            (Card::where('excel_uploads_id', $excel_id)->first())->delete();
-            (EbayItems::where('excel_uploads_id', $excel_id)->first())->delete();
-            (CardSales::where('excel_uploads_id', $excel_id)->first())->delete();
-            $data = ExcelUploads::get();
-            return response()->json(['status' => 200, 'data' => $data], 200);
+            if ($carddetails = Card::where('excel_uploads_id', $excel_id)->first()) {
+                ($carddetails = Card::where('excel_uploads_id', $excel_id))->delete();
+            }
+            if ($ebayitems = EbayItems::where('excel_uploads_id', $excel_id)->first()) {
+                ($ebayitems = EbayItems::where('excel_uploads_id', $excel_id))->delete();
+            }
+            if ($cardsales = CardSales::where('excel_uploads_id', $excel_id)->first()) {
+                ($cardsales = CardSales::where('excel_uploads_id', $excel_id))->delete();
+            }
+            return response()->json(['status' => 200], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
