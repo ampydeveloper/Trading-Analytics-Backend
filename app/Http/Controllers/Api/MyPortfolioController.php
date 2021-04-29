@@ -174,10 +174,11 @@ class MyPortfolioController extends Controller {
             $data = [];
             foreach ($cards as $key => $card) {
 //                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-                $sx_count = count($sx);
-                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
-
+//                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+//                $sx_count = count($sx);
+//                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+                $sx_data = CardSales::getSx($card->id);
+                $sx = $sx_data['sx'];
 //                $sx = ($sx == null) ? 0 : $sx;
                 foreach ($ptempcards[$card->id] as $ptempcard) {
                     $purchase_price = (isset($ptempcard) ? $ptempcard->purchase_price : 0);
@@ -304,15 +305,18 @@ class MyPortfolioController extends Controller {
 //            if (!empty($myPortfolioValues)) {
 //                $updated = $myPortfolioValues->updated_at;
 //            }
-
             //Calculate SX value
             $card_ids = MyPortfolio::where('user_id', $this->user_id)->pluck('card_id');
             $total_sx_value = 0;
             foreach ($card_ids as $card_id) {
 //                $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-                $sx_count = count($sx);
-                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+//                $sx = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+//                $sx_count = count($sx);
+//                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+
+                $sx_data = CardSales::getSx($card_id);
+                $sx = $sx_data['sx'];
+
                 $total_sx_value += $sx;
             }
 
@@ -321,8 +325,8 @@ class MyPortfolioController extends Controller {
             $diff_icon = (($diff >= 0) ? 'up' : 'down');
             $diff = number_format(abs($diff), 2, '.', '');
 
-            $percent_diff =  ($total_purchases>0? (($diff / $total_purchases)* 100): 0 ) ;
-//            $percent_diff_icon = (($percent_diff >= 0) ? 'up' : 'down');
+            $percent_diff = ($total_purchases > 0 ? (($diff / $total_purchases) * 100) : 0 );
+            $percent_diff_icon = (($percent_diff >= 0) ? 'up' : 'down');
             $percent_diff = number_format(abs($percent_diff), 2, '.', '');
 
             return response()->json([
@@ -334,7 +338,7 @@ class MyPortfolioController extends Controller {
 //                        'updated' => $updated,
                         'total_purchases' => $total_purchases,
                         'percent_differ' => $percent_diff,
-                        'percent_diff_icon' => $diff_icon
+                        'percent_diff_icon' => $percent_diff_icon
                             ], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);

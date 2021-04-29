@@ -92,14 +92,17 @@ class WatchListController extends Controller {
                 foreach ($cards as $key => $card) {
 
 //                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-                    $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-                    $sx_count = count($sx);
-                    $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
-
+//                    $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+//                    $sx_count = count($sx);
+//                    $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
 //                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->avg('cost');
-                    $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-                    $count = count($lastSx);
-                    $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+//                    $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+//                    $count = count($lastSx);
+//                    $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                    $sx_data = CardSales::getSxAndLastSx($card->id);
+                    $sx = $sx_data['sx'];
+                    $lastSx = $sx_data['lastSx'];
+
                     $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                     $sx = number_format((float) $sx, 2, '.', '');
 
@@ -118,7 +121,6 @@ class WatchListController extends Controller {
 //                        $sx = abs($sx);
 //                        $sx_icon = 'down';
 //                    }
-
 //                    $purchase_price = (isset($ptempcards[$card->id]) ? $ptempcards[$card->id]->purchase_price : 0);
 //                    $purchase_quantity = (isset($ptempcards[$card->id]) ? $ptempcards[$card->id]->purchase_quantity : 1);
 //                    $portfolio_id = (isset($ptempcards[$card->id]) ? $ptempcards[$card->id]->id : 0);
@@ -128,7 +130,7 @@ class WatchListController extends Controller {
                         'id' => $card->id,
                         'title' => $card->title,
                         'cardImage' => $card->cardImage,
-                        'sx_value' => str_replace('-', '', number_format((float)$sx - $lastSx, 2, '.', '')),
+                        'sx_value' => str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', '')),
                         'sx_icon' => $sx_icon,
                         'price' => $sx,
 //                        'purchase_price' => $purchase_price,

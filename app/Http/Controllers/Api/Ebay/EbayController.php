@@ -529,12 +529,17 @@ class EbayController extends Controller {
                 }
                 $listingTypeval = ($item->listingInfo ? $item->listingInfo->listingType : '');
                 
-                $sx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-                $sx_count = count($sx);
-                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
-                $lastSx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-                $count = count($lastSx);
-                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+//                $sx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+//                $sx_count = count($sx);
+//                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+//                $lastSx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+//                $count = count($lastSx);
+//                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                
+                $sx_data = CardSales::getSxAndLastSx($item->card_id);
+                $sx = $sx_data['sx'];
+                $lastSx = $sx_data['lastSx'];
+                
                 $price_diff = (float) str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
                 
                 return [
@@ -1343,12 +1348,18 @@ class EbayController extends Controller {
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
                 
                 //Getting sx and price diff
-                $sx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-                $sx_count = count($sx);
-                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
-                $lastSx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-                $count = count($lastSx);
-                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+//                $sx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+//                $sx_count = count($sx);
+//                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+//                
+//                $lastSx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+//                $count = count($lastSx);
+//                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                
+                $sx_data = CardSales::getSxAndLastSx($item->card_id);
+                $sx = $sx_data['sx'];
+                $lastSx = $sx_data['lastSx'];
+                
                 $price_diff = (float) str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
                 
                 return [
@@ -1394,12 +1405,16 @@ class EbayController extends Controller {
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
                 
-                $sx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-                $sx_count = count($sx);
-                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
-                $lastSx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-                $count = count($lastSx);
-                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+//                $sx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
+//                $sx_count = count($sx);
+//                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
+//                $lastSx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
+//                $count = count($lastSx);
+//                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                $sx_data = CardSales::getSxAndLastSx($item->card_id);
+                $sx = $sx_data['sx'];
+                $lastSx = $sx_data['lastSx'];
+                
                 $price_diff = (float) str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
                 
                 return [
