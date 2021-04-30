@@ -688,6 +688,7 @@ class CardController extends Controller {
                 $sale = CardSales::getSx($cardId);
                 $data['sale'] += $sale['sx'];
             }
+            $data['sale'] = number_format($data['sale'], 2, '.', '');
 
 
 //            $all_cards = Card::pluck('id');
