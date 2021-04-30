@@ -48,8 +48,7 @@ use LogsActivity;
         $count = $salesDate->count();
         if ($count >= 1) {
             $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
-            $sxSale = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date0 . '%')->pluck('cost');
-            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
+            $data['sx'] = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date0 . '%')->avg('cost');
         } else {
             $data['sx'] = 0;
         }
@@ -62,16 +61,16 @@ use LogsActivity;
         $count = $salesDate->count();
         if ($count >= 2) {
             $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
-            $sxSale = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date0 . '%')->pluck('cost');
-            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
+            $data['sx'] = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date0 . '%')->avg('cost');
+//            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
 
             $check_date1 = date('Y-m-d', strtotime($salesDate[1]));
-            $lastSxSale = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date1 . '%')->pluck('cost');
-            $data['lastSx'] = array_sum($lastSxSale->toArray()) / count($lastSxSale);
+            $data['lastSx'] = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date1 . '%')->avg('cost');
+//            $data['lastSx'] = array_sum($lastSxSale->toArray()) / count($lastSxSale);
         } elseif ($count == 1) {
             $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
-            $sxSale = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date0 . '%')->pluck('cost');
-            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
+            $data['sx'] = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date0 . '%')->avg('cost');
+//            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
             $data['lastSx'] = 0;
         } else {
             $data['sx'] = 0;
@@ -86,16 +85,16 @@ use LogsActivity;
         $count = $salesDate->count();
         if ($count >= 2) {
             $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
-            $sxSale = CardSales::where('timestamp', 'like', '%' . $check_date0 . '%')->pluck('cost');
-            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
+            $data['sx'] = CardSales::where('timestamp', 'like', '%' . $check_date0 . '%')->avg('cost');
+//            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
 
             $check_date1 = date('Y-m-d', strtotime($salesDate[1]));
-            $lastSxSale = CardSales::where('timestamp', 'like', '%' . $check_date1 . '%')->pluck('cost');
-            $data['lastSx'] = array_sum($lastSxSale->toArray()) / count($lastSxSale);
+            $data['lastSx'] = CardSales::where('timestamp', 'like', '%' . $check_date1 . '%')->avg('cost');
+//            $data['lastSx'] = array_sum($lastSxSale->toArray()) / count($lastSxSale);
         } elseif ($count == 1) {
             $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
-            $sxSale = CardSales::where('timestamp', 'like', '%' . $check_date0 . '%')->pluck('cost');
-            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
+            $data['sx'] = CardSales::where('timestamp', 'like', '%' . $check_date0 . '%')->avg('cost');
+//            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
             $data['lastSx'] = 0;
         } else {
             $data['sx'] = 0;
@@ -110,16 +109,16 @@ use LogsActivity;
         $count = $salesDate->count();
         if ($count >= 2) {
             $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
-            $sxSale = CardSales::where('timestamp', 'like', '%' . $check_date0 . '%')->pluck('cost');
-            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
+            $data['sx'] = CardSales::where('timestamp', 'like', '%' . $check_date0 . '%')->avg('cost');
+//            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
 
             $check_date1 = date('Y-m-d', strtotime($salesDate[$count - 1]));
-            $lastSxSale = CardSales::where('timestamp', 'like', '%' . $check_date1 . '%')->pluck('cost');
-            $data['lastSx'] = array_sum($lastSxSale->toArray()) / count($lastSxSale);
+            $data['lastSx'] = CardSales::where('timestamp', 'like', '%' . $check_date1 . '%')->avg('cost');
+//            $data['lastSx'] = array_sum($lastSxSale->toArray()) / count($lastSxSale);
         } elseif ($count == 1) {
             $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
-            $sxSale = CardSales::where('timestamp', 'like', '%' . $check_date0 . '%')->pluck('cost');
-            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
+            $data['sx'] = CardSales::where('timestamp', 'like', '%' . $check_date0 . '%')->avg('cost');
+//            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
             $data['lastSx'] = 0;
         } else {
             $data['sx'] = 0;
@@ -134,16 +133,16 @@ use LogsActivity;
         $count = $salesDate->count();
         if ($count >= 2) {
             $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
-            $sxSale = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date0 . '%')->pluck('cost');
-            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
+            $data['sx'] = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date0 . '%')->avg('cost');
+//            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
 //dd($sxSale);
             $check_date1 = date('Y-m-d', strtotime($salesDate[$count - 1]));
-            $lastSxSale = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date1 . '%')->pluck('cost');
-            $data['lastSx'] = array_sum($lastSxSale->toArray()) / count($lastSxSale);
+            $data['lastSx'] = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date1 . '%')->avg('cost');
+//            $data['lastSx'] = array_sum($lastSxSale->toArray()) / count($lastSxSale);
         } elseif ($count == 1) {
             $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
-            $sxSale = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date0 . '%')->pluck('cost');
-            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
+            $data['sx'] = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date0 . '%')->avg('cost');
+//            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
             $data['lastSx'] = 0;
         } else {
             $data['sx'] = 0;
@@ -156,16 +155,16 @@ use LogsActivity;
         $count = $salesDate->count();
         if ($count >= 2) {
             $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
-            $sxSale = CardSales::whereIn('card_id', $ids)->where('timestamp', 'like', '%' . $check_date0 . '%')->pluck('cost');
-            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
+            $data['sx'] = CardSales::whereIn('card_id', $ids)->where('timestamp', 'like', '%' . $check_date0 . '%')->avg('cost');
+//            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
 
             $check_date1 = date('Y-m-d', strtotime($salesDate[$count - 1]));
-            $lastSxSale = CardSales::whereIn('card_id', $ids)->where('timestamp', 'like', '%' . $check_date1 . '%')->pluck('cost');
-            $data['lastSx'] = array_sum($lastSxSale->toArray()) / count($lastSxSale);
+            $data['lastSx'] = CardSales::whereIn('card_id', $ids)->where('timestamp', 'like', '%' . $check_date1 . '%')->avg('cost');
+//            $data['lastSx'] = array_sum($lastSxSale->toArray()) / count($lastSxSale);
         } elseif ($count == 1) {
             $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
-            $sxSale = CardSales::whereIn('card_id', $ids)->where('timestamp', 'like', '%' . $check_date0 . '%')->pluck('cost');
-            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
+            $data['sx'] = CardSales::whereIn('card_id', $ids)->where('timestamp', 'like', '%' . $check_date0 . '%')->avg('cost');
+//            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
             $data['lastSx'] = 0;
         } else {
             $data['sx'] = 0;
@@ -180,16 +179,16 @@ use LogsActivity;
         $count = $salesDate->count();
         if ($count >= 2) {
             $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
-            $sxSale = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date0 . '%')->pluck('cost');
-            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
+            $data['sx'] = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date0 . '%')->avg('cost');
+//            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
 
             $check_date_oldest = date('Y-m-d', strtotime($salesDate[$count - 1]));
-            $oldestSxSale = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date_oldest . '%')->pluck('cost');
-            $data['oldestSx'] = array_sum($oldestSxSale->toArray()) / count($oldestSxSale);
+            $data['oldestSx'] = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date_oldest . '%')->avg('cost');
+//            $data['oldestSx'] = array_sum($oldestSxSale->toArray()) / count($oldestSxSale);
         } elseif ($count == 1) {
             $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
-            $sxSale = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date0 . '%')->pluck('cost');
-            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
+            $data['sx'] = CardSales::where('card_id', $id)->where('timestamp', 'like', '%' . $check_date0 . '%')->avg('cost');
+//            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
             $data['oldestSx'] = 0;
         } else {
             $data['sx'] = 0;
@@ -197,5 +196,4 @@ use LogsActivity;
         }
         return $data;
     }
-
 }

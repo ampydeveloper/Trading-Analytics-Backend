@@ -679,9 +679,17 @@ class CardController extends Controller {
         try {
             $data = ['total' => 0, 'sale' => 0, 'avg_sale' => 0, 'change' => 0, 'change_arrow' => 'up', 'last_updated' => ''];
             $data['total'] = Card::count();
-            $data['sale'] = number_format(CardSales::leftJoin('cards', 'cards.id', '=', 'card_sales.card_id')->where('cards.deleted_at', null)->orderBy('timestamp', 'DESC')->select('card_sales.card_id', 'card_sales.cost')->get()->groupBy('card_id')->map(function ($cs) {
-                        return ['avg' => $cs->splice(0, 3)->avg('cost')];
-                    })->sum('avg'), 2, '.', '');
+//            $data['sale'] = number_format(CardSales::leftJoin('cards', 'cards.id', '=', 'card_sales.card_id')->where('cards.deleted_at', null)->orderBy('timestamp', 'DESC')->select('card_sales.card_id', 'card_sales.cost')->get()->groupBy('card_id')->map(function ($cs) {
+//                        return ['avg' => $cs->splice(0, 3)->avg('cost')];
+//                    })->sum('avg'), 2, '.', '');
+            $cards = Card::whereHas('sales')->pluck('id');
+            $data['sale'] = 0;
+            foreach ($cards as $cardId) {
+                $sale = CardSales::getSx($cardId);
+                $data['sale'] += $sale['sx'];
+            }
+
+
 //            $all_cards = Card::pluck('id');
 //            $data['all_sales_value'] = CardSales::whereIn('card_id', $all_cards)->groupBy('card_id')->orderBy('timestamp', 'DESC')->get();
 //                    ->limit(3)->avg('cost');
@@ -1522,6 +1530,8 @@ class CardController extends Controller {
 
     public function uploadSlabForExcelImport(Request $request) {
         try {
+//            dd('sdcsd');
+//            dd($request->all());
             if ($request->has('file1')) {
                 $filename = $request->file1->getClientOriginalName();
 //                return response()->json(['message' => $filename], 500);
@@ -1553,7 +1563,9 @@ class CardController extends Controller {
                 }
 //                return response()->json(['message' => 'File uploaded unsuccessfully'], 500);
             }
-            if ($request->has('file')) {
+            
+            
+            if ($request->has('file') && !is_array($request->file)) {
                 $filename = $request->file('file')->getClientOriginalName();
                 if ($request->has('card_id')) {
                     // if(Storage::disk('public')->put($filename, file_get_contents($request->file('file')->getRealPath()))){
@@ -1568,7 +1580,18 @@ class CardController extends Controller {
                     // Excel::import(new CardsImport, request()->file('file'));
                     return response()->json(['message' => 'Slabs imported successfully.'], 200);
                 }
-            } else {
+            }elseif($request->has('file') && is_array($request->file)) {
+                foreach($request->file as $csv) {
+                    $filename = $csv->getClientOriginalName();
+                    $path = $csv->store('temp');
+                    ExcelImports::dispatch(['file' => $path, 'type' => 'slabs', 'filename' => $filename]);
+                }
+                if ($request->has('card_id')) {
+                    return response()->json(['message' => 'Listings imported successfully.'], 200);
+                } else {
+                    return response()->json(['message' => 'Slabs imported successfully.'], 200);
+                }
+            }else {
                 return response()->json(['message' => 'Images uploaded successfully.'], 200);
             }
         } catch (\Exception $e) {
