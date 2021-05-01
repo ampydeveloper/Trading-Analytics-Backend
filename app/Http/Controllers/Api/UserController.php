@@ -371,16 +371,37 @@ class UserController extends Controller {
                 return response()->json(['status' => 200, 'data' => $settings], 200);
             }
             $data = $request->all();
-            if ($request->file('slab_image')) {
-                $filename = 'Default-Slab-' . $request->slab_image->getClientOriginalName();
-                Storage::disk('public')->put($filename, file_get_contents($request->slab_image->getRealPath()));
-                $data['slab_image'] = $filename;
+            if ($request->file('basketball_image')) {
+                $filename = 'Default-basketball-' . $request->basketball_image->getClientOriginalName();
+                Storage::disk('public')->put($filename, file_get_contents($request->basketball_image->getRealPath()));
+                $data['basketball_image'] = $filename;
+            }
+            if ($request->file('baseball_image')) {
+                $filename = 'Default-baseball-' . $request->baseball_image->getClientOriginalName();
+                Storage::disk('public')->put($filename, file_get_contents($request->baseball_image->getRealPath()));
+                $data['baseball_image'] = $filename;
+            }
+            if ($request->file('football_image')) {
+                $filename = 'Default-football-' . $request->football_image->getClientOriginalName();
+                Storage::disk('public')->put($filename, file_get_contents($request->football_image->getRealPath()));
+                $data['football_image'] = $filename;
+            }
+            if ($request->file('soccer_image')) {
+                $filename = 'Default-soccer-' . $request->soccer_image->getClientOriginalName();
+                Storage::disk('public')->put($filename, file_get_contents($request->soccer_image->getRealPath()));
+                $data['soccer_image'] = $filename;
+            }
+            if ($request->file('pokemon_image')) {
+                $filename = 'Default-pokemon-' . $request->pokemon_image->getClientOriginalName();
+                Storage::disk('public')->put($filename, file_get_contents($request->pokemon_image->getRealPath()));
+                $data['pokemon_image'] = $filename;
             }
             if ($request->file('listing_image')) {
-                $filename = 'Default-Listing-' . $request->slab_image->getClientOriginalName();
+                $filename = 'Default-Listing-' . $request->listing_image->getClientOriginalName();
                 Storage::disk('public')->put($filename, file_get_contents($request->listing_image->getRealPath()));
                 $data['listing_image'] = $filename;
             }
+//            dd($data);
             AppSettings::updateOrCreate(['id' => 1], $data);
             return response()->json(['status' => 200, 'message' => 'Settings saved successfully.'], 200);
         } catch (\Exception $e) {

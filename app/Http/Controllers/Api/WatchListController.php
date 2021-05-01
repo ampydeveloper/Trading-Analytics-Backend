@@ -130,6 +130,8 @@ class WatchListController extends Controller {
                         'id' => $card->id,
                         'title' => $card->title,
                         'cardImage' => $card->cardImage,
+                        'grade' => $card->grade,
+                        'is_sx' => $card->is_sx,
                         'sx_value' => str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', '')),
                         'sx_icon' => $sx_icon,
                         'price' => $sx,

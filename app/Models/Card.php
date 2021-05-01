@@ -63,7 +63,8 @@ class Card extends Model
         else{
             $settings = AppSettings::first();
             if ($settings) {
-                return $settings->slab_image;
+                $default_filename = $this->sport.'_image';
+                return $settings->$default_filename;
             }else{
                 return asset('/img/default-image.jpg');
             }

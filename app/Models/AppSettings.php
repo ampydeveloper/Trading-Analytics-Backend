@@ -12,7 +12,11 @@ class AppSettings extends Model
      * @var array
      */
     protected $fillable = [
-        'slab_image',
+        'basketball_image',
+        'baseball_image',
+        'football_image',
+        'soccer_image',
+        'pokemon_image',
         'listing_image',
         'trenders_order',
         'live_listings_order'
@@ -24,7 +28,31 @@ class AppSettings extends Model
         'updated_at',
     ];
 
-    public function getSlabImageAttribute($value){
+    public function getBasketballImageAttribute($value){
+        if(!strpos($value, "storage") !== false){
+            $value = "storage/" . $value;
+        }
+        return $value != null ? url($value) : '';
+    }
+    public function getBaseballImageAttribute($value){
+        if(!strpos($value, "storage") !== false){
+            $value = "storage/" . $value;
+        }
+        return $value != null ? url($value) : '';
+    }
+    public function getFootballImageAttribute($value){
+        if(!strpos($value, "storage") !== false){
+            $value = "storage/" . $value;
+        }
+        return $value != null ? url($value) : '';
+    }
+    public function getSoccerImageAttribute($value){
+        if(!strpos($value, "storage") !== false){
+            $value = "storage/" . $value;
+        }
+        return $value != null ? url($value) : '';
+    }
+    public function getPokemonImageAttribute($value){
         if(!strpos($value, "storage") !== false){
             $value = "storage/" . $value;
         }

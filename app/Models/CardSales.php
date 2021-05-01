@@ -91,14 +91,19 @@ use LogsActivity;
             $check_date1 = date('Y-m-d', strtotime($salesDate[1]));
             $data['lastSx'] = CardSales::where('timestamp', 'like', '%' . $check_date1 . '%')->avg('cost');
 //            $data['lastSx'] = array_sum($lastSxSale->toArray()) / count($lastSxSale);
+            
+            $check_date_oldest = date('Y-m-d', strtotime($salesDate[$count - 1]));
+            $data['oldestSx'] = CardSales::where('timestamp', 'like', '%' . $check_date_oldest . '%')->avg('cost');
         } elseif ($count == 1) {
             $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
             $data['sx'] = CardSales::where('timestamp', 'like', '%' . $check_date0 . '%')->avg('cost');
 //            $data['sx'] = array_sum($sxSale->toArray()) / count($sxSale);
             $data['lastSx'] = 0;
+            $data['oldestSx'] = 0;
         } else {
             $data['sx'] = 0;
             $data['lastSx'] = 0;
+            $data['oldestSx'] = 0;
         }
         return $data;
     }
