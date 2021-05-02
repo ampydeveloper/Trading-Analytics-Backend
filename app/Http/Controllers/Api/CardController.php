@@ -1156,7 +1156,7 @@ class CardController extends Controller {
             });
 
 //            return response()->json(['status' => 200, 'data' => $cvs], 200);
-            if (!empty($cvs) && $cvs->count() > 0) {
+//            if (!empty($cvs) && $cvs->count() > 0) {
                 $data['values'] = $cvs->pluck('cost')->toArray();
                 $data['labels'] = $cvs->pluck('timestamp')->toArray();
                 $data['qty'] = $cvs->pluck('quantity')->toArray();
@@ -1212,15 +1212,15 @@ class CardController extends Controller {
                 $finalData['pert_diff'] = str_replace('-', '', number_format($pert_diff, 2, '.', ''));
                 $finalData['sx_icon'] = $sx_icon;
                 $finalData['sx_value'] = number_format($sx, 2, '.', '');
-            } else {
-                $finalData['values'] = [];
-                $finalData['labels'] = [];
-                $finalData['qty'] = [];
-                $finalData['dollar_diff'] = 0;
-                $finalData['pert_diff'] = 0;
-                $finalData['sx_icon'] = 0;
-                $finalData['sx_value'] = 0;
-            }
+//            } else {
+//                $finalData['values'] = [];
+//                $finalData['labels'] = [];
+//                $finalData['qty'] = [];
+//                $finalData['dollar_diff'] = 0;
+//                $finalData['pert_diff'] = 0;
+//                $finalData['sx_icon'] = 0;
+//                $finalData['sx_value'] = 0;
+//            }
 
             $finalData['rank'] = $this->getCardRank($card_id);
             $sx_data = CardSales::getSx($card_id);
@@ -1726,7 +1726,7 @@ class CardController extends Controller {
             $ts = $dt->timestamp * 1000;
             $dt = trim($dt->format('Y-m-d'));
 //            $map_val[$dt] = [$ts, 0];
-            $map_qty[$dt] = 0;
+//            $map_qty[$dt] = 0;
             $ind = array_search($dt, $data['labels']);
             if (gettype($ind) == "integer") {
                 $map_val[$dt] = [$ts, $data['values'][$ind]];
@@ -1735,20 +1735,24 @@ class CardController extends Controller {
             } else {
                 if ($previousValue != 0 && ($cmpFormat == 'Y-m' || $cmpFormat == 'Y')) {
                     $map_val[$dt] = [$ts, $previousValue];
+                    $map_qty[$dt] = 0;
                     $flag = 1;
                 } elseif ($flag == 0 && $cmpFormat == 'Y-m-d') {
                     $salesDate = CardSales::where('timestamp', '<', $dt)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                     if ($salesDate->exists()) {
                         $sx = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
                         $map_val[$dt] = [$ts, $sx];
+                        $map_qty[$dt] = 0;
                         $flag = 1;
                         $previousValue = $sx;
                     } else {
                         $map_val[$dt] = [$ts, $previousValue];
+                        $map_qty[$dt] = 0;
                         $flag = 1;
                     }
                 } elseif ($previousValue != 0 && $cmpFormat == 'Y-m-d') {
                     $map_val[$dt] = [$ts, $previousValue];
+                    $map_qty[$dt] = 0;
                 }
             }
         }

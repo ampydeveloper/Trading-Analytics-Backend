@@ -348,6 +348,8 @@ class StoxtickerController extends Controller {
             })->sum()
             ];
         });
+        
+        dump($cvs);
 
         $data['values'] = $cvs->pluck('cost')->toArray();
         $data['labels'] = $cvs->pluck('timestamp')->toArray();
@@ -378,10 +380,13 @@ class StoxtickerController extends Controller {
             $qty = [];
             if (count($data['values']) == 0 && count($data['labels']) == 0) {
                     $date = explode(" ", $from);
+                    dump($date);
                     $sx = CardSales::where('timestamp', 'like', '%' . $date[0] . '%')->avg('cost');
+                    dump($sx);
                     if ($sx == null) {
                         $date = date('Y-m-d', strtotime('-2 day'));
                         $salesDate = CardSales::where('timestamp', '<=', $date)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                        dd($salesDate);
                         if ($salesDate->exists()) {
                             $sx = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
                         } else {
@@ -671,7 +676,7 @@ class StoxtickerController extends Controller {
             $ts = $dt->timestamp * 1000;
             $dt = trim($dt->format('Y-m-d'));
 //            $map_val[$dt] = [$ts, 0];
-            $map_qty[$dt] = 0;
+//            $map_qty[$dt] = 0;
             $ind = array_search($dt, $data['labels']);
             if (gettype($ind) == "integer") {
                 $map_val[$dt] = [$ts, $data['values'][$ind]];
@@ -680,20 +685,24 @@ class StoxtickerController extends Controller {
             } else {
                 if ($previousValue != 0 && ($cmpFormat == 'Y-m' || $cmpFormat == 'Y')) {
                     $map_val[$dt] = [$ts, $previousValue];
+                    $map_qty[$dt] = 0;
                     $flag = 1;
                 } elseif ($flag == 0 && $cmpFormat == 'Y-m-d') {
                     $salesDate = CardSales::where('timestamp', '<', $dt)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                     if ($salesDate->exists()) {
                         $sx = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
                         $map_val[$dt] = [$ts, $sx];
+                        $map_qty[$dt] = 0;
                         $flag = 1;
                         $previousValue = $sx;
                     } else {
                         $map_val[$dt] = [$ts, $previousValue];
+                        $map_qty[$dt] = 0;
                         $flag = 1;
                     }
                 } elseif($previousValue != 0 && $cmpFormat == 'Y-m-d') {
                     $map_val[$dt] = [$ts, $previousValue];
+                    $map_qty[$dt] = 0;
                 }
             }
         }
