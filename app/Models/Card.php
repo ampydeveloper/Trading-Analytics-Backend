@@ -56,14 +56,14 @@ class Card extends Model
 
     public function getCardImageAttribute()
     {
-         if($this->image != null && $this->image != '0'){
+         if($this->image != null && $this->image != "0"){
             return url("storage/" . $this->image);
 //            return url("storage/".strtolower($this->sport). '/' . $this->image);
         }
         else{
             $settings = AppSettings::first();
             if ($settings) {
-                $default_filename = $this->sport.'_image';
+                $default_filename = strtolower($this->sport).'_image';
                 return $settings->$default_filename;
             }else{
                 return asset('/img/default-image.jpg');

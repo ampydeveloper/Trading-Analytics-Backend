@@ -388,13 +388,13 @@ class EbayController extends Controller {
 //                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
 //                $count = count($lastSx);
 //                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-                
+
                 $sx_data = CardSales::getSxAndLastSx($card->id);
                 $sx = $sx_data['sx'];
                 $lastSx = $sx_data['lastSx'];
-                
+
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-                
+
                 $data['sx_value'] = number_format((float) $sx, 2, '.', '');
                 $data['sx_icon'] = $sx_icon;
                 $cards[$ind]['price'] = 0;
@@ -435,11 +435,11 @@ class EbayController extends Controller {
 //                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
 //                $count = count($lastSx);
 //                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-                
+
                 $sx_data = CardSales::getSxAndLastSx($card->id);
                 $sx = $sx_data['sx'];
                 $lastSx = $sx_data['lastSx'];
-                
+
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                 $data['sx_value'] = number_format((float) $sx, 2, '.', '');
                 $data['sx_icon'] = $sx_icon;
@@ -1137,7 +1137,7 @@ class EbayController extends Controller {
                     return $query->sellingStatus->currentPrice;
                 });
             }
-            $items = $items->skip($skip)->take($take)->map(function($item, $key) {
+            $items = $items->skip($skip)->take($take)->map(function($item, $key) use($card_id) {
                 $galleryURL = $item->galleryURL;
                 if ($item->pictureURLLarge != null) {
                     $galleryURL = $item->pictureURLLarge;
@@ -1147,6 +1147,11 @@ class EbayController extends Controller {
                     $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
+
+                $sx_data = CardSales::getSxAndLastSx($card_id);
+                $sx = $sx_data['sx'];
+                $lastSx = $sx_data['lastSx'];
+                $price_diff = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
 
                 return [
                     'id' => $item->id,
@@ -1158,6 +1163,9 @@ class EbayController extends Controller {
                     'listing_ending_at' => $item->listing_ending_at,
                     'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
                     'data' => $item,
+                    'sx_value' => number_format((float) $sx, 2, '.', ''),
+                    'sx_icon' => (($sx - $lastSx) >= 0) ? 'up' : 'down',
+                    'price_diff' => $price_diff,
                 ];
             });
             return response()->json(['status' => 200, 'data' => $items, 'next' => ($page + 1)], 200);

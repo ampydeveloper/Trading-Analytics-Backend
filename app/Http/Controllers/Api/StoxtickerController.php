@@ -521,7 +521,8 @@ class StoxtickerController extends Controller {
                 $data['qty'] = array_reverse($data['qty']);
             }
             
-            $last_timestamp = CardSales::whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->first();
+//            $last_timestamp = CardSales::whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->first();
+            $last_timestamp = CardSales::orderBy('timestamp', 'DESC')->first();
 
             $sx_data = CardSales::getGraphSx($from, $to);
             $sx = $sx_data['sx'];

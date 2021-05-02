@@ -818,7 +818,8 @@ class CardController extends Controller {
                 $data['labels'] = array_reverse($data['labels']);
                 $data['qty'] = array_reverse($data['qty']);
             }
-            $last_timestamp = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->first();
+//            $last_timestamp = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->first();
+            $last_timestamp = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->first();
             $sx_data = CardSales::getGraphSxWithCardId($card_id, $from, $to);
             $sx = $sx_data['sx'];
             $lastSx = $sx_data['lastSx'];
@@ -1210,7 +1211,7 @@ class CardController extends Controller {
                 $pert_diff = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
                 $finalData['pert_diff'] = str_replace('-', '', number_format($pert_diff, 2, '.', ''));
                 $finalData['sx_icon'] = $sx_icon;
-                $finalData['sx_value'] = $sx;
+                $finalData['sx_value'] = number_format($sx, 2, '.', '');
             } else {
                 $finalData['values'] = [];
                 $finalData['labels'] = [];
