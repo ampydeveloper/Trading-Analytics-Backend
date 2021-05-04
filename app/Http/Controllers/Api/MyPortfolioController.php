@@ -255,7 +255,7 @@ class MyPortfolioController extends Controller {
         try {
             $this->user_id = auth()->user()->id;
 //            $card_ids = MyPortfolio::where("user_id", $this->user_id)->pluck('card_id');
-            $cards = Card::where(function ($q) use ($filter) {
+            $cards = Card::whereHas('sales')->where(function ($q) use ($filter) {
                         if ($filter['player'] != '') {
                             $q->where('player', 'like', '%' . $filter['player'] . '%');
                         }

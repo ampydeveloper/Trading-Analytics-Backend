@@ -24,7 +24,7 @@ class StoxtickerController extends Controller {
     public function slabSearch(Request $request) {
         try {
             $search = $request->input('keyword', null);
-            $data = Card::where(function($q) use ($search) {
+            $data = Card::whereHas('sales')->where(function($q) use ($search) {
                         $search = explode(' ', $search);
                         foreach ($search as $key => $keyword) {
                             $q->Where('title', 'like', '%' . $keyword . '%');
@@ -80,11 +80,13 @@ class StoxtickerController extends Controller {
 
     public function searchBoard(Request $request) {
         try {
+            dump($request->all());
             $page = $request->input('page', 1);
             $take = 4;
             $takeout = $take * $page;
 //        $skip = $skip - $take;
             $boards = Board::where('name', 'like', '%' . $request->input('keyword') . '%')->take($takeout)->get();
+            dump($boards->toArray());
             if (!empty($request->input('sport'))) {
                 foreach ($boards as $key => $board) {
                     $all_cards = json_decode($board->cards);
@@ -100,6 +102,7 @@ class StoxtickerController extends Controller {
             }
             foreach ($boards as $key => $board) {
                 $all_cards = json_decode($board->cards);
+                dd($all_cards);
                 $boards[$key]['sales_graph'] = $this->__cardData($all_cards, $days);
 
 //                $sx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
@@ -349,7 +352,7 @@ class StoxtickerController extends Controller {
             ];
         });
         
-        dump($cvs);
+//        dump($cvs);
 
         $data['values'] = $cvs->pluck('cost')->toArray();
         $data['labels'] = $cvs->pluck('timestamp')->toArray();
@@ -357,7 +360,7 @@ class StoxtickerController extends Controller {
 
         if ($days > 2) {
 //            $data = $this->__groupGraphData($days, $data);
-            $data = $this->__groupGraphDataPerDay($days, $data);
+            $data = $this->__groupGraphDataPerDay($days, $data, $card_ids);
         }
         // $data_qty = $this->__groupGraphData($days, ['labels' => $data['values'], 'values' => $data['qty']]);
         if ($days == 2) {
@@ -378,19 +381,18 @@ class StoxtickerController extends Controller {
             $labels = [];
             $values = [];
             $qty = [];
+            $sx = 0;
             if (count($data['values']) == 0 && count($data['labels']) == 0) {
                     $date = explode(" ", $from);
-                    dump($date);
-                    $sx = CardSales::where('timestamp', 'like', '%' . $date[0] . '%')->avg('cost');
-                    dump($sx);
+//                    dump($date);
+                    $sx = CardSales::whereIn('card_id', $card_ids)->where('timestamp', 'like', '%' . $date[0] . '%')->avg('cost');
+//                    dump($sx);
                     if ($sx == null) {
                         $date = date('Y-m-d', strtotime('-2 day'));
-                        $salesDate = CardSales::where('timestamp', '<=', $date)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
-                        dd($salesDate);
+                        $salesDate = CardSales::whereIn('card_id', $card_ids)->where('timestamp', '<=', $date)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+//                        dd($salesDate);
                         if ($salesDate->exists()) {
-                            $sx = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                        } else {
-                            $sx = 0;
+                            $sx = CardSales::whereIn('card_id', $card_ids)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
                         }
                     }
                 }
@@ -442,6 +444,7 @@ class StoxtickerController extends Controller {
 
     public function getStoxtickerAllData($days = 2) {
         try {
+//            dd('vgh');
             if ($days == 2) {
                 $grpFormat = 'H:i';
                 $from = date('Y-m-d H:i:s');
@@ -472,6 +475,9 @@ class StoxtickerController extends Controller {
                 $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }
+//            
+//            dump($to);
+//            dump($from);
             
             $data = ['values' => [], 'labels' => []];
             $cvs = CardSales::whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
@@ -486,6 +492,7 @@ class StoxtickerController extends Controller {
                 ];
             });
 
+            dd($cvs);
             $data['values'] = $cvs->pluck('cost')->toArray();
             $data['labels'] = $cvs->pluck('timestamp')->toArray();
             $data['qty'] = $cvs->pluck('quantity')->toArray();
@@ -494,19 +501,21 @@ class StoxtickerController extends Controller {
                 $data = $this->__groupGraphDataPerDay($days, $data);
             }
             if ($days == 2) {
+//                dd('in');
                 $labels = [];
                 $values = [];
                 $qty = [];
+                $sx = 0;
                 if (count($data['values']) == 0 && count($data['labels']) == 0) {
                     $date = explode(" ", $from);
                     $sx = CardSales::where('timestamp', 'like', '%' . $date[0] . '%')->avg('cost');
+//                    dump($sx);
                     if ($sx == null) {
                         $date = date('Y-m-d', strtotime('-2 day'));
                         $salesDate = CardSales::where('timestamp', '<=', $date)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
-                        if ($salesDate->exists()) {
+//                        dd($salesDate);
+                        if ($salesDate !== null) {
                             $sx = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                        } else {
-                            $sx = 0;
                         }
                     }
                 }
@@ -625,7 +634,7 @@ class StoxtickerController extends Controller {
         return $data;
     }
 
-    public function __groupGraphDataPerDay($days, $data) {
+    public function __groupGraphDataPerDay($days, $data, $card_ids = 0) {
         $months = null;
         $years = null;
         $cmp = $days;
@@ -688,9 +697,18 @@ class StoxtickerController extends Controller {
                     $map_qty[$dt] = 0;
                     $flag = 1;
                 } elseif ($flag == 0 && $cmpFormat == 'Y-m-d') {
-                    $salesDate = CardSales::where('timestamp', '<', $dt)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
-                    if ($salesDate->exists()) {
-                        $sx = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                    if($card_ids != 0) {
+                        $salesDate = CardSales::whereIn('card_id', $card_ids)->where('timestamp', '<', $dt)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                    } else {
+                        $salesDate = CardSales::where('timestamp', '<', $dt)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                    }
+//                    dd($salesDate);
+                    if ($salesDate !== null) {
+                        if($card_ids != 0) {
+                            $sx = CardSales::whereIn('card_id', $card_ids)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                        } else {
+                            $sx = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                        }
                         $map_val[$dt] = [$ts, $sx];
                         $map_qty[$dt] = 0;
                         $flag = 1;
@@ -706,6 +724,8 @@ class StoxtickerController extends Controller {
                 }
             }
         }
+        
+//        dd($map_val);
 
         uksort($map_val, [$this, "lbl_dt"]);
         uksort($map_qty, [$this, "lbl_dt"]);
