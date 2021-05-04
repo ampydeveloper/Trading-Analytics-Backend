@@ -80,13 +80,13 @@ class StoxtickerController extends Controller {
 
     public function searchBoard(Request $request) {
         try {
-            dump($request->all());
+//            dump($request->all());
             $page = $request->input('page', 1);
             $take = 4;
             $takeout = $take * $page;
 //        $skip = $skip - $take;
             $boards = Board::where('name', 'like', '%' . $request->input('keyword') . '%')->take($takeout)->get();
-            dump($boards->toArray());
+//            dump($boards->toArray());
             if (!empty($request->input('sport'))) {
                 foreach ($boards as $key => $board) {
                     $all_cards = json_decode($board->cards);
@@ -102,7 +102,7 @@ class StoxtickerController extends Controller {
             }
             foreach ($boards as $key => $board) {
                 $all_cards = json_decode($board->cards);
-                dd($all_cards);
+//                dd($all_cards);
                 $boards[$key]['sales_graph'] = $this->__cardData($all_cards, $days);
 
 //                $sx = CardSales::whereIn('card_id', $all_cards)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
@@ -492,7 +492,7 @@ class StoxtickerController extends Controller {
                 ];
             });
 
-            dd($cvs);
+//            dd($cvs);
             $data['values'] = $cvs->pluck('cost')->toArray();
             $data['labels'] = $cvs->pluck('timestamp')->toArray();
             $data['qty'] = $cvs->pluck('quantity')->toArray();
