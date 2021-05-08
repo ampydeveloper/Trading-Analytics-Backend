@@ -435,18 +435,19 @@ class EbayController extends Controller {
 //                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
 //                $count = count($lastSx);
 //                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-
+//dd($card->id);
                 $sx_data = CardSales::getSxAndLastSx($card->id);
                 $sx = $sx_data['sx'];
                 $lastSx = $sx_data['lastSx'];
-
+//dd($sx_data);
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-                $data['sx_value'] = number_format((float) $sx, 2, '.', '');
-                $data['sx_icon'] = $sx_icon;
-                $cards[$ind]['price'] = 0;
-                if (isset($card->details->currentPrice)) {
-                    $cards[$ind]['price'] = $card->details->currentPrice;
-                }
+//                $data['sx_value'] = number_format((float) $sx, 2, '.', '');
+                $cards[$ind]['sx_icon'] = $sx_icon;
+                $cards[$ind]['price'] = number_format((float) $sx, 2, '.', '');
+                $cards[$ind]['sx_value'] = str_replace('-', '', number_format($sx - $lastSx, 2, '.', ''));
+//                if (isset($card->details->currentPrice)) {
+//                    $cards[$ind]['price'] = $card->details->currentPrice;
+//                }
             }
 
             return response()->json(['status' => 200, 'items' => $items, 'cards' => $cards], 200);
@@ -1067,17 +1068,23 @@ class EbayController extends Controller {
                     ->with(['category', 'card', 'card.value', 'details', 'playerDetails', 'condition', 'sellerInfo', 'listingInfo', 'sellingStatus', 'shippingInfo', 'specifications'])
                     ->first();
 
-            $sx_data = CardSales::getSxAndLastSx($data['items']->card->id);
-            $sx = $sx_data['sx'];
-            $lastSx = $sx_data['lastSx'];
+            if (!empty($data['items']->card_id)) {
+                $sx_data = CardSales::getSxAndLastSx($data['items']->card->id);
+                $sx = $sx_data['sx'];
+                $lastSx = $sx_data['lastSx'];
 
-            $sx_icon = null;
-            if ($sx != null && $lastSx != null) {
-                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                $sx_icon = null;
+                if ($sx != null && $lastSx != null) {
+                    $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                }
+                $data['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                $data['sx'] = number_format((float) $sx, 2, '.', '');
+                $data['sx_icon'] = $sx_icon;
+            } else {
+                $data['sx_value'] = 0;
+                $data['sx'] = 0;
+                $data['sx_icon'] = '';
             }
-            $data['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-            $data['sx'] = number_format((float) $sx, 2, '.', '');
-            $data['sx_icon'] = $sx_icon;
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);

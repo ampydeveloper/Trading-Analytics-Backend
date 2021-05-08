@@ -27,7 +27,7 @@ Pokemon: <?php echo $items['pokemon'][0]->card->title; ?> <?php echo env('VUE_UR
 
 <meta  data-hid="card-og-url" property="og:url" content="<?php echo env('VUE_URL'); ?>stoxticker">
 <meta  data-hid="card-og-title" property="og:title" content="SX Stoxticker">
-<meta  data-hid="card-og-image" property="og:image" content="<?php url('img/stoxticker-graph-share.png'); ?>">
+<meta  data-hid="card-og-image" property="og:image" content="<?php echo url('img/stoxticker-graph-share.png'); ?>">
 <meta  data-hid="card-og-description" property="og:description" content="
 <?php if(isset($items['basketball'][0])){ ?>
 Basketball: <?php echo $items['basketball'][0]->card->title; ?> <?php echo env('VUE_URL').'card-data/?id='. $items['basketball'][0]->card->id; ?> 
@@ -51,7 +51,7 @@ Pokemon: <?php echo $items['pokemon'][0]->card->title; ?> <?php echo env('VUE_UR
 <meta property="twitter:card" content="summary_large_image">
 <meta  data-hid="card-twitter-url" property="twitter:url" content="<?php echo env('VUE_URL'); ?>stoxticker">
 <meta  data-hid="card-twitter-title" property="twitter:title" content="SX Stoxticker">
-<meta  data-hid="card-twitter-image" property="twitter:image" content="<?php url('img/stoxticker-graph-share.png'); ?>">
+<meta  data-hid="card-twitter-image" property="twitter:image" content="<?php echo url('img/stoxticker-graph-share.png'); ?>">
 <meta  data-hid="card-twitter-description" property="twitter:description" content="
 <?php if(isset($items['basketball'][0])){ ?>
 Basketball: <?php echo $items['basketball'][0]->card->title; ?> <?php echo env('VUE_URL').'card-data/?id='. $items['basketball'][0]->card->id; ?> 

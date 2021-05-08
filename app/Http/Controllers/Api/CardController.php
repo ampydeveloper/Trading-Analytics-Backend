@@ -725,7 +725,7 @@ class CardController extends Controller {
             if ($days == 2) {
                 $grpFormat = 'H:i';
                 $from = date('Y-m-d H:i:s');
-                $to = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $to = date('Y-m-d 00:00:00');
             } elseif ($days == 7) {
                 $grpFormat = 'Y-m-d';
                 $from = date('Y-m-d H:i:s', strtotime('-1 day'));
@@ -758,20 +758,10 @@ class CardController extends Controller {
             // $card_id = 10359;
 
             $data = ['values' => [], 'labels' => []];
-//            $tempDate = [];
-//            $cvs = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function($cs) use($grpFormat) {
-//                        return Carbon::parse($cs->timestamp)->format($grpFormat);
-//                    })->map(function($cs, $timestamp) use($grpFormat, $days) {
-//                return [
-//                'cost' => round((clone $cs)->splice(0, 3)->avg('cost'), 2),
-//                'timestamp' => Carbon::createFromFormat($grpFormat, $timestamp)->format($days == 2 ? 'H:i' : $grpFormat),
-//                // ($days == 1825 ? 'Y' : 'Y-m-d 00:00:00')),
-//                'quantity' => $cs->map(function ($qty) { return (int) $qty->quantity;
-//                })->sum()
-//                ];
-//            });
-            $cvs = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
-                        return Carbon::parse($cs->timestamp)->format('Y-m-d');
+            
+            if($grpFormat == 'H:i') {
+                $cvs = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
+                        return Carbon::parse($cs->timestamp)->format($grpFormat);
                     })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
                 return [
                 'cost' => round((clone $cs)->avg('cost'), 2),
@@ -781,6 +771,21 @@ class CardController extends Controller {
                 })->sum()
                 ];
             });
+                
+            } else {
+                $cvs = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
+                            return Carbon::parse($cs->timestamp)->format('Y-m-d');
+                        })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
+                    return [
+                    'cost' => round((clone $cs)->avg('cost'), 2),
+                    'timestamp' => $timestamp,
+                    'quantity' => $cs->map(function ($qty) {
+                    return (int) $qty->quantity;
+                    })->sum()
+                    ];
+                });
+            }
+
 
 //            dd($card_id);
 
@@ -796,27 +801,57 @@ class CardController extends Controller {
                 $values = [];
                 $qty = [];
                 $sx = 0;
-                if (count($data['values']) == 0 && count($data['labels']) == 0) {
-                    $date = explode(" ", $from);
-                    $sx = CardSales::where('timestamp', 'like', '%' . $date[0] . '%')->avg('cost');
-                    if ($sx == null) {
-                        $date = date('Y-m-d', strtotime('-2 day'));
-                        $salesDate = CardSales::where('timestamp', '<=', $date)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
-                        if ($salesDate->exists()) {
-                            $sx = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                $ind = null;
+                
+                $startTime  = new \DateTime($to);
+                $endTime    = new \DateTime($from);
+                $timeStep   = 1;
+                $timeArray  = array();
+                $previousSx = 0;
+                $flag = 0;
+                while ($startTime <= $endTime) {
+                    $hi = $startTime->format('H:i');
+                    if (count($data['labels']) > 0) {
+                        $ind = array_search($hi, $data['labels']);
+                        if (is_numeric($ind)) {
+                            $values[] = $data['values'][$ind];
+                            $qty[] = $data['qty'][$ind];
+                            $previousSx = $data['values'][$ind];
+                            $flag = 1;
+                        } else {
+                            if ($previousSx == 0 && $flag == 0) {
+                                $salesDate = CardSales::where('card_id', $card_id)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                                if ($salesDate !== null) {
+                                    $previousSx = CardSales::where('card_id', $card_id)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                                    $values[] = number_format($previousSx, 2, '.', '');
+                                    $qty[] = 0;
+                                }
+                                    $flag = 1;
+                            } else {
+                                $values[] = number_format($previousSx, 2, '.', '');
+                                $qty[] = 0;
+                            }
+                        }
+                    } else {
+                        if($previousSx == 0 && $flag == 0) {
+                            $salesDate = CardSales::where('card_id', $card_id)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                            if ($salesDate !== null) {
+                                $previousSx = CardSales::where('card_id', $card_id)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                                $values[] = number_format($previousSx,2,'.','');
+                                $qty[] = 0;
+                            }
+                            $flag = 1;
+                        } else {
+                            $values[] = number_format($previousSx,2,'.','');
+                            $qty[] = 0;
                         }
                     }
+                    $timeArray[] = $hi;
+                    $startTime->add(new \DateInterval('PT' . $timeStep . 'M'));
                 }
-                for ($i = 0; $i <= 23; $i++) {
-                    $labels[] = ($i < 10) ? '0' . $i . ':00' : $i . ':00';
-                    $ind = array_search($labels[$i], $data['labels']);
-                    $values[] = is_integer($ind) && array_key_exists($ind, $data['values']) ? $data['values'][$ind] : $sx;
-                    $qty[] = is_integer($ind) && array_key_exists($ind, $data['qty']) ? $data['qty'][$ind] : 0;
-                    // (count($data['qty']) > 0 ) ? $data['qty'][0] : 0;
-                }
-                $data['labels'] = $labels;
                 $data['values'] = $values;
                 $data['qty'] = $qty;
+                $data['labels'] = $timeArray;
             } else {
                 $data['values'] = array_reverse($data['values']);
                 $data['labels'] = array_reverse($data['labels']);
@@ -967,7 +1002,7 @@ class CardController extends Controller {
             if ($days == 2) {
                 $grpFormat = 'H:i';
                 $from = date('Y-m-d H:i:s');
-                $to = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $to = date('Y-m-d 00:00:00');
             } elseif ($days == 7) {
                 $grpFormat = 'Y-m-d';
                 $from = date('Y-m-d H:i:s', strtotime('-1 day'));
@@ -996,18 +1031,34 @@ class CardController extends Controller {
             }
 
             foreach ($cids as $ind => $cid) {
+                
+                if($grpFormat == 'H:i') {
 
-                $cvs = CardSales::where('card_id', $cid)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
-                            return Carbon::parse($cs->timestamp)->format('Y-m-d');
-                        })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
-                    return [
-                    'cost' => round((clone $cs)->avg('cost'), 2),
-                    'timestamp' => $timestamp,
-                    'quantity' => $cs->map(function ($qty) {
-                    return (int) $qty->quantity;
-                    })->sum()
-                    ];
-                });
+                    $cvs = CardSales::where('card_id', $cid)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
+                                return Carbon::parse($cs->timestamp)->format($grpFormat);
+                            })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
+                        return [
+                        'cost' => round((clone $cs)->avg('cost'), 2),
+                        'timestamp' => $timestamp,
+                        'quantity' => $cs->map(function ($qty) {
+                        return (int) $qty->quantity;
+                        })->sum()
+                        ];
+                    });
+                } else {
+                    $cvs = CardSales::where('card_id', $cid)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
+                                return Carbon::parse($cs->timestamp)->format('Y-m-d');
+                            })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
+                        return [
+                        'cost' => round((clone $cs)->avg('cost'), 2),
+                        'timestamp' => $timestamp,
+                        'quantity' => $cs->map(function ($qty) {
+                        return (int) $qty->quantity;
+                        })->sum()
+                        ];
+                    });
+                }
+
 
                 $views = Card::where('id', $cid)->pluck('views');
                 $view = ($views[0] == null) ? $view = 1 : $view = $views[0] + 1;
@@ -1024,30 +1075,58 @@ class CardController extends Controller {
                     $labels = [];
                     $values = [];
                     $qty = [];
-                    if (count($data['values']) == 0 && count($data['labels']) == 0) {
-                        $date = explode(" ", $from);
-                        $sx = CardSales::where('card_id', $cid)->where('timestamp', 'like', '%' . $date[0] . '%')->avg('cost');
-                        if ($sx == null) {
-                            $date = date('Y-m-d', strtotime('-2 day'));
-                            $salesDate = CardSales::where('card_id', $cid)->where('timestamp', '<=', $date)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
-                            if ($salesDate !== null) {
-                                $sx = CardSales::where('card_id', $cid)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                    $sx = 0;
+                    $ind = null;
+
+                    $startTime = new \DateTime($to);
+                    $endTime = new \DateTime($from);
+                    $timeStep = 1;
+                    $timeArray = array();
+                    $previousSx = 0;
+                    $flag = 0;
+                    while ($startTime <= $endTime) {
+                        $hi = $startTime->format('H:i');
+                        if (count($data['labels']) > 0) {
+                            $ind = array_search($hi, $data['labels']);
+                            if (is_numeric($ind)) {
+                                $values[] = $data['values'][$ind];
+                                $qty[] = $data['qty'][$ind];
+                                $previousSx = $data['values'][$ind];
+                                $flag = 1;
                             } else {
-                                $sx = 0;
+                                if ($previousSx == 0 && $flag == 0) {
+                                    $salesDate = CardSales::where('card_id', $cid)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                                    if ($salesDate !== null) {
+                                        $previousSx = CardSales::where('card_id', $cid)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                                        $values[] = number_format($previousSx, 2, '.', '');
+                                        $qty[] = 0;
+                                    }
+                                    $flag = 1;
+                                } else {
+                                    $values[] = number_format($previousSx, 2, '.', '');
+                                    $qty[] = 0;
+                                }
+                            }
+                        } else {
+                            if ($previousSx == 0 && $flag == 0) {
+                                $salesDate = CardSales::where('card_id', $cid)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                                if ($salesDate !== null) {
+                                    $previousSx = CardSales::where('card_id', $cid)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                                    $values[] = number_format($previousSx, 2, '.', '');
+                                    $qty[] = 0;
+                                }
+                                $flag = 1;
+                            } else {
+                                $values[] = number_format($previousSx, 2, '.', '');
+                                $qty[] = 0;
                             }
                         }
+                        $timeArray[] = $hi;
+                        $startTime->add(new \DateInterval('PT' . $timeStep . 'M'));
                     }
-                    for ($i = 0; $i <= 23; $i++) {
-                        $labels[] = ($i < 10) ? '0' . $i . ':00' : $i . ':00';
-                        $ind = array_search($labels[$i], $data['labels']);
-                        $values[] = is_integer($ind) && array_key_exists($ind, $data['values']) ? $data['values'][$ind] : $sx;
-                        $qty[] = is_integer($ind) && array_key_exists($ind, $data['qty']) ? $data['qty'][$ind] : 0;
-                        // (count($data['qty']) > 0 ) ? $data['qty'][0] : 0;
-                    }
-                    $data['labels'] = $labels;
                     $data['values'] = $values;
                     $data['qty'] = $qty;
-//                dump($data);
+                    $data['labels'] = $timeArray;
                 } else {
                     $data['values'] = array_reverse($data['values']);
                     $data['labels'] = array_reverse($data['labels']);
@@ -1094,7 +1173,7 @@ class CardController extends Controller {
             if ($days == 2) {
                 $grpFormat = 'H:i';
                 $from = date('Y-m-d H:i:s');
-                $to = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $to = date('Y-m-d 00:00:00');
             } elseif ($days == 7) {
                 $grpFormat = 'Y-m-d';
                 $from = date('Y-m-d H:i:s', strtotime('-1 day'));
@@ -1126,17 +1205,33 @@ class CardController extends Controller {
 //            dump($from);
 
             $data = ['values' => [], 'labels' => []];
-            $cvs = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
-                        return Carbon::parse($cs->timestamp)->format('Y-m-d');
-                    })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
-                return [
-                'cost' => round((clone $cs)->avg('cost'), 2),
-                'timestamp' => $timestamp,
-                'quantity' => $cs->map(function ($qty) {
-                return (int) $qty->quantity;
-                })->sum()
-                ];
-            });
+            
+            if($grpFormat == 'H:i') { 
+                $cvs = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
+                            return Carbon::parse($cs->timestamp)->format($grpFormat);
+                        })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
+                    return [
+                    'cost' => round((clone $cs)->avg('cost'), 2),
+                    'timestamp' => $timestamp,
+                    'quantity' => $cs->map(function ($qty) {
+                    return (int) $qty->quantity;
+                    })->sum()
+                    ];
+                });
+            } else {
+                $cvs = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) use ($grpFormat) {
+                            return Carbon::parse($cs->timestamp)->format('Y-m-d');
+                        })->map(function ($cs, $timestamp) use ($grpFormat, $days) {
+                    return [
+                    'cost' => round((clone $cs)->avg('cost'), 2),
+                    'timestamp' => $timestamp,
+                    'quantity' => $cs->map(function ($qty) {
+                    return (int) $qty->quantity;
+                    })->sum()
+                    ];
+                });
+            }
+
 //            dump($cvs);
 //            return response()->json(['status' => 200, 'data' => $cvs], 200);
 //            if (!empty($cvs) && $cvs->count() > 0) {
@@ -1151,45 +1246,61 @@ class CardController extends Controller {
                 $labels = [];
                 $values = [];
                 $qty = [];
-                if (count($data['values']) == 0 && count($data['labels']) == 0) {
-                    $date = explode(" ", $from);
-                    $sx = CardSales::where('card_id', $card_id)->where('timestamp', 'like', '%' . $date[0] . '%')->avg('cost');
-//                    dump($sx);
-                    if ($sx == null) {
-                        $date = date('Y-m-d', strtotime('-2 day'));
-                        $salesDate = CardSales::where('card_id', $card_id)->where('timestamp', '<=', $date)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
-//                        dump($salesDate);
-                        if ($salesDate !== null) {
-                            $sx = CardSales::where('card_id', $card_id)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                $sx = 0;
+                $ind = null;
+                
+                $startTime  = new \DateTime($to);
+                $endTime    = new \DateTime($from);
+                $timeStep   = 1;
+                $timeArray  = array();
+                $previousSx = 0;
+                $flag = 0;
+                while ($startTime <= $endTime) {
+                    $hi = $startTime->format('H:i');
+                    $date_format = $startTime->format('M/d/Y H:i');
+                    $timstamp_format = $startTime->gettimestamp();
+//                    die('er');
+                    if (count($data['labels']) > 0) {
+                        $ind = array_search($hi, $data['labels']);
+                        if (is_numeric($ind)) {
+                            $values[] = array($timstamp_format, $data['values'][$ind]);
+                            $qty[] = $data['qty'][$ind];
+                            $previousSx = $data['values'][$ind];
+                            $flag = 1;
                         } else {
-                            $sx = 0;
+                            if ($previousSx == 0 && $flag == 0) {
+                                $salesDate = CardSales::where('card_id', $card_id)->where('card_id', $card_id)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                                if ($salesDate !== null) {
+                                    $previousSx = CardSales::where('card_id', $card_id)->where('card_id', $card_id)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                                    $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
+                                    $qty[] = 0;
+                                }
+                                    $flag = 1;
+                            } else {
+                                $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
+                                $qty[] = 0;
+                            }
+                        }
+                    } else {
+                        if($previousSx == 0 && $flag == 0) {
+                            $salesDate = CardSales::where('card_id', $card_id)->where('card_id', $card_id)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                            if ($salesDate !== null) {
+                                $previousSx = CardSales::where('card_id', $card_id)->where('card_id', $card_id)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                                $values[] = array($timstamp_format, number_format($previousSx,2,'.',''));
+                                $qty[] = 0;
+                            }
+                            $flag = 1;
+                        } else {
+                            $values[] = array($timstamp_format, number_format($previousSx,2,'.',''));
+                            $qty[] = 0;
                         }
                     }
-//                    dump($card_id);
-//                    dd($sx);
+                    $timeArray[] = $date_format;
+                    $startTime->add(new \DateInterval('PT' . $timeStep . 'M'));
                 }
-
-//                $startTime = strtotime('12 am');
-//                $endTime = strtotime('11:59 pm');
-//                $arrInterval = [];
-//                while ($endTime >= $startTime) {
-////                    $arrInterval[] = date("h:i", $startTime);
-//                    $arrInterval[] = $startTime;
-//                    $startTime = strtotime('+1 hour', $startTime);
-//                }
-//                dd($arrInterval);
-
-                for ($i = 0; $i <= 23; $i++) {
-                    $labels[] = ($i < 10) ? '0' . $i . ':00' : $i . ':00';
-                    $ind = array_search($labels[$i], $data['labels']);
-                    $values[] = is_integer($ind) && array_key_exists($ind, $data['values']) ? $data['values'][$ind] : $sx;
-                    $qty[] = is_integer($ind) && array_key_exists($ind, $data['qty']) ? $data['qty'][$ind] : 0;
-                    // (count($data['qty']) > 0 ) ? $data['qty'][0] : 0;
-                }
-//                $labels = $arrInterval;
-                $data['labels'] = $labels;
                 $data['values'] = $values;
                 $data['qty'] = $qty;
+                $data['labels'] = $timeArray;
             } else {
                 $data['values'] = array_reverse($data['values']);
                 $data['labels'] = array_reverse($data['labels']);
@@ -1240,7 +1351,7 @@ class CardController extends Controller {
     public function getCardAllGraph($card_id) {
         try {
             $days = [
-                0 => ['from' => date('Y-m-d H:i:s'), 'to' => date('Y-m-d H:i:s', strtotime('-1 day'))],
+                0 => ['from' => date('Y-m-d H:i:s'), 'to' => date('Y-m-d 00:00:00')],
                 1 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-7 days'))],
                 2 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-30 days'))],
                 3 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-90 days'))],

@@ -52,7 +52,7 @@ class ExcelImports implements ShouldQueue
             Storage::disk('local')->delete($this->file);
 
         }catch(Exception $e){            
-            \Log::error($e);
+//            \Log::error($e);
         }
     }
 }
