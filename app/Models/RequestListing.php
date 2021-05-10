@@ -22,7 +22,8 @@ class RequestListing extends Model
         'card_id',
         'user_id',
         'link',
-        'approved'
+        'approved',
+        'new_card_id'
     ];
     protected static $logFillable = true;
     protected static $logOnlyDirty = true;

@@ -345,8 +345,9 @@ class EbayController extends Controller {
                     'timestamp' => Carbon::now()->format('Y-m-d h:i:s'),
                     'quantity' => 1,
                     'cost' => $request->input('sold_price'),
-                    'source' => 'Slabstox',
+                    'source' => 'Ebay',
                     'type' => $item_type,
+                    'ebay_items_id' => $item_details->id,
                 ]);
                 return response()->json(['status' => 200, 'message' => 'Sold price Chnaged successfully'], 200);
             }
@@ -560,7 +561,7 @@ class EbayController extends Controller {
                     'itemId' => $item->itemId,
                     'viewItemURL' => $item->viewItemURL,
                     'listing_ending_at' => $item->listing_ending_at,
-                    'showBuyNow' => ($listingTypeval != 'Auction') ? true : false,
+                    'showBuyNow' => ($listingTypeval == 'AuctionWithBIN') ? true : false,
                     'data' => $item,
                     'sx_value' => number_format((float) $sx, 2, '.', ''),
                     'sx_icon' => (($sx - $lastSx) >= 0) ? 'up' : 'down',
@@ -964,13 +965,15 @@ class EbayController extends Controller {
     }
 
     public function searchedCardsByUserForAdmin(Request $request) {
-        $page = $request->input('page', 1);
-        $take = $request->input('take', 30);
-        $skip = $take * $page;
-        $skip = $skip - $take;
+//        $page = $request->input('page', 1);
+//        $take = $request->input('take', 30);
+//        $skip = $take * $page;
+//        $skip = $skip - $take;
         try {
-            $data = UserSearch::with(['userDetails', 'cardDetails'])->skip($skip)->take($take)->get();
-            return response()->json(['status' => 200, 'data' => $data, 'next' => ($page + 1)], 200);
+//            $data = UserSearch::with(['userDetails', 'cardDetails'])->skip($skip)->take($take)->get();
+//            return response()->json(['status' => 200, 'data' => $data, 'next' => ($page + 1)], 200);
+            $data = UserSearch::with(['userDetails', 'cardDetails'])->get();
+            return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -1082,7 +1085,7 @@ class EbayController extends Controller {
                 $data['sx_icon'] = $sx_icon;
             } else {
                 $data['sx_value'] = 0;
-                $data['sx'] = 0;
+                $data['sx'] = null;
                 $data['sx_icon'] = '';
             }
             return response()->json(['status' => 200, 'data' => $data], 200);
@@ -1392,7 +1395,7 @@ class EbayController extends Controller {
                     'itemId' => $item->itemId,
                     'viewItemURL' => $item->viewItemURL,
                     'listing_ending_at' => $item->listing_ending_at,
-                    'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
+                    'showBuyNow' => ($listingTypeVal == 'AuctionWithBIN') ? true : false,
                     'data' => $item,
                     'sx_value' => number_format((float) $sx, 2, '.', ''),
                     'sx_icon' => (($sx - $lastSx) >= 0) ? 'up' : 'down',
@@ -1447,7 +1450,7 @@ class EbayController extends Controller {
                     'itemId' => $item->itemId,
                     'viewItemURL' => $item->viewItemURL,
                     'listing_ending_at' => $item->listing_ending_at,
-                    'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
+                    'showBuyNow' => ($listingTypeVal == 'AuctionWithBIN') ? true : false,
                     'data' => $item,
                     'sx_value' => number_format((float) $sx, 2, '.', ''),
                     'sx_icon' => (($sx - $lastSx) >= 0) ? 'up' : 'down',

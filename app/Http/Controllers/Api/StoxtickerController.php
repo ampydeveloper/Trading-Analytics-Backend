@@ -8,7 +8,7 @@ use App\Models\Card;
 use App\Models\CardDetails;
 use App\Models\CardValues;
 use App\Models\CardSales;
-use App\Models\Board;d
+use App\Models\Board;
 use App\Models\BoardFollow;
 use App\Models\Ebay\EbayItems;
 use Carbon\Carbon;
@@ -393,9 +393,9 @@ class StoxtickerController extends Controller {
                             $flag = 1;
                         } else {
                             if ($previousSx == 0 && $flag == 0) {
-                                $salesDate = CardSales::whereIn('card_id', $card_ids)->where('card_id', $card_id)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                                $salesDate = CardSales::whereIn('card_id', $card_ids)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                                 if ($salesDate !== null) {
-                                    $previousSx = CardSales::whereIn('card_id', $card_ids)->where('card_id', $card_id)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                                    $previousSx = CardSales::whereIn('card_id', $card_ids)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
                                     $values[] = number_format($previousSx, 2, '.', '');
                                     $qty[] = 0;
                                 }
@@ -407,9 +407,9 @@ class StoxtickerController extends Controller {
                         }
                     } else {
                         if($previousSx == 0 && $flag == 0) {
-                            $salesDate = CardSales::whereIn('card_id', $card_ids)->where('card_id', $card_id)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                            $salesDate = CardSales::whereIn('card_id', $card_ids)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                             if ($salesDate !== null) {
-                                $previousSx = CardSales::whereIn('card_id', $card_ids)->where('card_id', $card_id)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                                $previousSx = CardSales::whereIn('card_id', $card_ids)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
                                 $values[] = number_format($previousSx,2,'.','');
                                 $qty[] = 0;
                             }

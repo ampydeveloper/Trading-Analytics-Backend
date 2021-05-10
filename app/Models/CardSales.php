@@ -25,6 +25,7 @@ use LogsActivity;
         'card_id',
         'timestamp',
         'excel_uploads_id',
+        'ebay_items_id',
         'quantity',
         'cost',
         'source',

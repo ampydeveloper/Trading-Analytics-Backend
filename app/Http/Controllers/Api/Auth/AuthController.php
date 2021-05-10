@@ -9,6 +9,7 @@ use App\Models\Auth\User;
 use Symfony\Component\HttpFoundation\Response as Response;
 use Validator;
 use App\Mail\Api\Auth\SendPassworedResetLink;
+use App\Mail\Api\Auth\EmailConfirmation;
 
 class AuthController extends Controller
 {
@@ -16,15 +17,15 @@ class AuthController extends Controller
     {
         try {
             $user = User::create([
-                'first_name' => $request->input('first_name'),
-                'email' => $request->input('email'),
-                'confirmation_code' => md5(uniqid(mt_rand(), true)),
-                'active' => true,
-                'password' => $request->input('password'),
-                'avatar_type' => 'storage',
-                'avatar_location' => 'dummy.jpg',
-                // If users require approval or needs to confirm email
-                'confirmed' => !(config('access.users.requires_approval') || config('access.users.confirm_email')),
+                        'first_name' => $request->input('first_name'),
+                        'email' => $request->input('email'),
+                        'confirmation_code' => md5(uniqid(mt_rand(), true)),
+                        'active' => true,
+                        'password' => $request->input('password'),
+                        'avatar_type' => 'storage',
+                        'avatar_location' => 'dummy.jpg',
+                            // If users require approval or needs to confirm email
+//                'confirmed' => !(config('access.users.requires_approval') || config('access.users.confirm_email')),
             ]);
 
             if ($user) {
@@ -32,10 +33,13 @@ class AuthController extends Controller
                 $user->assignRole(config('access.users.default_role'));
             }
 
+            $request->email_confirmation_link = url('/') . '/api/auth/email-confirmation/' . $user->confirmation_code;
+            \Mail::send(new EmailConfirmation($request));
+
             return response()->json([
-                'message' => 'Register successfully!',
-                'alert' => 'Email is sent please verify your email'
-            ], 200);
+                        'message' => 'Register successfully!',
+                        'alert' => 'Email is sent please verify your email'
+                            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => [
@@ -45,10 +49,38 @@ class AuthController extends Controller
             ], 500);
         }
     }
+    
+    public function emailConfirmation($token) {
+        $user = User::where('confirmation_code', $token)->first();
+        if($user != null) {
+            if ($user->confirmed == false) {
+                User::whereId($user->id)->update(['confirmed' => 1]);
+                return response()->json([
+                            'message' => 'Email confirmed successfully!',
+                                ], 200);
+            } else {
+                return response()->json([
+                            'message' => 'Email is already confirmed.',
+                                ], 200);
+            }
+        } else {
+            return response()->json([
+                        'message' => 'Invalid Token',
+                            ], 200);
+        }
+    }
 
     public function login(Request $request)
     {
         try {
+            if(User::where('email', $request->email)->where('confirmed', false)->exists()) {
+                return response()->json([
+                            'error' => [
+                                'message' => 'Please confirm your email.',
+                            ],
+                                ], 500);
+            }
+
             //attem login with token 
             if ($request->has('token')) {
                 auth('api')->setToken($request->input('token'));
@@ -135,12 +167,13 @@ class AuthController extends Controller
             return response()->json($validator->errors(), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
+//        dd($request->all());
         $user = User::where('email', $request->input('email'))->first();
         if ($user) {
             try {
                 $token = md5(uniqid(mt_rand(), true));
                 if ($user->update(['confirmation_code' => $token])) {
-                    $request->reset_link = env('CLIENT_BASE_URL') . '/auth/password-reset/' . $token;
+                    $request->reset_link = url('/') . '/auth/password-reset/' . $token;
                     $request->name = $user->first_name . ' ' . $user->last_name;
                     \Mail::send(new SendPassworedResetLink($request));
                     return response()->json(['message' => 'Email sent to you'], 200);

@@ -37,6 +37,7 @@ Route::group([
 
     Route::post('register', 'AuthController@register');
     Route::get('register/activate/{token}', 'AuthController@activate');
+    Route::get('email-confirmation/{token}', 'AuthController@emailConfirmation');
 
     Route::post('send-reset-link-email', 'AuthController@sendResetLinkEmail');
     Route::post('password-reset-request', 'AuthController@passwordResetRequest');
