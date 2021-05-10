@@ -1676,11 +1676,8 @@ class CardController extends Controller {
 
     public function uploadSlabForExcelImport(Request $request) {
         try {
-//            dd('sdcsd');
-//            dd($request->all());
             if ($request->has('file1')) {
                 $filename = $request->file1->getClientOriginalName();
-//                return response()->json(['message' => $filename], 500);
                 if (Storage::disk('public')->put($filename, file_get_contents($request->file1->getRealPath()))) {
                     $zip = new ZipArchive;
                     $res = $zip->open(public_path("storage/" . $filename));
@@ -1701,25 +1698,23 @@ class CardController extends Controller {
                             $zip->extractTo(public_path("storage/Pokemon"));
                             $zip->close();
                         }
-                        // return response()->json(['message' => $filename], 200);
                         Storage::disk('public')->delete($filename);
                     } else {
                         return response()->json(['message' => 'Error while extracting the files.'], 500);
                     }
                 }
-//                return response()->json(['message' => 'File uploaded unsuccessfully'], 500);
             }
-
 
             if ($request->has('file') && !is_array($request->file)) {
                 $filename = $request->file('file')->getClientOriginalName();
-                if ($request->has('card_id')) {
                     $path = $request->file('file')->store('temp');
-                    ExcelImports::dispatch(['file' => $path, 'type' => 'listings', 'filename' => $filename]);
+                if ($request->has('card_id')) {
+                    Excel::import(new ListingsImport($filename), storage_path('app') . '/' . $path);
+//                    ExcelImports::dispatch(['file' => $path, 'type' => 'listings', 'filename' => $filename]);
                     return response()->json(['message' => 'Listings imported successfully.'], 200);
                 } else {
-                    $path = $request->file('file')->store('temp');
-                    ExcelImports::dispatch(['file' => $path, 'type' => 'slabs', 'filename' => $filename]);
+                    Excel::import(new CardsImport($filename), storage_path('app') . '/' . $path);
+//                    ExcelImports::dispatch(['file' => $path, 'type' => 'slabs', 'filename' => $filename]);
                     return response()->json(['message' => 'Slabs imported successfully.'], 200);
                 }
             } elseif ($request->has('file') && is_array($request->file)) {
@@ -1727,9 +1722,11 @@ class CardController extends Controller {
                     $filename = $csv->getClientOriginalName();
                     $path = $csv->store('temp');
                     if ($request->has('card_id')) {
-                        ExcelImports::dispatch(['file' => $path, 'type' => 'listings', 'filename' => $filename]);
+                        Excel::import(new ListingsImport($filename), storage_path('app') . '/' . $path);
+//                        ExcelImports::dispatch(['file' => $path, 'type' => 'listings', 'filename' => $filename]);
                     } else {
-                        ExcelImports::dispatch(['file' => $path, 'type' => 'slabs', 'filename' => $filename]);
+                        Excel::import(new CardsImport($filename), storage_path('app') . '/' . $path);
+//                        ExcelImports::dispatch(['file' => $path, 'type' => 'slabs', 'filename' => $filename]);
                     }
                 }
                 if ($request->has('card_id')) {
@@ -1742,7 +1739,7 @@ class CardController extends Controller {
             }
         } catch (\Exception $e) {
             \Log::error($e);
-            return response()->json($e->getMessage(), 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
