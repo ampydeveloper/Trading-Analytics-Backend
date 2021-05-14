@@ -598,7 +598,7 @@ class CardController extends Controller {
                 'qualifiers7' => $request->input('qualifiers7'),
                 'qualifiers8' => $request->input('qualifiers8'),
                 'is_featured' => ((bool) $request->input('is_featured')),
-                'image' => $request->hasFile('image') ? $filename : null,
+                'image' => $request->hasFile('image') ? $save_filename : null,
             ]);
 //            $data = Card::where('id', $request->input('card_id'))->update($updated_array);
             return response()->json(['status' => 200, 'message' => 'Card Updated'], 200);
