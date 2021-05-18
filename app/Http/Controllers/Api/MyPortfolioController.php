@@ -217,11 +217,13 @@ class MyPortfolioController extends Controller {
             $cards = Card::whereIn('id', array_keys($ptempcards->toArray()))->with('details')->get();
             $cards = $cards->take($take);
             $data = [];
+//            dd($ptempcards);
             foreach ($cards as $key => $card) {
+                 $purchase_price = (isset($ptempcards) ? $ptempcards[$card->id][0]->purchase_price : 0);
                 $data[] = [
                     'id' => $card->id,
                     'title' => $card->title,
-                    'price' => (isset($card->details->currentPrice) ? $card->details->currentPrice : ''),
+                    'price' => $purchase_price,
                 ];
             }
             return response()->json(['status' => 200, 'data' => $data], 200);

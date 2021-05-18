@@ -540,12 +540,22 @@ class EbayController extends Controller {
                 }
                 $listingTypeval = ($item->listingInfo ? $item->listingInfo->listingType : '');
 
-//                $sx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-//                $sx_count = count($sx);
-//                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
-//                $lastSx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-//                $count = count($lastSx);
-//                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+$datetime1 = new \DateTime($item->listing_ending_at);
+                $datetime2 = new \DateTime('now');
+                $interval = $datetime1->diff($datetime2);
+                $days = $interval->format('%d');
+                $hours = $interval->format('%h');
+                $mins = $interval->format('%i');
+                $secs = $interval->format('%s');
+                if ($days > 0) {
+                    $timeleft = $days . 'd ' . $hours . 'h';
+                } else if ($hours > 1) {
+                    $timeleft = $hours . 'h ' . $mins . 'm';
+                } else if ($mins > 1) {
+                    $timeleft = $mins . 'm ' . $secs . 's';
+                } else {
+                    $timeleft = $secs . 's';
+                }
 
                 $sx_data = CardSales::getSxAndLastSx($item->card_id);
                 $sx = $sx_data['sx'];
@@ -566,6 +576,7 @@ class EbayController extends Controller {
                     'sx_value' => number_format((float) $sx, 2, '.', ''),
                     'sx_icon' => (($sx - $lastSx) >= 0) ? 'up' : 'down',
                     'price_diff' => $price_diff,
+                    'timeleft' => $timeleft,
                 ];
             });
 //        return ['data' => $items, 'next' => ($page + 1), 'cards' => $cardsIds];
@@ -834,6 +845,7 @@ class EbayController extends Controller {
                 }
                 $auction_end = null;
                 if (!empty($data['auction_end'])) {
+                    date_default_timezone_set("America/Los_Angeles");
                     $auction_end_str = $data['auction_end'] / 1000;
                     $auction_end = date('Y-m-d H:i:s', $auction_end_str);
                 }
@@ -1071,6 +1083,23 @@ class EbayController extends Controller {
                     ->with(['category', 'card', 'card.value', 'details', 'playerDetails', 'condition', 'sellerInfo', 'listingInfo', 'sellingStatus', 'shippingInfo', 'specifications'])
                     ->first();
 
+            $datetime1 = new \DateTime($data['items']->listing_ending_at);
+            $datetime2 = new \DateTime('now');
+            $interval = $datetime1->diff($datetime2);
+            $days = $interval->format('%d');
+            $hours = $interval->format('%h');
+            $mins = $interval->format('%i');
+            $secs = $interval->format('%s');
+            if ($days > 0) {
+                $timeleft = $days . 'd ' . $hours . 'h';
+            } else if ($hours > 1) {
+                $timeleft = $hours . 'h ' . $mins . 'm';
+            } else if ($mins > 1) {
+                $timeleft = $mins . 'm ' . $secs . 's';
+            } else {
+                $timeleft = $secs . 's';
+            }
+            $data['timeleft'] = $timeleft;
             if (!empty($data['items']->card_id)) {
                 $sx_data = CardSales::getSxAndLastSx($data['items']->card->id);
                 $sx = $sx_data['sx'];
@@ -1372,14 +1401,22 @@ class EbayController extends Controller {
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
 
-                //Getting sx and price diff
-//                $sx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-//                $sx_count = count($sx);
-//                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
-//                
-//                $lastSx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-//                $count = count($lastSx);
-//                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+                $datetime1 = new \DateTime($item->listing_ending_at);
+                $datetime2 = new \DateTime('now');
+                $interval = $datetime1->diff($datetime2);
+                $days = $interval->format('%d');
+                $hours = $interval->format('%h');
+                $mins = $interval->format('%i');
+                $secs = $interval->format('%s');
+                if ($days > 0) {
+                    $timeleft = $days . 'd ' . $hours . 'h';
+                } else if ($hours > 1) {
+                    $timeleft = $hours . 'h ' . $mins . 'm';
+                } else if ($mins > 1) {
+                    $timeleft = $mins . 'm ' . $secs . 's';
+                } else {
+                    $timeleft = $secs . 's';
+                }
 
                 $sx_data = CardSales::getSxAndLastSx($item->card_id);
                 $sx = $sx_data['sx'];
@@ -1400,6 +1437,7 @@ class EbayController extends Controller {
                     'sx_value' => number_format((float) $sx, 2, '.', ''),
                     'sx_icon' => (($sx - $lastSx) >= 0) ? 'up' : 'down',
                     'price_diff' => $price_diff,
+                    'timeleft' => $timeleft,
                 ];
             });
             return response()->json(['status' => 200, 'data' => $items, 'next' => ($page + 1)], 200);
@@ -1430,12 +1468,23 @@ class EbayController extends Controller {
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
 
-//                $sx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-//                $sx_count = count($sx);
-//                $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
-//                $lastSx = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-//                $count = count($lastSx);
-//                $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+$datetime1 = new \DateTime($item->listing_ending_at);
+                $datetime2 = new \DateTime('now');
+                $interval = $datetime1->diff($datetime2);
+                $days = $interval->format('%d');
+                $hours = $interval->format('%h');
+                $mins = $interval->format('%i');
+                $secs = $interval->format('%s');
+                if ($days > 0) {
+                    $timeleft = $days . 'd ' . $hours . 'h';
+                } else if ($hours > 1) {
+                    $timeleft = $hours . 'h ' . $mins . 'm';
+                } else if ($mins > 1) {
+                    $timeleft = $mins . 'm ' . $secs . 's';
+                } else {
+                    $timeleft = $secs . 's';
+                }
+                
                 $sx_data = CardSales::getSxAndLastSx($item->card_id);
                 $sx = $sx_data['sx'];
                 $lastSx = $sx_data['lastSx'];
@@ -1455,6 +1504,7 @@ class EbayController extends Controller {
                     'sx_value' => number_format((float) $sx, 2, '.', ''),
                     'sx_icon' => (($sx - $lastSx) >= 0) ? 'up' : 'down',
                     'price_diff' => $price_diff,
+                    'timeleft' => $timeleft,
                 ];
             });
 

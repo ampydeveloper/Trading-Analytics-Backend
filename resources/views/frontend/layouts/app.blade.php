@@ -25,7 +25,7 @@
                 @include('frontend.includes.nav')
 
                 <div class="container">
-                    @include('includes.partials.messages')
+            
                     @yield('content')
                 </div><!-- container -->
             </div><!-- #app -->

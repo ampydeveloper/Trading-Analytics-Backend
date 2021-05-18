@@ -384,10 +384,13 @@ class StoxtickerController extends Controller {
                 $flag = 0;
                 while ($startTime <= $endTime) {
                     $hi = $startTime->format('H:i');
+                     $date_format = $startTime->format('M/d/Y H:i');
+                    $timstamp_format = $startTime->gettimestamp()*1000;
                     if (count($data['labels']) > 0) {
                         $ind = array_search($hi, $data['labels']);
                         if (is_numeric($ind)) {
-                            $values[] = $data['values'][$ind];
+//                            $values[] = $data['values'][$ind];
+                            $values[] = array($timstamp_format, $data['values'][$ind]);
                             $qty[] = $data['qty'][$ind];
                             $previousSx = $data['values'][$ind];
                             $flag = 1;
@@ -396,12 +399,14 @@ class StoxtickerController extends Controller {
                                 $salesDate = CardSales::whereIn('card_id', $card_ids)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                                 if ($salesDate !== null) {
                                     $previousSx = CardSales::whereIn('card_id', $card_ids)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                                    $values[] = number_format($previousSx, 2, '.', '');
+//                                    $values[] = number_format($previousSx, 2, '.', '');
+                                     $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                                     $qty[] = 0;
                                 }
                                     $flag = 1;
                             } else {
-                                $values[] = number_format($previousSx, 2, '.', '');
+//                                $values[] = number_format($previousSx, 2, '.', '');
+                                 $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                                 $qty[] = 0;
                             }
                         }
@@ -410,16 +415,18 @@ class StoxtickerController extends Controller {
                             $salesDate = CardSales::whereIn('card_id', $card_ids)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                             if ($salesDate !== null) {
                                 $previousSx = CardSales::whereIn('card_id', $card_ids)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                                $values[] = number_format($previousSx,2,'.','');
+//                                $values[] = number_format($previousSx,2,'.','');
+                                 $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                                 $qty[] = 0;
                             }
                             $flag = 1;
                         } else {
-                            $values[] = number_format($previousSx,2,'.','');
+//                            $values[] = number_format($previousSx,2,'.','');
+                             $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                             $qty[] = 0;
                         }
                     }
-                    $timeArray[] = $hi;
+                    $timeArray[] = $date_format;
                     $startTime->add(new \DateInterval('PT' . $timeStep . 'M'));
                 }
                 $data['values'] = $values;
@@ -550,10 +557,13 @@ class StoxtickerController extends Controller {
                 $flag = 0;
                 while ($startTime <= $endTime) {
                     $hi = $startTime->format('H:i');
+                     $date_format = $startTime->format('M/d/Y H:i');
+                    $timstamp_format = $startTime->gettimestamp()*1000;
                     if (count($data['labels']) > 0) {
                         $ind = array_search($hi, $data['labels']);
                         if (is_numeric($ind)) {
-                            $values[] = $data['values'][$ind];
+//                            $values[] = $data['values'][$ind];
+                            $values[] = array($timstamp_format, $data['values'][$ind]);
                             $qty[] = $data['qty'][$ind];
                             $previousSx = $data['values'][$ind];
                             $flag = 1;
@@ -562,12 +572,14 @@ class StoxtickerController extends Controller {
                                 $salesDate = CardSales::where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                                 if ($salesDate !== null) {
                                     $previousSx = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                                    $values[] = number_format($previousSx, 2, '.', '');
+//                                    $values[] = number_format($previousSx, 2, '.', '');
+                                    $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                                     $qty[] = 0;
                                 }
                                     $flag = 1;
                             } else {
-                                $values[] = number_format($previousSx, 2, '.', '');
+//                                $values[] = number_format($previousSx, 2, '.', '');
+                                $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                                 $qty[] = 0;
                             }
                         }
@@ -576,16 +588,18 @@ class StoxtickerController extends Controller {
                             $salesDate = CardSales::where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                             if ($salesDate !== null) {
                                 $previousSx = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                                $values[] = number_format($previousSx,2,'.','');
+//                                $values[] = number_format($previousSx,2,'.','');
+                                $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                                 $qty[] = 0;
                             }
                             $flag = 1;
                         } else {
-                            $values[] = number_format($previousSx,2,'.','');
+//                            $values[] = number_format($previousSx,2,'.','');
+                            $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                             $qty[] = 0;
                         }
                     }
-                    $timeArray[] = $hi;
+                    $timeArray[] = $date_format;
                     $startTime->add(new \DateInterval('PT' . $timeStep . 'M'));
                 }
                 $data['values'] = $values;
@@ -698,6 +712,7 @@ class StoxtickerController extends Controller {
     }
 
     public function __groupGraphDataPerDay($days, $data, $card_ids = 0) {
+//        dd($days);
         $months = null;
         $years = null;
         $cmp = $days;
@@ -735,6 +750,9 @@ class StoxtickerController extends Controller {
             $cmpFormat = 'Y';
             $start_date = $last_date->copy()->subYears($cmp);
         }
+        
+//        dump($start_date);
+//        dd($last_date);
 
 
         // if ((count($data['labels']) < (int) $cmp) || $cmpSfx == 'years' || $last_date > Carbon::now()) {
@@ -747,25 +765,23 @@ class StoxtickerController extends Controller {
         foreach ($period as $dt) {
             $ts = $dt->timestamp * 1000;
             $dt = trim($dt->format('Y-m-d'));
-//            $map_val[$dt] = [$ts, 0];
-//            $map_qty[$dt] = 0;
             $ind = array_search($dt, $data['labels']);
             if (gettype($ind) == "integer") {
                 $map_val[$dt] = [$ts, $data['values'][$ind]];
                 $map_qty[$dt] = $data['qty'][$ind];
                 $previousValue = $data['values'][$ind];
             } else {
-                if ($previousValue != 0 && ($cmpFormat == 'Y-m' || $cmpFormat == 'Y')) {
+                if ($previousValue != 0 && (($cmpFormat == 'Y-m' && $days != 90)  || $cmpFormat == 'Y')) {
+//                    dd('in');
                     $map_val[$dt] = [$ts, $previousValue];
                     $map_qty[$dt] = 0;
                     $flag = 1;
-                } elseif ($flag == 0 && $cmpFormat == 'Y-m-d') {
+                } elseif ($flag == 0 && ($cmpFormat == 'Y-m-d' || $days == 90)) {
                     if(is_array($card_ids)) {
                         $salesDate = CardSales::whereIn('card_id', $card_ids)->where('timestamp', '<', $dt)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                     } else {
                         $salesDate = CardSales::where('timestamp', '<', $dt)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                     }
-//                    dd($salesDate);
                     if ($salesDate !== null) {
                         if(is_array($card_ids)) {
                             $sx = CardSales::whereIn('card_id', $card_ids)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
@@ -781,14 +797,12 @@ class StoxtickerController extends Controller {
                         $map_qty[$dt] = 0;
                         $flag = 1;
                     }
-                } elseif($previousValue != 0 && $cmpFormat == 'Y-m-d') {
+                } elseif($previousValue != 0 && ($cmpFormat == 'Y-m-d'|| $days == 90)) {
                     $map_val[$dt] = [$ts, $previousValue];
                     $map_qty[$dt] = 0;
                 }
             }
         }
-        
-//        dd($map_val);
 
         uksort($map_val, [$this, "lbl_dt"]);
         uksort($map_qty, [$this, "lbl_dt"]);
