@@ -18,6 +18,7 @@ use App\Models\CardSales;
 use App\Jobs\ProcessCardsForRetrivingDataFromEbay;
 use App\Jobs\ProcessCardsComplieData;
 use App\Jobs\CompareEbayImagesWithCardImages;
+use App\Jobs\StoreZipImages;
 use App\Models\Ebay\EbayItems;
 use App\Models\RequestSlab;
 use App\Models\RequestListing;
@@ -1688,13 +1689,11 @@ class CardController extends Controller {
         try {
             if ($request->has('file1')) {
                 $filename = $request->file1->getClientOriginalName();
-                
                 if (Storage::disk('public')->put($filename, file_get_contents($request->file1->getRealPath()))) {
                     $zip = new ZipArchive;
                     $res = $zip->open(public_path("storage/" . $filename));
                     if ($res === TRUE) {
                         if ($request->input('for') == 'baseball') {
-                            //Storage::disk('s3')->put('Baseball/'.$filename,file_get_contents($request->file1), 'public');
                             $zip->extractTo(public_path("storage/Baseball"));
                             $zip->close();
                         } else if ($request->input('for') == 'basketball') {
@@ -1716,7 +1715,7 @@ class CardController extends Controller {
                     }
                 }
             }
-            dd('else');
+
             if ($request->has('file') && !is_array($request->file)) {
                 $filename = $request->file('file')->getClientOriginalName();
                     $path = $request->file('file')->store('temp');
