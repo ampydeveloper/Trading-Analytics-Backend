@@ -10,7 +10,8 @@
             <meta name="csrf-token" content="{{ csrf_token() }}">
             <title>@yield('title', app_name())</title>
             <!--<meta name="description" content="@yield('meta_description', '')">-->
-            <meta name="author" content="@yield('meta_author', 'LOC')">
+            <meta name="author" content="@yield('meta_author', '')">
+            <link rel="shortcut icon" type="image/jpg" href="/slabstox.ico"/>
             @yield('meta')
 
             @stack('before-styles')
@@ -24,8 +25,7 @@
                 @include('includes.partials.logged-in-as')
                 @include('frontend.includes.nav')
 
-                <div class="container">
-            
+                <div class="container-fluid">
                     @yield('content')
                 </div><!-- container -->
             </div><!-- #app -->
