@@ -810,10 +810,13 @@ class CardController extends Controller {
                 $flag = 0;
                 while ($startTime <= $endTime) {
                     $hi = $startTime->format('H:i');
+                                $date_format = $startTime->format('M/d/Y H:i');
+                    $timstamp_format = $startTime->gettimestamp()*1000;
                     if (count($data['labels']) > 0) {
                         $ind = array_search($hi, $data['labels']);
                         if (is_numeric($ind)) {
-                            $values[] = $data['values'][$ind];
+//                            $values[] = $data['values'][$ind];
+                            $values[] = array($timstamp_format, $data['values'][$ind]);
                             $qty[] = $data['qty'][$ind];
                             $previousSx = $data['values'][$ind];
                             $flag = 1;
@@ -822,12 +825,14 @@ class CardController extends Controller {
                                 $salesDate = CardSales::where('card_id', $card_id)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                                 if ($salesDate !== null) {
                                     $previousSx = CardSales::where('card_id', $card_id)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                                    $values[] = number_format($previousSx, 2, '.', '');
+//                                    $values[] = number_format($previousSx, 2, '.', '');
+                                  $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                                     $qty[] = 0;
                                 }
                                 $flag = 1;
                             } else {
-                                $values[] = number_format($previousSx, 2, '.', '');
+//                                $values[] = number_format($previousSx, 2, '.', '');
+                                $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                                 $qty[] = 0;
                             }
                         }
@@ -836,16 +841,18 @@ class CardController extends Controller {
                             $salesDate = CardSales::where('card_id', $card_id)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                             if ($salesDate !== null) {
                                 $previousSx = CardSales::where('card_id', $card_id)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                                $values[] = number_format($previousSx, 2, '.', '');
+//                                $values[] = number_format($previousSx, 2, '.', '');
+                                $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                                 $qty[] = 0;
                             }
                             $flag = 1;
                         } else {
-                            $values[] = number_format($previousSx, 2, '.', '');
+//                            $values[] = number_format($previousSx, 2, '.', '');
+                            $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                             $qty[] = 0;
                         }
                     }
-                    $timeArray[] = $hi;
+                    $timeArray[] = $date_format;
                     $startTime->add(new \DateInterval('PT' . $timeStep . 'M'));
                 }
                 $data['values'] = $values;
@@ -1258,7 +1265,7 @@ class CardController extends Controller {
                 while ($startTime <= $endTime) {
                     $hi = $startTime->format('H:i');
                     $date_format = $startTime->format('M/d/Y H:i');
-                    $timstamp_format = $startTime->gettimestamp();
+                    $timstamp_format = $startTime->gettimestamp()*1000;
 //                    die('er');
                     if (count($data['labels']) > 0) {
                         $ind = array_search($hi, $data['labels']);
