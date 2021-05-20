@@ -18,7 +18,6 @@ use App\Models\CardSales;
 use App\Jobs\ProcessCardsForRetrivingDataFromEbay;
 use App\Jobs\ProcessCardsComplieData;
 use App\Jobs\CompareEbayImagesWithCardImages;
-use App\Jobs\StoreZipImages;
 use App\Models\Ebay\EbayItems;
 use App\Models\RequestSlab;
 use App\Models\RequestListing;
@@ -811,13 +810,10 @@ class CardController extends Controller {
                 $flag = 0;
                 while ($startTime <= $endTime) {
                     $hi = $startTime->format('H:i');
-                    $date_format = $startTime->format('M/d/Y H:i');
-                    $timstamp_format = $startTime->gettimestamp()*1000;
                     if (count($data['labels']) > 0) {
                         $ind = array_search($hi, $data['labels']);
                         if (is_numeric($ind)) {
-                            $values[] = array($timstamp_format, $data['values'][$ind]);
-                            
+                            $values[] = $data['values'][$ind];
                             $qty[] = $data['qty'][$ind];
                             $previousSx = $data['values'][$ind];
                             $flag = 1;
@@ -826,12 +822,12 @@ class CardController extends Controller {
                                 $salesDate = CardSales::where('card_id', $card_id)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                                 if ($salesDate !== null) {
                                     $previousSx = CardSales::where('card_id', $card_id)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                                    $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
+                                    $values[] = number_format($previousSx, 2, '.', '');
                                     $qty[] = 0;
                                 }
                                 $flag = 1;
                             } else {
-                                $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
+                                $values[] = number_format($previousSx, 2, '.', '');
                                 $qty[] = 0;
                             }
                         }
@@ -840,16 +836,16 @@ class CardController extends Controller {
                             $salesDate = CardSales::where('card_id', $card_id)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                             if ($salesDate !== null) {
                                 $previousSx = CardSales::where('card_id', $card_id)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                                $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
+                                $values[] = number_format($previousSx, 2, '.', '');
                                 $qty[] = 0;
                             }
                             $flag = 1;
                         } else {
-                            $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
+                            $values[] = number_format($previousSx, 2, '.', '');
                             $qty[] = 0;
                         }
                     }
-                    $timeArray[] = $date_format;;
+                    $timeArray[] = $hi;
                     $startTime->add(new \DateInterval('PT' . $timeStep . 'M'));
                 }
                 $data['values'] = $values;
@@ -862,7 +858,7 @@ class CardController extends Controller {
             }
 //            $last_timestamp = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->first();
             $last_timestamp = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->first();
-            $sx_data = CardSales::getGraphSxWithCardId($card_id, $from, $to);
+            $sx_data = CardSales::getGraphSxWithCardId($days, $data, $card_id);
             $sx = $sx_data['sx'];
             $lastSx = $sx_data['lastSx'];
             if (!empty($sx_data) && !empty($last_timestamp)) {
@@ -882,7 +878,7 @@ class CardController extends Controller {
 //            $data['total_sales'] = CardSales::where('card_id', $card_id)->sum('cost');
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
-            dd($e);
+//            dd($e);
             return response()->json($e->getMessage(), 500);
         }
     }
@@ -967,7 +963,7 @@ class CardController extends Controller {
 //            $sx_count = count($sx);
 //            $sx = $sales_diff = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
 
-            $sx_data = CardSales::getSlabstoxSx();
+            $sx_data = CardSales::getSlabstoxSxGraph($days, $data);
             $sx = $sx_data['sx'];
             $lastSx = $sx_data['oldestSx'];
 
@@ -1089,13 +1085,10 @@ class CardController extends Controller {
                     $flag = 0;
                     while ($startTime <= $endTime) {
                         $hi = $startTime->format('H:i');
-                         $date_format = $startTime->format('M/d/Y H:i');
-                    $timstamp_format = $startTime->gettimestamp()*1000;
                         if (count($data['labels']) > 0) {
                             $ind = array_search($hi, $data['labels']);
                             if (is_numeric($ind)) {
-//                                $values[] = $data['values'][$ind];
-                                $values[] = array($timstamp_format, $data['values'][$ind]);
+                                $values[] = $data['values'][$ind];
                                 $qty[] = $data['qty'][$ind];
                                 $previousSx = $data['values'][$ind];
                                 $flag = 1;
@@ -1104,14 +1097,12 @@ class CardController extends Controller {
                                     $salesDate = CardSales::where('card_id', $cid)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                                     if ($salesDate !== null) {
                                         $previousSx = CardSales::where('card_id', $cid)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-//                                        $values[] = number_format($previousSx, 2, '.', '');
-                                        $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
+                                        $values[] = number_format($previousSx, 2, '.', '');
                                         $qty[] = 0;
                                     }
                                     $flag = 1;
                                 } else {
-//                                    $values[] = number_format($previousSx, 2, '.', '');
-                                    $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
+                                    $values[] = number_format($previousSx, 2, '.', '');
                                     $qty[] = 0;
                                 }
                             }
@@ -1120,18 +1111,16 @@ class CardController extends Controller {
                                 $salesDate = CardSales::where('card_id', $cid)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                                 if ($salesDate !== null) {
                                     $previousSx = CardSales::where('card_id', $cid)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-//                                    $values[] = number_format($previousSx, 2, '.', '');
-                                    $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
+                                    $values[] = number_format($previousSx, 2, '.', '');
                                     $qty[] = 0;
                                 }
                                 $flag = 1;
                             } else {
-//                                $values[] = number_format($previousSx, 2, '.', '');
-                                $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
+                                $values[] = number_format($previousSx, 2, '.', '');
                                 $qty[] = 0;
                             }
                         }
-                        $timeArray[] = $date_format;
+                        $timeArray[] = $hi;
                         $startTime->add(new \DateInterval('PT' . $timeStep . 'M'));
                     }
                     $data['values'] = $values;
@@ -1155,14 +1144,14 @@ class CardController extends Controller {
             $finalData['rank1'] = $this->getCardRank($cids[0]);
             $finalData['rank2'] = $this->getCardRank($cids[1]);
 
-            $sx_data00 = CardSales::getSx($cids[0]);
+            $sx_data00 = CardSales::getSxGraph($data);
             $finalData['slabstoxvalue1'] = number_format((float) $sx_data00['sx'], 2, '.', '');
-            $sx_data0 = CardSales::getGraphSxWithCardId($cids[0], $from, $to);
+            $sx_data0 = CardSales::getGraphSxWithCardId($days, $data, $cids[0]);
             $finalData['sx1'] = number_format((float) $sx_data0['sx'], 2, '.', '');
 
-            $sx_data11 = CardSales::getSx($cids[1]);
+            $sx_data11 = CardSales::getSx($data);
             $finalData['slabstoxvalue2'] = number_format((float) $sx_data11['sx'], 2, '.', '');
-            $sx_data1 = CardSales::getGraphSxWithCardId($cids[1], $from, $to);
+            $sx_data1 = CardSales::getGraphSxWithCardId($days, $data, $cids[1]);
             $finalData['sx2'] = number_format((float) $sx_data1['sx'], 2, '.', '');
 
             $finalData['last_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('timestamp', 'DESC')->first();
@@ -1252,6 +1241,7 @@ class CardController extends Controller {
             if ($days > 2) {
                 $data = $this->__groupGraphDataPerDay($days, $data, $card_id);
             }
+          
             if ($days == 2) {
                 $labels = [];
                 $values = [];
@@ -1268,7 +1258,7 @@ class CardController extends Controller {
                 while ($startTime <= $endTime) {
                     $hi = $startTime->format('H:i');
                     $date_format = $startTime->format('M/d/Y H:i');
-                    $timstamp_format = $startTime->gettimestamp()*1000;
+                    $timstamp_format = $startTime->gettimestamp();
 //                    die('er');
                     if (count($data['labels']) > 0) {
                         $ind = array_search($hi, $data['labels']);
@@ -1316,13 +1306,13 @@ class CardController extends Controller {
                 $data['labels'] = array_reverse($data['labels']);
                 $data['qty'] = array_reverse($data['qty']);
             }
-
+  
             $finalData['values'] = $data['values'];
             $finalData['labels'] = $data['labels'];
             $finalData['qty'] = $data['qty'];
 //            }
-
-            $sx_data = CardSales::getGraphSxWithCardId($card_id, $from, $to);
+            $sx_data = CardSales::getGraphSxWithCardId($days, $data, $card_id);
+//dd('redss');
             $sx = $sx_data['sx'];
             $lastSx = $sx_data['lastSx'];
 
@@ -1689,11 +1679,13 @@ class CardController extends Controller {
         try {
             if ($request->has('file1')) {
                 $filename = $request->file1->getClientOriginalName();
+                
                 if (Storage::disk('public')->put($filename, file_get_contents($request->file1->getRealPath()))) {
                     $zip = new ZipArchive;
                     $res = $zip->open(public_path("storage/" . $filename));
                     if ($res === TRUE) {
                         if ($request->input('for') == 'baseball') {
+                            //Storage::disk('s3')->put('Baseball/'.$filename,file_get_contents($request->file1), 'public');
                             $zip->extractTo(public_path("storage/Baseball"));
                             $zip->close();
                         } else if ($request->input('for') == 'basketball') {
@@ -1715,7 +1707,7 @@ class CardController extends Controller {
                     }
                 }
             }
-
+//            dd('else');
             if ($request->has('file') && !is_array($request->file)) {
                 $filename = $request->file('file')->getClientOriginalName();
                     $path = $request->file('file')->store('temp');

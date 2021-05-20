@@ -219,11 +219,11 @@ class MyPortfolioController extends Controller {
             $data = [];
 //            dd($ptempcards);
             foreach ($cards as $key => $card) {
-                 $purchase_price = (isset($ptempcards) ? $ptempcards[$card->id][0]->purchase_price : 0);
+                $sx_data = CardSales::getSx($card->id);
                 $data[] = [
                     'id' => $card->id,
                     'title' => $card->title,
-                    'price' => $purchase_price,
+                    'price' => $sx_data['sx'],
                 ];
             }
             return response()->json(['status' => 200, 'data' => $data], 200);
