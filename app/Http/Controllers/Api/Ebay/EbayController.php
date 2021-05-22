@@ -521,7 +521,7 @@ class EbayController extends Controller {
                     $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeval = ($item->listingInfo ? $item->listingInfo->listingType : '');
-                date_default_timezone_set("America/New_York");
+                date_default_timezone_set("UTC");
                 $datetime1 = new \DateTime($item->listing_ending_at);
                 $datetime2 = new \DateTime('now');
                 $interval = $datetime1->diff($datetime2);
@@ -1070,7 +1070,7 @@ class EbayController extends Controller {
             $data['items'] = EbayItems::where('id', $request->input('id'))
                     ->with(['category', 'card', 'card.value', 'details', 'playerDetails', 'condition', 'sellerInfo', 'listingInfo', 'sellingStatus', 'shippingInfo', 'specifications'])
                     ->first();
-            date_default_timezone_set("America/New_York");
+            date_default_timezone_set("UTC");
             $datetime1 = new \DateTime($data['items']->listing_ending_at);
             $datetime2 = new \DateTime('now');
             $interval = $datetime1->diff($datetime2);
@@ -1388,7 +1388,7 @@ class EbayController extends Controller {
                     $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
-                date_default_timezone_set("America/New_York");
+                date_default_timezone_set("UTC");
                 $datetime1 = new \DateTime($item->listing_ending_at);
                 $datetime2 = new \DateTime('now');
                 $interval = $datetime1->diff($datetime2);
@@ -1455,7 +1455,7 @@ class EbayController extends Controller {
                     $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
-                date_default_timezone_set("America/New_York");
+                date_default_timezone_set("UTC");
                 $datetime1 = new \DateTime($item->listing_ending_at);
                 $datetime2 = new \DateTime('now');
                 $interval = $datetime1->diff($datetime2);
