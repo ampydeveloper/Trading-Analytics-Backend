@@ -45,7 +45,7 @@ use LogsActivity;
 //    ];
 
     public static function getSx($id) {
-        
+
         $salesDate = CardSales::where('card_id', $id)->groupBy(DB::raw('DATE(timestamp)'))->orderBy('timestamp', 'DESC')->pluck('timestamp');
         $count = $salesDate->count();
         if ($count >= 1) {
@@ -56,7 +56,19 @@ use LogsActivity;
         }
         return $data;
     }
-    
+
+    public static function getSxGraph($days, $data) {
+//        $data['sx'] = $data['values'][count($data['values']) - 1][1];
+        
+        if ($days == 2) {
+                $data['sx'] = $data['values'][count($data['values']) - 1];
+            } else {
+                $data['sx'] = $data['values'][count($data['values']) - 1][1];
+            }
+            
+        return $data;
+    }
+
     public static function getSxAndLastSx($id) {
         $salesDate = CardSales::where('card_id', $id)->groupBy(DB::raw('DATE(timestamp)'))->orderBy('timestamp', 'DESC')->pluck('timestamp');
         $count = $salesDate->count();
@@ -77,7 +89,7 @@ use LogsActivity;
     }
 
     public static function getSlabstoxSx() {
-        
+
         $salesDate = CardSales::groupBy(DB::raw('DATE(timestamp)'))->orderBy('timestamp', 'DESC')->pluck('timestamp');
         $count = $salesDate->count();
         if ($count >= 2) {
@@ -99,85 +111,106 @@ use LogsActivity;
         }
         return $data;
     }
-    
+
     public static function getSlabstoxSxGraph($days, $data) {
-        if($days == 2 || $days == 7 ||$days == 30 ||$days == 90) {
+        if ($days == 2 || $days == 7 || $days == 30 || $days == 90) {
+            if ($days == 2) {
+                $data['lastSx'] = $data['values'][0];
+                $data['sx'] = $data['values'][count($data['values']) - 1];
+            } else {
                 $data['lastSx'] = $data['values'][0][1];
                 $data['sx'] = $data['values'][count($data['values']) - 1][1];
-            } else {
-                if ($data['start_date'] == $data['labels'][0]) {
-                    $data['lastSx'] = $data['values'][0][1];
-                } else {
-                    $salesDate = CardSales::where('timestamp', '<', Carbon::createFromFormat('M/d/Y', $data['start_date'])->format('Y-m-d'))->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
-                    if ($salesDate !== null) {
-                        $data['lastSx'] = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                    } else {
-                        $data['lastSx'] = 0;
-                    }
-                }
-                $data['sx'] = $data['values'][count($data['values']) - 1][1];
             }
+        } else {
+            if ($data['start_date'] == $data['labels'][0]) {
+                $data['lastSx'] = $data['values'][0][1];
+            } else {
+                $salesDate = CardSales::where('timestamp', '<', Carbon::createFromFormat('M/d/Y', $data['start_date'])->format('Y-m-d'))->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                if ($salesDate !== null) {
+                    $data['lastSx'] = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                } else {
+                    $data['lastSx'] = 0;
+                }
+            }
+            $data['sx'] = $data['values'][count($data['values']) - 1][1];
+        }
     }
 
-        public static function getGraphSx($days, $data) {
-        
-        if($days == 2 || $days == 7 ||$days == 30 ||$days == 90) {
+    public static function getGraphSx($days, $data) {
+
+        if ($days == 2 || $days == 7 || $days == 30 || $days == 90) {
+            if ($days == 2) {
+                $data['lastSx'] = $data['values'][0];
+                $data['sx'] = $data['values'][count($data['values']) - 1];
+            } else {
                 $data['lastSx'] = $data['values'][0][1];
                 $data['sx'] = $data['values'][count($data['values']) - 1][1];
-            } else {
-                if ($data['start_date'] == $data['labels'][0]) {
-                    $data['lastSx'] = $data['values'][0][1];
-                } else {
-                    $salesDate = CardSales::where('timestamp', '<', Carbon::createFromFormat('M/d/Y', $data['start_date'])->format('Y-m-d'))->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
-                    if ($salesDate !== null) {
-                        $data['lastSx'] = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                    } else {
-                        $data['lastSx'] = 0;
-                    }
-                }
-                $data['sx'] = $data['values'][count($data['values']) - 1][1];
             }
+        } else {
+            if ($data['start_date'] == $data['labels'][0]) {
+                $data['lastSx'] = $data['values'][0][1];
+            } else {
+                $salesDate = CardSales::where('timestamp', '<', Carbon::createFromFormat('M/d/Y', $data['start_date'])->format('Y-m-d'))->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                if ($salesDate !== null) {
+                    $data['lastSx'] = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                } else {
+                    $data['lastSx'] = 0;
+                }
+            }
+            $data['sx'] = $data['values'][count($data['values']) - 1][1];
+        }
         return $data;
     }
-    
+
     public static function getGraphSxWithCardId($days, $data, $card_id) {
-        
-        if($days == 2 || $days == 7 ||$days == 30 ||$days == 90) {
+
+        if ($days == 2 || $days == 7 || $days == 30 || $days == 90) {
+            if ($days == 2) {
+                $data['lastSx'] = $data['values'][0];
+                $data['sx'] = $data['values'][count($data['values']) - 1];
+            } else {
                 $data['lastSx'] = $data['values'][0][1];
                 $data['sx'] = $data['values'][count($data['values']) - 1][1];
-            } else {
-                if ($data['start_date'] == $data['labels'][0]) {
-                    $data['lastSx'] = $data['values'][0][1];
-                } else {
-                    $salesDate = CardSales::where('card_id', $card_id)->where('timestamp', '<', Carbon::createFromFormat('M/d/Y', $data['start_date'])->format('Y-m-d'))->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
-                    if ($salesDate !== null) {
-                        $data['lastSx'] = CardSales::where('card_id', $card_id)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                    } else {
-                        $data['lastSx'] = 0;
-                    }
-                }
-                $data['sx'] = $data['values'][count($data['values']) - 1][1];
             }
+        } else {
+            if ($data['start_date'] == $data['labels'][0]) {
+                $data['lastSx'] = $data['values'][0][1];
+            } else {
+                $salesDate = CardSales::where('card_id', $card_id)->where('timestamp', '<', Carbon::createFromFormat('M/d/Y', $data['start_date'])->format('Y-m-d'))->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                if ($salesDate !== null) {
+                    $data['lastSx'] = CardSales::where('card_id', $card_id)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                } else {
+                    $data['lastSx'] = 0;
+                }
+            }
+            $data['sx'] = $data['values'][count($data['values']) - 1][1];
+        }
         return $data;
     }
+
     public static function getGraphSxWithIds($days, $data, $card_ids) {
-        
-        if($days == 2 || $days == 7 ||$days == 30 ||$days == 90) {
+
+        if ($days == 2 || $days == 7 || $days == 30 || $days == 90) {
+            if ($days == 2) {
+                $data['lastSx'] = $data['values'][0];
+                $data['sx'] = $data['values'][count($data['values']) - 1];
+            } else {
                 $data['lastSx'] = $data['values'][0][1];
                 $data['sx'] = $data['values'][count($data['values']) - 1][1];
-            } else {
-                if ($data['start_date'] == $data['labels'][0]) {
-                    $data['lastSx'] = $data['values'][0][1];
-                } else {
-                    $salesDate = CardSales::whereIn('card_id', $card_ids)->where('timestamp', '<', Carbon::createFromFormat('M/d/Y', $data['start_date'])->format('Y-m-d'))->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
-                    if ($salesDate !== null) {
-                        $data['lastSx'] = CardSales::whereIn('card_id', $card_ids)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                    } else {
-                        $data['lastSx'] = 0;
-                    }
-                }
-                $data['sx'] = $data['values'][count($data['values']) - 1][1];
             }
+        } else {
+            if ($data['start_date'] == $data['labels'][0]) {
+                $data['lastSx'] = $data['values'][0][1];
+            } else {
+                $salesDate = CardSales::whereIn('card_id', $card_ids)->where('timestamp', '<', Carbon::createFromFormat('M/d/Y', $data['start_date'])->format('Y-m-d'))->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                if ($salesDate !== null) {
+                    $data['lastSx'] = CardSales::whereIn('card_id', $card_ids)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                } else {
+                    $data['lastSx'] = 0;
+                }
+            }
+            $data['sx'] = $data['values'][count($data['values']) - 1][1];
+        }
         return $data;
     }
 
@@ -199,4 +232,5 @@ use LogsActivity;
         }
         return $data;
     }
+
 }
