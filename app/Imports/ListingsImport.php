@@ -63,14 +63,44 @@ public function collection(Collection $rows) {
                 $scrap_response = shell_exec($script_link . " 2>&1");
                 $data = (array) json_decode($scrap_response);
 
-                $cat = array(
-                    'football' => '1',
-                    'baseball' => '2',
-                    'basketball' => '3',
-                    'soccer' => '4',
-                    'pokemon' => '10',
-                );
-                $cat_id = $cat[$row[4]];
+                $cat_id = 1;
+                if (isset($row[4]) && $row[4] != null) {
+                    $cat = array(
+                        'football' => '1',
+                        'baseball' => '2',
+                        'basketball' => '3',
+                        'soccer' => '4',
+                        'pokemon' => '10',
+                    );
+                    $cat_id = $cat[$row[4]];
+                } else if (isset($data['details']['PrimaryCategoryID'])) {
+                    $cat_id = EbayItemCategories::where('categoryId', $data['details']['PrimaryCategoryID'])->first()['id'];
+                }
+
+                if (isset($data['details']['PictureURL'])) {
+                    if (is_array($data['details']['PictureURL']) && count($data['details']['PictureURL']) > 0) {
+                        $pictureURLLarge = $data['details']['PictureURL'][0];
+                        $pictureURLSuperSize = $data['details']['PictureURL'][count($data['details']['PictureURL']) - 1];
+                    } else {
+                        $pictureURLLarge = $data['details']['PictureURL'];
+                        $pictureURLSuperSize = $data['details']['PictureURL'];
+                    }
+                } else if (isset($data['image']) && !empty($data['image'])) {
+                    $pictureURLLarge = $data['image'];
+                    $pictureURLSuperSize = $data['image'];
+                } else {
+                    $pictureURLLarge = null;
+                    $pictureURLSuperSize = null;
+                }
+
+                $auction_end = null;
+                if (isset($row[6]) && $row[6] != null) {
+                    $auction_end = Carbon::create($row[6])->format('Y-m-d h:i:s');
+                } else if (!empty($data['timeLeft'])) {
+                    date_default_timezone_set("America/Los_Angeles");
+                    $auction_end_str = $data['timeLeft'] / 1000;
+                    $auction_end = date('Y-m-d H:i:s', $auction_end_str);
+                }
 
                 if (array_key_exists('price', $data) && !empty($data['price']) || !empty($row[3])) {
                     if (!empty($row[3])) {
@@ -85,7 +115,7 @@ public function collection(Collection $rows) {
                                 'currentPrice' => $price,
                                 'convertedCurrentPrice' => $price,
                                 'sellingState' => $price,
-                                'timeLeft' => isset($data['timeLeft']) ? $data['timeLeft'] : null,
+                                'timeLeft' => $auction_end,
                     ]);
                 }
                 if (array_key_exists('seller', $data) && !empty($data['seller'])) {
@@ -126,8 +156,8 @@ public function collection(Collection $rows) {
                                 'itemId' => $data['ebay_id'],
                                 'buyItNowAvailable' => isset($row[7]) ? $row[7] : null,
                                 'listingType' => isset($row[2]) ? $row[2] : null,
-                                'startTime' => isset($row[5]) ? Carbon::create($row[5])->format('Y-m-d h:i:s') : null,
-                                'endTime' => isset($row[6]) ? Carbon::create($row[6])->format('Y-m-d h:i:s') : null,
+                                'startTime' => null,
+                                'endTime' => $auction_end,
                     ]);
 
                     EbayItems::create([
@@ -137,17 +167,17 @@ public function collection(Collection $rows) {
                         'title' => $data['name'],
                         'category_id' => $cat_id,
                         'globalId' => isset($data['details']['Site']) ? 'EBAY-' . $data['details']['Site'] : null,
-                        'galleryURL' => isset($data['image']) ? $data['image'] : null,
+                        'galleryURL' => isset($data['details']['GalleryURL']) ? $data['details']['GalleryURL'] : null,
                         'viewItemURL' => isset($data['details']['ViewItemURLForNaturalSearch']) ? $data['details']['ViewItemURLForNaturalSearch'] : null,
                         'autoPay' => isset($data['details']['AutoPay']) ? $data['details']['AutoPay'] : null,
                         'postalCode' => isset($data['details']['PostalCode']) ? $data['details']['PostalCode'] : null,
-                        'location' => isset($data['location']) ? $data['location'] : null,
+                        'location' => isset($data['details']['Location']) ? $data['details']['Location'] : null,
                         'country' => isset($data['details']['Country']) ? $data['details']['Country'] : null,
-                        'returnsAccepted' => isset($data['returns']) == 'ReturnsNotAccepted' ? false : true,
+                        'returnsAccepted' => isset($data['details']['ReturnPolicy']['ReturnsAccepted']) == 'ReturnsNotAccepted' ? false : true,
                         'condition_id' => isset($data['details']['ConditionID']) ? $data['details']['ConditionID'] : 1,
-                        'pictureURLLarge' => isset($data['image']) ? $data['image'] : null,
-                        'pictureURLSuperSize' => isset($data['image']) ? $data['image'] : null,
-                        'listing_ending_at' => isset($data['timeLeft']) ? $data['timeLeft'] : null,
+                        'pictureURLLarge' => $pictureURLLarge,
+                        'pictureURLSuperSize' => $pictureURLSuperSize,
+                        'listing_ending_at' => $auction_end,
                         'is_random_bin' => array_key_exists('random_bin', $data) ? (bool) $data['random_bin'] : 0,
                         'seller_info_id' => isset($seller_info) ? $seller_info->id : null,
                         'selling_status_id' => isset($selling_status) ? $selling_status->id : null,

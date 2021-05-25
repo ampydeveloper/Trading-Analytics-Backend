@@ -521,7 +521,7 @@ class EbayController extends Controller {
                     $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeval = ($item->listingInfo ? $item->listingInfo->listingType : '');
-                date_default_timezone_set("UTC");
+                date_default_timezone_set("America/Los_Angeles");
                 $datetime1 = new \DateTime($item->listing_ending_at);
                 $datetime2 = new \DateTime('now');
                 $interval = $datetime1->diff($datetime2);
@@ -682,7 +682,7 @@ class EbayController extends Controller {
 
         if ($filterBy == 'ending_soon') {
             $date_one = Carbon::now()->addDay();
-            $date_one->setTimezone('UTC');
+            $date_one->setTimezone('America/Los_Angeles');
             // $date_two = Carbon::now()->setTimezone('UTC');
             $ebayitems = $ebayitems->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one);
             $ebayitems = $ebayitems->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
@@ -757,7 +757,7 @@ class EbayController extends Controller {
         });
         if ($filterBy == 'ending_soon') {
             $date_one = Carbon::now()->addDay();
-            $date_one->setTimezone('UTC');
+            $date_one->setTimezone('America/Los_Angeles');
             // $date_two = Carbon::now()->setTimezone('UTC');
             $items = $items->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one);
             $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
@@ -814,6 +814,18 @@ class EbayController extends Controller {
                 } else {
                     if (isset($data['category'])) {
                         $cat_id = $data['category'];
+                    } else {
+                        $card_details = Card::where('id', $data['card_id'])->select('sport')->first();
+                        $cat = array(
+                            'Football' => '1',
+                            'Baseball' => '2',
+                            'Basketball' => '3',
+                            'Soccer' => '4',
+                            'Pokemon' => '10',
+                        );
+                        if (!empty($card_details->sport)) {
+                            $cat_id = $cat[ucfirst($card_details->sport)];
+                        }
                     }
                 }
                 if (isset($data['details']['PictureURL'])) {
@@ -837,6 +849,12 @@ class EbayController extends Controller {
                     $auction_end_str = $data['auction_end'] / 1000;
                     $auction_end = date('Y-m-d H:i:s', $auction_end_str);
                 }
+                $listing_type = 'Listing';
+                if (isset($data['listing_type']) && !empty($data['listing_type'])) {
+                    $listing_type = ($data['listing_type'] == true ? 'Auction' : 'Listing');
+                } else if (isset($data['details']['auction']) && !empty($data['details']['auction'])) {
+                    $listing_type = ($data['details']['auction'] == true ? 'Auction' : 'Listing');
+                }
                 $selling_status = EbayItemSellingStatus::create([
                             'itemId' => $data['details']['ebay_id'],
                             'currentPrice' => $data['price'],
@@ -855,7 +873,7 @@ class EbayController extends Controller {
                             'itemId' => $data['details']['ebay_id'],
                             'startTime' => '',
                             'endTime' => $auction_end,
-                            'listingType' => (isset($data['listing_type']) && $data['listing_type'] == true ? 'Auction' : 'Listing'),
+                            'listingType' => $listing_type,
                 ]);
 
                 EbayItems::create([
@@ -898,57 +916,128 @@ class EbayController extends Controller {
                         ]);
                     }
                 }
-
-
+// dd('done');
                 \DB::commit();
-
                 return response()->json(['status' => 200, 'data' => ['message' => 'Added successfully.']], 200);
             } else {
+
+                $cat_id = 1;
+                if (isset($data['details']['PrimaryCategoryID'])) {
+                    $cat_id = EbayItemCategories::where('categoryId', $data['details']['PrimaryCategoryID'])->first()['id'];
+                } else {
+                    if (isset($data['category'])) {
+                        $cat_id = $data['category'];
+                    } else {
+                        $card_details = Card::where('id', $data['card_id'])->select('sport')->first();
+                        $cat = array(
+                            'Football' => '1',
+                            'Baseball' => '2',
+                            'Basketball' => '3',
+                            'Soccer' => '4',
+                            'Pokemon' => '10',
+                        );
+                        if (!empty($card_details->sport)) {
+                            $cat_id = $cat[ucfirst($card_details->sport)];
+                        }
+                    }
+                }
+
+                if (isset($data['details']['PictureURL'])) {
+                    if (is_array($data['details']['PictureURL']) && count($data['details']['PictureURL']) > 0) {
+                        $pictureURLLarge = $data['details']['PictureURL'][0];
+                        $pictureURLSuperSize = $data['details']['PictureURL'][count($data['details']['PictureURL']) - 1];
+                    } else {
+                        $pictureURLLarge = $data['details']['PictureURL'];
+                        $pictureURLSuperSize = $data['details']['PictureURL'];
+                    }
+                } else if (isset($data['image']) && !empty($data['image'])) {
+                    $pictureURLLarge = $data['image'];
+                    $pictureURLSuperSize = $data['image'];
+                } else {
+                    $pictureURLLarge = null;
+                    $pictureURLSuperSize = null;
+                }
+
                 $auction_end = null;
                 if (!empty($data['auction_end'])) {
+                    date_default_timezone_set("America/Los_Angeles");
                     $auction_end_str = $data['auction_end'] / 1000;
                     $auction_end = date('Y-m-d H:i:s', $auction_end_str);
                 }
-                $ebayItem = EbayItems::where('id', $item['id'])->first();
-                if ($ebayItem) {
-                    $ebayItem->update([
-                        'title' => $data['title'],
-                        'viewItemURL' => $data['web_link'],
-                        'location' => $data['location'],
-                        'returnsAccepted' => $data['ReturnPolicy'],
-                        'pictureURLLarge' => $data['image'],
-                        'listing_ending_at' => $auction_end,
-                    ]);
+                $listing_type = 'Listing';
+                if (isset($data['listing_type']) && !empty($data['listing_type'])) {
+                    $listing_type = ($data['listing_type'] == true ? 'Auction' : 'Listing');
+                } else if (isset($data['details']['auction']) && !empty($data['details']['auction'])) {
+                    $listing_type = ($data['details']['auction'] == true ? 'Auction' : 'Listing');
                 }
-
-                $ebayItemSellerInfo = EbayItemSellerInfo::where('id', $item['seller_info_id'])->first();
-                if ($ebayItemSellerInfo) {
-                    $ebayItemSellerInfo->update([
+//                 dd($auction_end);
+//                $selling_status = EbayItemSellingStatus::where('id', $item['selling_status_id'])->first();
+//                dd($selling_status);
+                if (!empty($item['selling_status_id'])) {
+                    (EbayItemSellingStatus::where('id', $item['selling_status_id'])->first())->update([
+                        'currentPrice' => $data['price'],
+                        'convertedCurrentPrice' => $data['price'],
+                        'sellingState' => $data['price'],
+                        'timeLeft' => $auction_end,
+                    ]);
+//                    dd($selling_status);
+                }
+//                dd('ddd');
+                $seller_info = EbayItemSellerInfo::where('id', $item['seller_info_id'])->first();
+                if (!empty($seller_info)) {
+                    $seller_info->update([
                         'sellerUserName' => $data['seller_name'],
                         'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
                         'seller_contact_link' => $data['seller_contact_link'],
                         'seller_store_link' => $data['seller_store_link']
                     ]);
                 }
-                //                foreach ($data['specifics'] as $speci) {
-                //                    EbayItemSpecific::where('id', $speci['id'])->update([
-                //                        'value' => $speci['value']
-                //                    ]);
-                //                }
-                $ebayItemListingInfo = EbayItemListingInfo::where('id', $item['listing_info_id'])->first();
-                if ($ebayItemListingInfo) {
-                    $ebayItemListingInfo->update([
+                $listing_info = EbayItemListingInfo::where('id', $item['listing_info_id'])->first();
+                if ($listing_info) {
+                    $listing_info->update([
                         'startTime' => '',
                         'endTime' => $auction_end,
-                        'listingType' => (isset($data['listing_type']) && $data['listing_type'] == true ? 'Auction' : 'Listing'),
+                        'listingType' => $listing_type,
                     ]);
                 }
 
+                $ebayItem = EbayItems::where('id', $item['id'])->first();
+                if ($ebayItem) {
+                    $ebayItem->update([
+                        'title' => $data['title'],
+                        'card_id' => $data['card_id'],
+                        'viewItemURL' => $data['web_link'],
+                        'location' => $data['location'],
+                        'returnsAccepted' => $data['ReturnPolicy'],
+                        'pictureURLLarge' => $pictureURLLarge,
+                        'pictureURLSuperSize' => $pictureURLSuperSize,
+                        'listing_ending_at' => $auction_end,
+                        'status' => 0,
+                    ]);
+                }
+
+                foreach ($data['specifics'] as $key => $speci) {
+                    if (isset($speci['Value'])) {
+                        if ($speci['Value'] != "N/A") {
+                            EbayItemSpecific::where('itemId', $data['details']['ebay_id'])
+                                    ->where('name', $speci['Name'])
+                                    ->update([
+                                        'value' => is_array($speci['Value']) ? implode(',', $speci['Value']) : $speci['Value']
+                            ]);
+                        }
+                    } else {
+                        EbayItemSpecific::where('itemId', $data['details']['ebay_id'])
+                                ->where('name', $key)
+                                ->update([
+                                    'value' => is_array($speci) ? implode(',', $speci) : $speci
+                        ]);
+                    }
+                }
+// dd('done');
                 \DB::commit();
                 return response()->json(['status' => 200, 'data' => ['message' => 'Updated successfully.']], 200);
             }
         } catch (\Exception $e) {
-//            dd($e);
             \Log::error($e);
             \DB::rollBack();
             return response()->json($e->getMessage(), 500);
@@ -1028,7 +1117,7 @@ class EbayController extends Controller {
         if ($filterBy != null) {
             if ($filterBy == 'ending_soon') {
                 $date_one = Carbon::now()->addDay();
-                $date_one->setTimezone('UTC');
+                $date_one->setTimezone('America/Los_Angeles');
                 // $date_two = Carbon::now()->setTimezone('UTC');
                 $items = $items->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one);
             }
@@ -1070,7 +1159,7 @@ class EbayController extends Controller {
             $data['items'] = EbayItems::where('id', $request->input('id'))
                     ->with(['category', 'card', 'card.value', 'details', 'playerDetails', 'condition', 'sellerInfo', 'listingInfo', 'sellingStatus', 'shippingInfo', 'specifications'])
                     ->first();
-            date_default_timezone_set("UTC");
+            date_default_timezone_set("America/Los_Angeles");
             $datetime1 = new \DateTime($data['items']->listing_ending_at);
             $datetime2 = new \DateTime('now');
             $interval = $datetime1->diff($datetime2);
@@ -1180,6 +1269,24 @@ class EbayController extends Controller {
                 $lastSx = $sx_data['lastSx'];
                 $price_diff = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
 
+                date_default_timezone_set("America/Los_Angeles");
+                $datetime1 = new \DateTime($item->listing_ending_at);
+                $datetime2 = new \DateTime('now');
+                $interval = $datetime1->diff($datetime2);
+                $days = $interval->format('%d');
+                $hours = $interval->format('%h');
+                $mins = $interval->format('%i');
+                $secs = $interval->format('%s');
+                if ($days > 0) {
+                    $timeleft = $days . 'd ' . $hours . 'h';
+                } else if ($hours > 1) {
+                    $timeleft = $hours . 'h ' . $mins . 'm';
+                } else if ($mins > 1) {
+                    $timeleft = $mins . 'm ' . $secs . 's';
+                } else {
+                    $timeleft = $secs . 's';
+                }
+
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
@@ -1188,6 +1295,7 @@ class EbayController extends Controller {
                     'itemId' => $item->itemId,
                     'viewItemURL' => $item->viewItemURL,
                     'listing_ending_at' => $item->listing_ending_at,
+                    'timeleft' => $timeleft,
                     'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
                     'data' => $item,
                     'sx_value' => number_format((float) $sx, 2, '.', ''),
@@ -1364,8 +1472,8 @@ class EbayController extends Controller {
             }
             if ($filterBy == 'ending_soon') {
                 $date_one = Carbon::now()->addDay();
-                $date_one->setTimezone('UTC');
-                $date_two = Carbon::now()->setTimezone('UTC');
+                $date_one->setTimezone('America/Los_Angeles');
+                $date_two = Carbon::now()->setTimezone('America/Los_Angeles');
                 $items = $items->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one);
             }
             $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
@@ -1388,7 +1496,7 @@ class EbayController extends Controller {
                     $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
-                date_default_timezone_set("UTC");
+                date_default_timezone_set("America/Los_Angeles");
                 $datetime1 = new \DateTime($item->listing_ending_at);
                 $datetime2 = new \DateTime('now');
                 $interval = $datetime1->diff($datetime2);
@@ -1441,7 +1549,7 @@ class EbayController extends Controller {
         $skip = $skip - $take;
         try {
             $date_one = Carbon::now()->addDay();
-            $date_one->setTimezone('UTC');
+            $date_one->setTimezone('America/Los_Angeles');
             // $date_two = Carbon::now()->setTimezone('UTC');
             $items = EbayItems::with(['sellingStatus', 'card', 'card.value', 'listingInfo'])->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one)
             $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
@@ -1455,7 +1563,7 @@ class EbayController extends Controller {
                     $galleryURL = $this->defaultListingImage;
                 }
                 $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
-                date_default_timezone_set("UTC");
+                date_default_timezone_set("America/Los_Angeles");
                 $datetime1 = new \DateTime($item->listing_ending_at);
                 $datetime2 = new \DateTime('now');
                 $interval = $datetime1->diff($datetime2);

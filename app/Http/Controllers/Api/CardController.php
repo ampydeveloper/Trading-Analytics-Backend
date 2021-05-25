@@ -267,9 +267,8 @@ class CardController extends Controller {
                             if ($search != null) {
                                 $q->where('title', 'like', '%' . $search . '%');
                             }
-                        })->whereHas('sales', function($q) use($to,$from) {
+                        })->whereHas('sales', function($q) use($to, $from) {
                             $q->whereBetween('timestamp', [$to, $from]);
-                            
                         })->where('active', 1)->with('details')->orderByRaw('FIELD (id, ' . implode(', ', $card_sales) . ') ASC');
 
 //                        dump(Card::whereHas('sales', function($q) use($to,$from) {$q->whereBetween('timestamp', [$to, $from]);})->orderBy('id', 'ASC')->pluck('id'));
@@ -290,7 +289,7 @@ class CardController extends Controller {
                     $data['price'] = number_format((float) $sx, 2, '.', '');
                     $data['sx_value_signed'] = (float) $sx - $lastSx;
                     $data['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-                    $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx)*100 : 0);
+                    $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
                     $data['sx_percent_signed'] = $sx_percent;
                     $data['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
                     $data['sx_icon'] = $sx_icon;
@@ -298,7 +297,7 @@ class CardController extends Controller {
                     $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
                     return $data;
                 });
-                
+
 
                 if ($top_trend) {
                     $cards = $cards->unique('sport');
@@ -410,7 +409,6 @@ class CardController extends Controller {
                 ];
             });
 //            dd($list);
-            
             //                    whereIn('title', 'like', '%' . $keyword_list . '%')
             //                    ->orWhere('variation', 'like', '%' . $request->input('keyword') . '%')
             //                    ->orWhere('grade', 'like', '%' . $request->input('keyword') . '%')
@@ -612,7 +610,7 @@ class CardController extends Controller {
                 'qualifiers6' => $request->input('qualifiers6'),
                 'qualifiers7' => $request->input('qualifiers7'),
                 'qualifiers8' => $request->input('qualifiers8'),
-                'is_featured' => ((bool) $request->input('is_featured')),
+//                'is_featured' => ((bool) $request->input('is_featured')),
                 'image' => $request->hasFile('image') ? $save_filename : null,
             ]);
 //            $data = Card::where('id', $request->input('card_id'))->update($updated_array);
@@ -1264,7 +1262,7 @@ class CardController extends Controller {
             if ($days > 2) {
                 $data = $this->__groupGraphDataPerDay($days, $data, $card_id);
             }
-          
+
             if ($days == 2) {
                 $labels = [];
                 $values = [];
@@ -1304,7 +1302,7 @@ class CardController extends Controller {
                                 }
                                 $flag = 1;
                             } else {
-                                $values[] =  number_format($previousSx, 2, '.', '');
+                                $values[] = number_format($previousSx, 2, '.', '');
 //                                $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                                 $qty[] = 0;
                             }
@@ -1314,13 +1312,13 @@ class CardController extends Controller {
                             $salesDate = CardSales::where('card_id', $card_id)->where('card_id', $card_id)->where('timestamp', '<', $to)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                             if ($salesDate !== null) {
                                 $previousSx = CardSales::where('card_id', $card_id)->where('card_id', $card_id)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
-                              $values[] =  number_format($previousSx, 2, '.', '');
+                                $values[] = number_format($previousSx, 2, '.', '');
 //                                $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                                 $qty[] = 0;
                             }
                             $flag = 1;
                         } else {
-                            $values[] =  number_format($previousSx, 2, '.', '');
+                            $values[] = number_format($previousSx, 2, '.', '');
 //                            $values[] = array($timstamp_format, number_format($previousSx, 2, '.', ''));
                             $qty[] = 0;
                         }
@@ -1336,7 +1334,7 @@ class CardController extends Controller {
                 $data['labels'] = array_reverse($data['labels']);
                 $data['qty'] = array_reverse($data['qty']);
             }
-  
+
             $finalData['values'] = $data['values'];
             $finalData['labels'] = $data['labels'];
             $finalData['qty'] = $data['qty'];
@@ -1529,12 +1527,17 @@ class CardController extends Controller {
                 // dd($validator->errors());
                 return response()->json($validator->errors(), 500);
             }
-            RequestListing::create([
-                'user_id' => $user_id,
-                'link' => $request->input('link'),
-                'card_id' => $request->input('card_id')
-            ]);
-            return response()->json(['status' => 200, 'data' => ['message' => 'Request added']], 200);
+            $check_request_listing = RequestListing::where('link', $request->input('link'))->where('card_id', $request->input('card_id'))->count();
+            if ($check_request_listing == 0) {
+                RequestListing::create([
+                    'user_id' => $user_id,
+                    'link' => $request->input('link'),
+                    'card_id' => $request->input('card_id')
+                ]);
+                return response()->json(['status' => 200, 'data' => ['message' => 'Listing request has been submitted successfully.']], 200);
+            } else {
+                return response()->json(['status' => 200, 'data' => ['message' => 'This listing is already present in our system. Try another one.']], 200);
+            }
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -1555,14 +1558,14 @@ class CardController extends Controller {
     }
 
     public function getRequestListingListForAdmin(Request $request) {
-        $page = $request->input('page', 1);
-        $take = $request->input('take', 30);
-        $skip = $take * $page;
-        $skip = $skip - $take;
+//        $page = $request->input('page', 1);
+//        $take = $request->input('take', 30);
+//        $skip = $take * $page;
+//        $skip = $skip - $take;
         try {
             $items = RequestListing::where('approved', 0)->with(['user', 'card'])->orderBy('updated_at', 'desc')->get();
-            $items = $items->skip($skip)->take($take);
-            return response()->json(['status' => 200, 'data' => $items, 'next' => ($page + 1)], 200);
+//            $items = $items->skip($skip)->take($take);
+            return response()->json(['status' => 200, 'data' => $items], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -1709,7 +1712,7 @@ class CardController extends Controller {
         try {
             if ($request->has('file1')) {
                 $filename = $request->file1->getClientOriginalName();
-                
+
                 if (Storage::disk('public')->put($filename, file_get_contents($request->file1->getRealPath()))) {
                     $zip = new ZipArchive;
                     $res = $zip->open(public_path("storage/" . $filename));
@@ -1740,7 +1743,7 @@ class CardController extends Controller {
 //            dd('else');
             if ($request->has('file') && !is_array($request->file)) {
                 $filename = $request->file('file')->getClientOriginalName();
-                    $path = $request->file('file')->store('temp');
+                $path = $request->file('file')->store('temp');
                 if ($request->has('card_id')) {
                     Excel::import(new ListingsImport($filename), storage_path('app') . '/' . $path);
 //                    ExcelImports::dispatch(['file' => $path, 'type' => 'listings', 'filename' => $filename]);
@@ -1883,7 +1886,7 @@ class CardController extends Controller {
                 $map_qty[$dt] = $data['qty'][$ind];
                 $previousValue = $data['values'][$ind];
             } else {
-                if ($previousValue != 0 && (($cmpFormat == 'Y-m' && $days != 90)  || $cmpFormat == 'Y')) {
+                if ($previousValue != 0 && (($cmpFormat == 'Y-m' && $days != 90) || $cmpFormat == 'Y')) {
                     $map_val[$dt] = [$ts, $previousValue];
                     $map_qty[$dt] = 0;
                     $flag = 1;
@@ -1900,7 +1903,7 @@ class CardController extends Controller {
                         $map_qty[$dt] = 0;
                         $flag = 1;
                     }
-                } elseif($previousValue != 0 && ($cmpFormat == 'Y-m-d'|| $days == 90)) {
+                } elseif ($previousValue != 0 && ($cmpFormat == 'Y-m-d' || $days == 90)) {
                     $map_val[$dt] = [$ts, $previousValue];
                     $map_qty[$dt] = 0;
                 }

@@ -37,7 +37,8 @@ class EbayItemSellingStatus extends Model
 
     public function getPriceAttribute()
     {
-        return number_format((float)$this->currentPrice, 2, '.', '');
+//        return number_format((float)$this->currentPrice, 2, '.', '');
+        return $this->currentPrice;
     }
 
 }
