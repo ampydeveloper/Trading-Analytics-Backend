@@ -96,9 +96,12 @@ class CardController extends Controller {
                             }
                             $q->orWhere('id', $request->get('search'));
                         }
-                    })->distinct('player')->skip($skip)->take($take)->get();
+                    });
+            $cards_count = $cards->count();
+            $all_pages = ceil($cards_count / $take);
+            $card_results = $cards->skip($skip)->take($take)->get();
             $data = [];
-            foreach ($cards as $card) {
+            foreach ($card_results as $card) {
                 $data[] = [
                     'id' => $card->id,
                     'sport' => $card->sport,
@@ -115,7 +118,7 @@ class CardController extends Controller {
                 ];
             }
             $sportsList = Card::select('sport')->distinct()->pluck('sport');
-            return response()->json(['status' => 200, 'data' => $data, 'next' => ($page + 1), 'sportsList' => $sportsList], 200);
+            return response()->json(['status' => 200, 'data' => $data, 'all_pages' => $all_pages, 'next' => ($page + 1), 'sportsList' => $sportsList], 200);
         } catch (\Exception $e) {
             return response()->json(['status' => 500, 'error' => $e->getMessage()], 500);
         }
@@ -1544,14 +1547,14 @@ class CardController extends Controller {
     }
 
     public function getRequestSlabListForAdmin(Request $request) {
-        $page = $request->input('page', 1);
-        $take = $request->input('take', 30);
-        $skip = $take * $page;
-        $skip = $skip - $take;
+//        $page = $request->input('page', 1);
+//        $take = $request->input('take', 30);
+//        $skip = $take * $page;
+//        $skip = $skip - $take;
         try {
             $items = RequestSlab::with(['user'])->where('status', 1)->orderBy('updated_at', 'desc')->get();
-            $items = $items->skip($skip)->take($take);
-            return response()->json(['status' => 200, 'data' => $items, 'next' => ($page + 1)], 200);
+//            $items = $items->skip($skip)->take($take);
+            return response()->json(['status' => 200, 'data' => $items], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -1731,9 +1734,14 @@ class CardController extends Controller {
                             $zip->extractTo(public_path("storage/Soccer"));
                             $zip->close();
                         } else if ($request->input('for') == 'pokemon') {
-                            $zip->extractTo(public_path("storage/Pokemon"));
+                            $zip->extractTo(public_path("storage/Pokémon"));
                             $zip->close();
                         }
+                        ExcelUploads::create([
+                            'file_name' => $filename,
+                            'status' => 1,
+                            'file_type' => 2,
+                        ]);
                         Storage::disk('public')->delete($filename);
                     } else {
                         return response()->json(['message' => 'Error while extracting the files.'], 500);
@@ -1797,13 +1805,14 @@ class CardController extends Controller {
     }
 
     public function csvUploads(Request $request) {
-        $page = $request->input('page', 1);
-        $take = $request->input('take', 30);
-        $skip = $take * $page;
-        $skip = $skip - $take;
+//        $page = $request->input('page', 1);
+//        $take = $request->input('take', 30);
+//        $skip = $take * $page;
+//        $skip = $skip - $take;
         try {
-            $data = ExcelUploads::skip($skip)->take($take)->get();
-            return response()->json(['status' => 200, 'data' => $data, 'next' => ($page + 1)], 200);
+//            $data = ExcelUploads::skip($skip)->take($take)->get();
+            $data = ExcelUploads::orderBy('created_at', 'DESC')->get();
+            return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }

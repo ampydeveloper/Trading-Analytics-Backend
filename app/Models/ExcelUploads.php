@@ -19,6 +19,7 @@ class ExcelUploads extends Model {
      */
     protected $fillable = [
         'file_name',
+        'file_type',
         'status'
     ];
 

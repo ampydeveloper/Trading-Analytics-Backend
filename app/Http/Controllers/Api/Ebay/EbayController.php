@@ -34,20 +34,25 @@ class EbayController extends Controller {
     }
 
     public function getItemsListForAdmin(Request $request) {
-//        dump(Carbon::now()->toDateTimeString());
-//        dump($request->all());
         $page = $request->input('page', 1);
         $take = $request->input('take', 30);
         $search = $request->input('search', null);
+        $sport = $request->input('sport', null);
         $skip = $take * $page;
         $skip = $skip - $take;
         try {
 
             $itemsSpecsIds = EbayItemSpecific::where('value', 'like', '%' . $search . '%')->groupBy('itemId')->pluck('itemId');
-            $items = EbayItems::with(['sellingStatus', 'card', 'listingInfo'])->where(function ($q) use ($itemsSpecsIds, $search, $request) {
+            if ($sport != null) {
+                $itemsCatsIds = EbayItemCategories::where('name', 'like', '%' . $sport . '%')->pluck('categoryId');
+                $itemsIdsCombine = array_merge($itemsSpecsIds->toArray(), $itemsCatsIds->toArray());
+            } else {
+                $itemsIdsCombine = $itemsSpecsIds;
+            }
+            $items = EbayItems::with(['sellingStatus', 'card', 'listingInfo'])->where(function ($q) use ($itemsIdsCombine, $search, $request) {
                         if ($search != null) {
-                            if (count($itemsSpecsIds) > 0) {
-                                $q->whereIn('itemId', $itemsSpecsIds);
+                            if (count($itemsIdsCombine) > 0) {
+                                $q->whereIn('itemId', $itemsIdsCombine);
                             } else {
                                 $q->where('title', 'like', '%' . $search . '%');
                                 $q->orWhere('id', $search);
@@ -60,11 +65,12 @@ class EbayController extends Controller {
                         }
 
                         if ($request->input('filter_by') == 'ending_soon') {
-                            $q->orWhere('listing_ending_at', '>', Carbon::now()->toDateTimeString());
+                            $q->orWhere('listing_ending_at', '>', Carbon::now()->format('Y-m-d h:i:s'));
                         }
-                    })->where('sold_price', '')->orderBy('updated_at', 'desc')->get();
-            $items = $items->skip($skip)->take($take);
-//            dd($items->toArray());
+                    })->where('sold_price', '')->orderBy('updated_at', 'desc');
+            $items_count = $items->count();
+            $all_pages = ceil($items_count / $take);
+            $items = $items->skip($skip)->take($take)->get();
             $data = [];
             foreach ($items as $key => $item) {
                 $galleryURL = $item->galleryURL;
@@ -88,7 +94,7 @@ class EbayController extends Controller {
                 ];
             }
             $sportsList = Card::select('sport')->distinct()->pluck('sport');
-            return response()->json(['status' => 200, 'data' => $data, 'next' => ($page + 1), 'sportsList' => $sportsList], 200);
+            return response()->json(['status' => 200, 'data' => $data, 'all_pages' => $all_pages, 'next' => ($page + 1), 'sportsList' => $sportsList], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -192,22 +198,35 @@ class EbayController extends Controller {
         $page = $request->input('page', 1);
         $take = $request->input('take', 30);
         $search = $request->input('search', null);
+        $sport = $request->input('sport', null);
         $skip = $take * $page;
         $skip = $skip - $take;
         try {
             $itemsSpecsIds = EbayItemSpecific::where('value', 'like', '%' . $search . '%')->groupBy('itemId')->pluck('itemId');
-            $items = EbayItems::where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->where(function ($q) use ($itemsSpecsIds, $search) {
+            if ($sport != null) {
+                $itemsCatsIds = EbayItemCategories::where('name', 'like', '%' . $sport . '%')->pluck('categoryId');
+                $itemsIdsCombine = array_merge($itemsSpecsIds->toArray(), $itemsCatsIds->toArray());
+            } else {
+                $itemsIdsCombine = $itemsSpecsIds;
+            }
+            $items = EbayItems::where('sold_price', '>', 0)->with(['sellingStatus', 'card', 'listingInfo'])->where(function ($q) use ($itemsIdsCombine, $search, $request) {
                         if ($search != null) {
-                            if (count($itemsSpecsIds) > 0) {
-                                $q->whereIn('itemId', $itemsSpecsIds);
+                            if (count($itemsIdsCombine) > 0) {
+                                $q->whereIn('itemId', $itemsIdsCombine);
                             } else {
                                 $q->where('title', 'like', '%' . $search . '%');
                                 $q->orWhere('card_id', $search);
                                 $q->orWhere('itemId', $search);
                             }
                         }
-                    })->orderBy('updated_at', 'desc')->get();
-            $items = $items->skip($skip)->take($take);
+                         if ($request->input('sport') == 'random_bin') {
+                            $q->orWhere('is_random_bin', 1);
+                        }
+                    })->orderBy('updated_at', 'desc');
+            $items_count = $items->count();
+            $all_pages = ceil($items_count / $take);
+            $items = $items->skip($skip)->take($take)->get();
+
             $data = [];
             foreach ($items as $key => $item) {
                 $galleryURL = $item->galleryURL;
@@ -232,7 +251,7 @@ class EbayController extends Controller {
                 ];
             }
             $sportsList = Card::select('sport')->distinct()->pluck('sport');
-            return response()->json(['status' => 200, 'data' => $data, 'next' => ($page + 1), 'sportsList' => $sportsList], 200);
+            return response()->json(['status' => 200, 'data' => $data, 'all_pages' => $all_pages, 'next' => ($page + 1), 'sportsList' => $sportsList], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -1725,19 +1744,18 @@ class EbayController extends Controller {
     }
 
     public function getSeeProblemForAdmin(Request $request) {
-        $page = $request->input('page', 1);
-        $take = $request->input('take', 30);
-        $search = $request->input('search', null);
-        $skip = $take * $page;
-        $skip = $skip - $take;
+//        $page = $request->input('page', 1);
+//        $take = $request->input('take', 30);
+//        $skip = $take * $page;
+//        $skip = $skip - $take;
         try {
             $sp = SeeProblem::with(['user', 'ebay'])->orderBy('updated_at', 'desc')->get();
-            $sp = $sp->skip($skip)->take($take);
-            $next = 0;
-            if ($sp->count() > 0) {
-                $next = ($page + 1);
-            }
-            return response()->json(['status' => 200, 'data' => $sp, 'next' => $next], 200);
+//            $sp = $sp->skip($skip)->take($take);
+//            $next = 0;
+//            if ($sp->count() > 0) {
+//                $next = ($page + 1);
+//            }
+            return response()->json(['status' => 200, 'data' => $sp], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }

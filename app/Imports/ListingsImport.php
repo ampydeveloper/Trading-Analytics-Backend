@@ -41,6 +41,7 @@ public function collection(Collection $rows) {
     $eu_ids = ExcelUploads::create([
                 'file_name' => $this->filename,
                 'status' => 0,
+                'file_type' => 1,
     ]);
 
     foreach ($rows as $row) {
