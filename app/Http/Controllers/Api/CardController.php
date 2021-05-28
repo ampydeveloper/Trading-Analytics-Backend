@@ -211,6 +211,7 @@ class CardController extends Controller {
 
     public function getRecentList(Request $request) {
 //        dump($request->all());
+//        dd('in');
         $page = $request->input('page', 1);
         $take = $request->input('take', 30);
         $search = $request->input('search', null);
@@ -261,10 +262,12 @@ class CardController extends Controller {
             $cards = [];
             $card_sales = CardSales::whereBetween('timestamp', [$to, $from])->groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
 //            dump(CardSales::whereBetween('timestamp', [$to, $from])->groupBy('card_id')->pluck('card_id'));
-//            dump($search);
+//            dump($card_sales);
             if (!empty($card_sales)) {
+//                dump('1');
                 $cards = Card::where(function ($q) use ($request, $search) {
                             if ($request->has('sport') && $request->input('sport') != null) {
+//                                dump('2');
                                 $q->where('sport', $request->input('sport'));
                             }
                             if ($search != null) {
@@ -273,18 +276,19 @@ class CardController extends Controller {
                         })->whereHas('sales', function($q) use($to, $from) {
                             $q->whereBetween('timestamp', [$to, $from]);
                         })->where('active', 1)->with('details')->orderByRaw('FIELD (id, ' . implode(', ', $card_sales) . ') ASC');
-
+//dump($cards->get()->toArray());
 //                        dump(Card::whereHas('sales', function($q) use($to,$from) {$q->whereBetween('timestamp', [$to, $from]);})->orderBy('id', 'ASC')->pluck('id'));
 //                        dump(count($cards->get()));
 //                        dd($cards->get()->toArray());
-                $cards = $cards->get()->map(function ($card, $key) use($orderby) {
+                $cards = $cards->get()->map(function ($card, $key) use($orderby, $to, $from) {
                     $data = $card;
-                    $sx_data = CardSales::getSxAndOldestSx($card->id);
+                    $sx_data = CardSales::getSxAndOldestSx($card->id, $to, $from);
                     $sx = $sx_data['sx'];
                     $lastSx = $sx_data['oldestSx'];
 
                     $show_perentage = false;
                     if ($orderby == 'percentup' || $orderby == 'percentdown') {
+//                        dump('4');
                         $show_perentage = true;
                     }
 
@@ -300,26 +304,35 @@ class CardController extends Controller {
                     $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
                     return $data;
                 });
+//dump($cards->toArray());
 
 
-                if ($top_trend) {
-                    $cards = $cards->unique('sport');
-                }
                 if ($request->input('orderby') == 'priceup') {
+//                    dump('6');
                     $cards = $cards->sortByDesc('sx_value_signed');
                     $cards = $cards->values()->all();
                 } elseif ($request->input('orderby') == 'pricedown') {
+//                    dump('7');
                     $cards = $cards->sortBy('sx_value_signed');
                     $cards = $cards->values()->all();
                 } else if ($request->input('orderby') == 'percentup') {
+//                    dump('8');
                     $cards = $cards->sortByDesc('sx_percent_signed');
                     $cards = $cards->values()->all();
                 } else if ($request->input('orderby') == 'percentdown') {
+//                    dump('9');
                     $cards = $cards->sortBy('sx_percent_signed');
                     $cards = $cards->values()->all();
                 }
 
+//                dump($cards);
+                if ($top_trend) {
+//                    dump('5');
+                    $cards = Collect($cards)->unique('sport');
+                }
+//                dd($cards);
                 if (!$top_trend) {
+//                    dump('10');
                     $cards = Collect($cards)->skip($skip)->take($take);
                 }
 //                if ($top_trend) { //moved up
@@ -345,9 +358,11 @@ class CardController extends Controller {
             $AppSettings = AppSettings::first();
             $order = ['basketball', 'soccer', 'baseball', 'football', 'pokemon'];
             if ($AppSettings) {
+//                dump('11');
                 $order = $AppSettings->trenders_order;
             }
 
+//            dd($cards);
             return response()->json(['status' => 200, 'data' => $cards, 'next' => ($page + 1), 'order' => $order], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
