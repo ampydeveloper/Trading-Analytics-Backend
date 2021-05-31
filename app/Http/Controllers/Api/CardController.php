@@ -759,28 +759,34 @@ class CardController extends Controller {
                 $to = date('Y-m-d 00:00:00');
             } elseif ($days == 7) {
                 $grpFormat = 'Y-m-d';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-8 days'));
             } elseif ($days == 30) {
                 $grpFormat = 'Y-m-d';
                 $lblFormat = 'H:i';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-30 days'));
             } elseif ($days == 90) {
                 $grpFormat = 'Y-m';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-90 days'));
             } elseif ($days == 180) {
                 $grpFormat = 'Y-m';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-180 days'));
             } elseif ($days == 365) {
                 $grpFormat = 'Y-m';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-365 days'));
             } elseif ($days == 1825) {
                 $grpFormat = 'Y';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }
             // Test
@@ -894,22 +900,27 @@ class CardController extends Controller {
                 $data['labels'] = array_reverse($data['labels']);
                 $data['qty'] = array_reverse($data['qty']);
             }
-//            $last_timestamp = CardSales::where('card_id', $card_id)->whereBetween('timestamp', [$to, $from])->orderBy('timestamp', 'DESC')->first();
-            $last_timestamp = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->first();
+
+            if ($days == 90) {
+                $data['last_timestamp'] = '';
+                $last_timestamp = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->first();
+                if (!empty($last_timestamp)) {
+                    $data['last_timestamp'] = Carbon::create($last_timestamp->timestamp)->format('F d Y \- h:i:s A');
+                }
+            }
+
             $sx_data = CardSales::getGraphSxWithCardId($days, $data, $card_id);
             $sx = $sx_data['sx'];
             $lastSx = $sx_data['lastSx'];
-            if (!empty($sx_data) && !empty($last_timestamp)) {
+            if (!empty($sx_data)) {
                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
                 $data['doller_diff'] = str_replace('-', '', number_format((float) ($sx - $lastSx), 2, '.', ''));
                 $perc_diff = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
                 $data['perc_diff'] = str_replace('-', '', number_format($perc_diff, 2, '.', ''));
-                $data['last_timestamp'] = Carbon::create($last_timestamp->timestamp)->format('F d Y \- h:i:s A');
                 $data['sx_icon'] = $sx_icon;
             } else {
                 $data['doller_diff'] = 0;
                 $data['perc_diff'] = 0;
-                $data['last_timestamp'] = '';
                 $data['sx_icon'] = '';
             }
 
@@ -1042,28 +1053,34 @@ class CardController extends Controller {
                 $to = date('Y-m-d 00:00:00');
             } elseif ($days == 7) {
                 $grpFormat = 'Y-m-d';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-8 days'));
             } elseif ($days == 30) {
                 $grpFormat = 'Y-m-d';
                 $lblFormat = 'H:i';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-30 days'));
             } elseif ($days == 90) {
                 $grpFormat = 'Y-m';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-90 days'));
             } elseif ($days == 180) {
                 $grpFormat = 'Y-m';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-180 days'));
             } elseif ($days == 365) {
                 $grpFormat = 'Y-m';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-365 days'));
             } elseif ($days == 1825) {
                 $grpFormat = 'Y';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }
 
@@ -1179,26 +1196,33 @@ class CardController extends Controller {
             $finalData['values2'] = $temData[1]['values'];
             $finalData['labels2'] = $temData[1]['labels'];
             $finalData['qty2'] = $temData[1]['qty'];
-            $finalData['rank1'] = $this->getCardRank($cids[0]);
-            $finalData['rank2'] = $this->getCardRank($cids[1]);
+           
+            if ($days == 90) {
+                $finalData['rank1'] = $this->getCardRank($cids[0]);
+                $finalData['rank2'] = $this->getCardRank($cids[1]);
+            }
 
-            $sx_data00 = CardSales::getSx($cids[0]);
-            $finalData['slabstoxvalue1'] = number_format((float) $sx_data00['sx'], 2, '.', '');
+            if ($days == 90) {
+                $sx_data00 = CardSales::getSx($cids[0]);
+                $finalData['slabstoxvalue1'] = number_format((float) $sx_data00['sx'], 2, '.', '');
+            }
+          
             $sx_data0 = CardSales::getGraphSxWithCardId($days, $temData[0], $cids[0]);
             $finalData['sx1'] = number_format((float) $sx_data0['sx'], 2, '.', '');
-
-            $sx_data11 = CardSales::getSx($cids[1]);
-            $finalData['slabstoxvalue2'] = number_format((float) $sx_data11['sx'], 2, '.', '');
+            if ($days == 90) {
+                $sx_data11 = CardSales::getSx($cids[1]);
+                $finalData['slabstoxvalue2'] = number_format((float) $sx_data11['sx'], 2, '.', '');
+            }
             $sx_data1 = CardSales::getGraphSxWithCardId($days, $temData[1], $cids[1]);
             $finalData['sx2'] = number_format((float) $sx_data1['sx'], 2, '.', '');
-
-            $finalData['last_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('timestamp', 'DESC')->first();
-            $finalData['last_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('timestamp', 'DESC')->first();
-            $finalData['high_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('cost', 'DESC')->first();
-            $finalData['high_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('cost', 'DESC')->first();
-            $finalData['low_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('cost', 'ASC')->first();
-            $finalData['low_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('cost', 'ASC')->first();
-
+            if ($days == 90) {
+                $finalData['last_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('timestamp', 'DESC')->first();
+                $finalData['last_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('timestamp', 'DESC')->first();
+                $finalData['high_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('cost', 'DESC')->first();
+                $finalData['high_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('cost', 'DESC')->first();
+                $finalData['low_sale1'] = CardSales::where('card_id', $cids[0])->orderBy('cost', 'ASC')->first();
+                $finalData['low_sale2'] = CardSales::where('card_id', $cids[1])->orderBy('cost', 'ASC')->first();
+            }
             return response()->json(['status' => 200, 'data' => $finalData], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -1214,28 +1238,34 @@ class CardController extends Controller {
                 $to = date('Y-m-d 00:00:00');
             } elseif ($days == 7) {
                 $grpFormat = 'Y-m-d';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-8 days'));
             } elseif ($days == 30) {
                 $grpFormat = 'Y-m-d';
                 $lblFormat = 'H:i';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-30 days'));
             } elseif ($days == 90) {
                 $grpFormat = 'Y-m';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-90 days'));
             } elseif ($days == 180) {
                 $grpFormat = 'Y-m';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-180 days'));
             } elseif ($days == 365) {
                 $grpFormat = 'Y-m';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-365 days'));
             } elseif ($days == 1825) {
                 $grpFormat = 'Y';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }
 
@@ -1377,17 +1407,17 @@ class CardController extends Controller {
 //                $finalData['sx_icon'] = 0;
 //                $finalData['sx_value'] = 0;
 //            }
+            if ($days == 90) {
+                $finalData['rank'] = $this->getCardRank($card_id);
+                $sx_data = CardSales::getSx($card_id);
 
-            $finalData['rank'] = $this->getCardRank($card_id);
-            $sx_data = CardSales::getSx($card_id);
-
-            $finalData['slabstoxValue'] = (isset($sx_data['sx']) ? number_format($sx_data['sx'], 2, '.', '') : 0);
-            $lastSaleData = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->first();
-            $finalData['lastSalePrice'] = (!empty($lastSaleData) ? $lastSaleData->cost : 0);
-            $finalData['lastSaleDate'] = (!empty($lastSaleData) ? $lastSaleData['timestamp'] : 0);
-            $finalData['highestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'DESC')->first();
-            $finalData['lowestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'ASC')->first();
-
+                $finalData['slabstoxValue'] = (isset($sx_data['sx']) ? number_format($sx_data['sx'], 2, '.', '') : 0);
+                $lastSaleData = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->first();
+                $finalData['lastSalePrice'] = (!empty($lastSaleData) ? $lastSaleData->cost : 0);
+                $finalData['lastSaleDate'] = (!empty($lastSaleData) ? $lastSaleData['timestamp'] : 0);
+                $finalData['highestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'DESC')->first();
+                $finalData['lowestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'ASC')->first();
+            }
             return response()->json(['status' => 200, 'data' => $finalData], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -1396,14 +1426,23 @@ class CardController extends Controller {
 
     public function getCardAllGraph($card_id) {
         try {
+//            $days = [
+//                0 => ['from' => date('Y-m-d H:i:s'), 'to' => date('Y-m-d 00:00:00')],
+//                1 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-7 days'))],
+//                2 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-30 days'))],
+//                3 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-90 days'))],
+//                4 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-180 days'))],
+//                5 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-365 days'))],
+//                6 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-1825 days'))]];
             $days = [
                 0 => ['from' => date('Y-m-d H:i:s'), 'to' => date('Y-m-d 00:00:00')],
-                1 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-7 days'))],
-                2 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-30 days'))],
-                3 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-90 days'))],
-                4 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-180 days'))],
-                5 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-365 days'))],
-                6 => ['from' => date('Y-m-d H:i:s', strtotime('-1 day')), 'to' => date('Y-m-d H:i:s', strtotime('-1825 days'))]];
+                1 => ['from' => date('Y-m-d H:i:s'), 'to' => date('Y-m-d H:i:s', strtotime('-7 days'))],
+                2 => ['from' => date('Y-m-d H:i:s'), 'to' => date('Y-m-d H:i:s', strtotime('-30 days'))],
+                3 => ['from' => date('Y-m-d H:i:s'), 'to' => date('Y-m-d H:i:s', strtotime('-90 days'))],
+                4 => ['from' => date('Y-m-d H:i:s'), 'to' => date('Y-m-d H:i:s', strtotime('-180 days'))],
+                5 => ['from' => date('Y-m-d H:i:s'), 'to' => date('Y-m-d H:i:s', strtotime('-365 days'))],
+                6 => ['from' => date('Y-m-d H:i:s'), 'to' => date('Y-m-d H:i:s', strtotime('-1825 days'))]];
+
             $data['labels'] = ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y'];
             foreach ($days as $day) {
                 $today_date = date('Y-m-d H:i:s');

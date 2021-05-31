@@ -648,12 +648,13 @@ class EbayController extends Controller {
         $cardsId = null;
         if ($filter['player'] != null) {
             $search = $filter['player'];
-            $cardsId = Card::where(function($q) use ($search) {
+            $cardsId = Card::whereHas('sales')->where(function($q) use ($search) {
                         $search = explode(' ', $search);
                         foreach ($search as $key => $keyword) {
-                            $q->orWhere('title', 'like', '%' . $keyword . '%');
+//                            $q->orWhere('title', 'like', '%' . $keyword . '%');
+                            $q->where('title', 'like', '%' . $keyword . '%');
                         }
-                    })->pluck('id');
+                    })->distinct('player')->where('active', 1)->pluck('id');
         }
 
         if ($filter['team'] != null) {
@@ -755,9 +756,10 @@ class EbayController extends Controller {
             $cardsId = Card::whereHas('sales')->where(function($q) use ($search) {
                         $search = explode(' ', $search);
                         foreach ($search as $key => $keyword) {
-                            $q->orWhere('title', 'like', '%' . $keyword . '%');
+//                            $q->orWhere('title', 'like', '%' . $keyword . '%');
+                            $q->where('title', 'like', '%' . $keyword . '%');
                         }
-                    })->distinct('player')->limit(18)->pluck('id');
+                    })->distinct('player')->where('active', 1)->pluck('id');
         }
 //        dump($cardsId);
 //        dd(EbayItems::whereIn('card_id', $cardsId)->get()->count());
@@ -1178,14 +1180,16 @@ class EbayController extends Controller {
             $data['items'] = EbayItems::where('id', $request->input('id'))
                     ->with(['category', 'card', 'card.value', 'details', 'playerDetails', 'condition', 'sellerInfo', 'listingInfo', 'sellingStatus', 'shippingInfo', 'specifications'])
                     ->first();
+//            echo $data['items']->listing_ending_at;
+//            dd(date('Y-m-d H:i:s', strtotime($data['items']->listing_ending_at)));
             date_default_timezone_set("America/Los_Angeles");
             $datetime1 = new \DateTime($data['items']->listing_ending_at);
             $datetime2 = new \DateTime('now');
             $interval = $datetime1->diff($datetime2);
-            $days = $interval->format('%d');
-            $hours = $interval->format('%h');
-            $mins = $interval->format('%i');
-            $secs = $interval->format('%s');
+            $data['items']['time_days'] =$days = $interval->format('%d');
+            $data['items']['time_hours'] =$hours = $interval->format('%h');
+            $data['items']['time_mins'] =$mins = $interval->format('%i');
+            $data['items']['time_secs'] =$secs = $interval->format('%s');
             if ($days > 0) {
                 $timeleft = $days . 'd ' . $hours . 'h';
             } else if ($hours > 1) {
@@ -1196,6 +1200,7 @@ class EbayController extends Controller {
                 $timeleft = $secs . 's';
             }
             $data['timeleft'] = $timeleft;
+            $data['items']['time_now'] = date('Y-m-d H:i:s');
             if (!empty($data['items']->card_id)) {
                 $sx_data = CardSales::getSxAndLastSx($data['items']->card->id);
                 $sx = $sx_data['sx'];
