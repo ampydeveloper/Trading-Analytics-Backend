@@ -212,10 +212,10 @@ class UserController extends Controller {
         }
         try {
             $page = $request->input('page', 1);
-            $take = $request->input('take', 30);
+//            $take = $request->input('take', 30);
             $search = $request->input('search', null);
-            $skip = $take * $page;
-            $skip = $skip - $take;
+//            $skip = $take * $page;
+//            $skip = $skip - $take;
 
             $users = User::where(function ($q) use ($request) {
                         if ($request->has('search') && $request->get('search') != '' && $request->get('search') != null) {
@@ -225,7 +225,8 @@ class UserController extends Controller {
                             $q->orWhere('email', 'like', '%' . $searchTerm . '%');
                             $q->orWhere('id', 'like', '%' . $searchTerm . '%');
                         }
-                    })->with('roles', 'permissions', 'providers')->withTrashed()->skip($skip)->take($take)->get();
+                    })->with('roles', 'permissions', 'providers')->withTrashed()->get();
+//                            ->skip($skip)->take($take)->get();
 
 //            $users = User::with('roles', 'permissions', 'providers')->withTrashed()->skip($skip)->take($take)->get();
             return response()->json(['status' => 200, 'data' => $users, 'next' => ($page)], 200);

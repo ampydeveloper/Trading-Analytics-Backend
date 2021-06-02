@@ -40,6 +40,7 @@ class EbayController extends Controller {
         $sport = $request->input('sport', null);
         $skip = $take * $page;
         $skip = $skip - $take;
+//        dd(Carbon::now()->setTimezone('America/Los_Angeles')->format('Y-m-d h:i:s'));
         try {
 
             $itemsSpecsIds = EbayItemSpecific::where('value', 'like', '%' . $search . '%')->groupBy('itemId')->pluck('itemId');
@@ -65,9 +66,9 @@ class EbayController extends Controller {
                         }
 
                         if ($request->input('filter_by') == 'ending_soon') {
-                            $q->orWhere('listing_ending_at', '>', Carbon::now()->format('Y-m-d h:i:s'));
+                            $q->orwhereDate('listing_ending_at', '<', Carbon::now()->format('Y-m-d h:i:s'));
                         }
-                    })->where('sold_price', '')->orderBy('updated_at', 'desc');
+                    })->where('sold_price', '')->orderBy('listing_ending_at', 'desc');
             $items_count = $items->count();
             $all_pages = ceil($items_count / $take);
             $items = $items->skip($skip)->take($take)->get();
@@ -81,6 +82,25 @@ class EbayController extends Controller {
                 } else if ($galleryURL == null) {
                     $galleryURL = $this->defaultListingImage;
                 }
+                
+                date_default_timezone_set("America/Los_Angeles");
+                $datetime1 = new \DateTime($item->listing_ending_at);
+                $datetime2 = new \DateTime('now');
+                $interval = $datetime1->diff($datetime2);
+                $days = $interval->format('%d');
+                $hours = $interval->format('%h');
+                $mins = $interval->format('%i');
+                $secs = $interval->format('%s');
+                if ($days > 0) {
+                    $timeleft = $days . 'd ' . $hours . 'h';
+                } else if ($hours > 1) {
+                    $timeleft = $hours . 'h ' . $mins . 'm';
+                } else if ($mins > 1) {
+                    $timeleft = $mins . 'm ' . $secs . 's';
+                } else {
+                    $timeleft = $secs . 's';
+                }
+                
                 $data[] = [
                     'id' => $item->id,
                     'card_id' => $item->card_id,
@@ -90,6 +110,7 @@ class EbayController extends Controller {
                     'itemId' => $item->itemId,
                     'viewItemURL' => $item->viewItemURL,
                     'listing_ending_at' => $item->listing_ending_at,
+                    'time_left' => $timeleft,
                     'status' => $item->status
                 ];
             }
@@ -219,7 +240,7 @@ class EbayController extends Controller {
                                 $q->orWhere('itemId', $search);
                             }
                         }
-                         if ($request->input('sport') == 'random_bin') {
+                        if ($request->input('sport') == 'random_bin') {
                             $q->orWhere('is_random_bin', 1);
                         }
                     })->orderBy('updated_at', 'desc');
@@ -361,7 +382,7 @@ class EbayController extends Controller {
                 }
                 CardSales::create([
                     'card_id' => $item_details->card_id,
-                    'timestamp' => Carbon::now()->format('Y-m-d h:i:s'),
+                    'timestamp' => Carbon::create($item_details->listing_ending_at)->format('Y-m-d H:i:s'),
                     'quantity' => 1,
                     'cost' => $request->input('sold_price'),
                     'source' => 'Ebay',
@@ -876,20 +897,24 @@ class EbayController extends Controller {
                 } else if (isset($data['details']['auction']) && !empty($data['details']['auction'])) {
                     $listing_type = ($data['details']['auction'] == true ? 'Auction' : 'Listing');
                 }
-                $selling_status = EbayItemSellingStatus::create([
-                            'itemId' => $data['details']['ebay_id'],
-                            'currentPrice' => $data['price'],
-                            'convertedCurrentPrice' => $data['price'],
-                            'sellingState' => $data['price'],
-                            'timeLeft' => $auction_end,
-                ]);
-                $seller_info = EbayItemSellerInfo::create([
-                            'itemId' => $data['details']['ebay_id'],
-                            'sellerUserName' => $data['seller_name'],
-                            'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
-                            'seller_contact_link' => $data['seller_contact_link'],
-                            'seller_store_link' => $data['seller_store_link']
-                ]);
+                if (!empty($data['price'])) {
+                    $selling_status = EbayItemSellingStatus::create([
+                                'itemId' => $data['details']['ebay_id'],
+                                'currentPrice' => $data['price'],
+                                'convertedCurrentPrice' => $data['price'],
+                                'sellingState' => $data['price'],
+                                'timeLeft' => $auction_end,
+                    ]);
+                }
+                if (array_key_exists('seller_name', $data) && !empty($data['seller_name'])) {
+                    $seller_info = EbayItemSellerInfo::create([
+                                'itemId' => $data['details']['ebay_id'],
+                                'sellerUserName' => $data['seller_name'],
+                                'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
+                                'seller_contact_link' => $data['seller_contact_link'],
+                                'seller_store_link' => $data['seller_store_link']
+                    ]);
+                }
                 $listing_info = EbayItemListingInfo::create([
                             'itemId' => $data['details']['ebay_id'],
                             'startTime' => '',
@@ -919,22 +944,23 @@ class EbayController extends Controller {
                     'selling_status_id' => isset($selling_status) ? $selling_status->id : null,
                     'listing_info_id' => isset($listing_info) ? $listing_info->id : null,
                 ]);
-
-                foreach ($data['specifics'] as $key => $speci) {
-                    if (isset($speci['Value'])) {
-                        if ($speci['Value'] != "N/A") {
+                if (array_key_exists('specifics', $data) && !empty($data['specifics'])) {
+                    foreach ($data['specifics'] as $key => $speci) {
+                        if (isset($speci['Value'])) {
+                            if ($speci['Value'] != "N/A") {
+                                EbayItemSpecific::create([
+                                    'itemId' => $data['details']['ebay_id'],
+                                    'name' => $speci['Name'],
+                                    'value' => is_array($speci['Value']) ? implode(',', $speci['Value']) : $speci['Value']
+                                ]);
+                            }
+                        } else {
                             EbayItemSpecific::create([
                                 'itemId' => $data['details']['ebay_id'],
-                                'name' => $speci['Name'],
-                                'value' => is_array($speci['Value']) ? implode(',', $speci['Value']) : $speci['Value']
+                                'name' => $key,
+                                'value' => is_array($speci) ? implode(',', $speci) : $speci
                             ]);
                         }
-                    } else {
-                        EbayItemSpecific::create([
-                            'itemId' => $data['details']['ebay_id'],
-                            'name' => $key,
-                            'value' => is_array($speci) ? implode(',', $speci) : $speci
-                        ]);
                     }
                 }
 // dd('done');
@@ -991,9 +1017,7 @@ class EbayController extends Controller {
                 } else if (isset($data['details']['auction']) && !empty($data['details']['auction'])) {
                     $listing_type = ($data['details']['auction'] == true ? 'Auction' : 'Listing');
                 }
-//                 dd($auction_end);
-//                $selling_status = EbayItemSellingStatus::where('id', $item['selling_status_id'])->first();
-//                dd($selling_status);
+
                 if (!empty($item['selling_status_id'])) {
                     (EbayItemSellingStatus::where('id', $item['selling_status_id'])->first())->update([
                         'currentPrice' => $data['price'],
@@ -1001,20 +1025,20 @@ class EbayController extends Controller {
                         'sellingState' => $data['price'],
                         'timeLeft' => $auction_end,
                     ]);
-//                    dd($selling_status);
                 }
-//                dd('ddd');
-                $seller_info = EbayItemSellerInfo::where('id', $item['seller_info_id'])->first();
-                if (!empty($seller_info)) {
-                    $seller_info->update([
-                        'sellerUserName' => $data['seller_name'],
-                        'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
-                        'seller_contact_link' => $data['seller_contact_link'],
-                        'seller_store_link' => $data['seller_store_link']
-                    ]);
+                if (array_key_exists('seller_name', $data) && !empty($data['seller_name'])) {
+                    $seller_info = EbayItemSellerInfo::where('id', $item['seller_info_id'])->first();
+                    if (!empty($seller_info)) {
+                        $seller_info->update([
+                            'sellerUserName' => $data['seller_name'],
+                            'positiveFeedbackPercent' => $data['positiveFeedbackPercent'],
+                            'seller_contact_link' => $data['seller_contact_link'],
+                            'seller_store_link' => $data['seller_store_link']
+                        ]);
+                    }
                 }
                 $listing_info = EbayItemListingInfo::where('id', $item['listing_info_id'])->first();
-                if ($listing_info) {
+                if (!empty($listing_info)) {
                     $listing_info->update([
                         'startTime' => '',
                         'endTime' => $auction_end,
@@ -1023,35 +1047,36 @@ class EbayController extends Controller {
                 }
 
                 $ebayItem = EbayItems::where('id', $item['id'])->first();
-                if ($ebayItem) {
+                if (!empty($ebayItem)) {
                     $ebayItem->update([
                         'title' => $data['title'],
                         'card_id' => $data['card_id'],
-                        'viewItemURL' => $data['web_link'],
-                        'location' => $data['location'],
-                        'returnsAccepted' => $data['ReturnPolicy'],
+                        'viewItemURL' => isset($data['web_link']) ? $data['web_link'] : null,
+                        'location' => isset($data['Location']) ? $data['Location'] : null,
+                        'returnsAccepted' => isset($data['ReturnPolicy']) ? $data['ReturnPolicy'] : false,
                         'pictureURLLarge' => $pictureURLLarge,
                         'pictureURLSuperSize' => $pictureURLSuperSize,
                         'listing_ending_at' => $auction_end,
                         'status' => 0,
                     ]);
                 }
-
-                foreach ($data['specifics'] as $key => $speci) {
-                    if (isset($speci['Value'])) {
-                        if ($speci['Value'] != "N/A") {
+                if (array_key_exists('specifics', $data) && !empty($data['specifics'])) {
+                    foreach ($data['specifics'] as $key => $speci) {
+                        if (isset($speci['Value'])) {
+                            if ($speci['Value'] != "N/A") {
+                                EbayItemSpecific::where('itemId', $data['details']['ebay_id'])
+                                        ->where('name', $speci['Name'])
+                                        ->update([
+                                            'value' => is_array($speci['Value']) ? implode(',', $speci['Value']) : $speci['Value']
+                                ]);
+                            }
+                        } else {
                             EbayItemSpecific::where('itemId', $data['details']['ebay_id'])
-                                    ->where('name', $speci['Name'])
+                                    ->where('name', $key)
                                     ->update([
-                                        'value' => is_array($speci['Value']) ? implode(',', $speci['Value']) : $speci['Value']
+                                        'value' => is_array($speci) ? implode(',', $speci) : $speci
                             ]);
                         }
-                    } else {
-                        EbayItemSpecific::where('itemId', $data['details']['ebay_id'])
-                                ->where('name', $key)
-                                ->update([
-                                    'value' => is_array($speci) ? implode(',', $speci) : $speci
-                        ]);
                     }
                 }
 // dd('done');
@@ -1186,10 +1211,10 @@ class EbayController extends Controller {
             $datetime1 = new \DateTime($data['items']->listing_ending_at);
             $datetime2 = new \DateTime('now');
             $interval = $datetime1->diff($datetime2);
-            $data['items']['time_days'] =$days = $interval->format('%d');
-            $data['items']['time_hours'] =$hours = $interval->format('%h');
-            $data['items']['time_mins'] =$mins = $interval->format('%i');
-            $data['items']['time_secs'] =$secs = $interval->format('%s');
+            $data['items']['time_days'] = $days = $interval->format('%d');
+            $data['items']['time_hours'] = $hours = $interval->format('%h');
+            $data['items']['time_mins'] = $mins = $interval->format('%i');
+            $data['items']['time_secs'] = $secs = $interval->format('%s');
             if ($days > 0) {
                 $timeleft = $days . 'd ' . $hours . 'h';
             } else if ($hours > 1) {
