@@ -754,22 +754,36 @@ class StoxtickerController extends Controller {
             $max = $years;
         }
         $cmpFormat = 'Y-m-d';
-        $last_date = Carbon::now();
-        if ($cmpSfx == 'days') {
-            $start_date = $last_date->copy()->subDays($cmp);
-        } else if ($cmpSfx == 'months') {
+        if ($cmpSfx == 'months') {
             $cmpFormat = 'Y-m';
-            $start_date = $last_date->copy()->subMonths($cmp);
         } else if ($cmpSfx == 'years') {
             $cmpFormat = 'Y';
-            $start_date = $last_date->copy()->subYears($cmp);
         }
+        
+        if ($days == 7) {
+            $start_date = date('Y-m-d', strtotime('-8 days'));
+        } elseif ($days == 30) {
+            $start_date = date('Y-m-d', strtotime('-30 days'));
+        } elseif ($days == 90) {
+            $start_date = date('Y-m-d', strtotime('-90 days'));
+        } elseif ($days == 180) {
+            $start_date = date('Y-m-d', strtotime('-180 days'));
+        } elseif ($days == 365) {
+            $start_date = date('Y-m-d', strtotime('-365 days'));
+        } elseif ($days == 1825) {
+            $start_date = date('Y-m-d', strtotime('-1825 days'));
+        }
+        $last_date = date('Y-m-d');
+
+
         $period = \Carbon\CarbonPeriod::create($start_date, '1 day', $last_date);
-        $data['start_date'] = trim($start_date->format('M/d/Y'));
+        $data['start_date'] = new DateTime($start_date);
+        $data['start_date'] = $data['start_date']->format('M/d/Y');
         $map_val = [];
         $map_qty = [];
         $previousValue = 0;
         $flag = 0;
+        $flag1 = 0;
         foreach ($period as $dt) {
             $ts = $dt->timestamp * 1000;
             $dt = trim($dt->format('Y-m-d'));
@@ -851,6 +865,30 @@ class StoxtickerController extends Controller {
                     } elseif (($previousValue != 0 || $flag == 1) && ($cmpFormat == 'Y-m-d' || $days == 90)) {
                         $map_val[$dt] = [$ts, $previousValue];
                         $map_qty[$dt] = 0;
+                    } elseif ($previousValue == 0 && $flag1 == 0 && (($cmpFormat == 'Y-m' && $days != 90) || $cmpFormat == 'Y')) {
+//                        dd('sdcs');
+                        if (is_array($card_ids)) {
+                            $salesDate = CardSales::whereIn('card_id', $card_ids)->where('timestamp', '<', $dt)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                        } elseif ($card_ids != 0) {
+                            $salesDate = CardSales::where('card_id', $card_ids)->where('timestamp', '<', $dt)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                        } else {
+                            $salesDate = CardSales::where('timestamp', '<', $dt)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
+                        }
+                        if ($salesDate !== null) {
+                            if (is_array($card_ids)) {
+                                $sx = CardSales::whereIn('card_id', $card_ids)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                            } elseif ($card_ids != 0) {
+                                $sx = CardSales::where('card_id', $card_ids)->where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                            } else {
+                                $sx = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
+                            }
+                            $map_val[$dt] = [$ts, $sx];
+                            $map_qty[$dt] = 0;
+                            $flag = 1;
+                            $previousValue = $sx;
+                        } else {
+                            $flag1 = 1;
+                        }
                     }
                 }
             }
