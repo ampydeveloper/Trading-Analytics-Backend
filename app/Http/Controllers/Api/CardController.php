@@ -2001,14 +2001,13 @@ class CardController extends Controller {
         foreach ($period as $dt) {
             $ts = $dt->timestamp * 1000;
             $dt = trim($dt->format('Y-m-d'));
-//            dump($dt);
             $ind = array_search($dt, $data['labels']);
 
             if ($boardGraph == 1) {
                 if (gettype($ind) == "integer") {
-                    $map_val[$dt] = [$ts, $data['values'][$ind]];
+                    $map_val[$dt] = [$ts, number_format($data['values'][$ind], 2, '.', '')];
                     $map_qty[$dt] = $data['qty'][$ind];
-                    $previousValue = $data['values'][$ind];
+                    $previousValue = number_format($data['values'][$ind], 2, '.', '');
                     $flag = 1;
                 } else {
                     if ($flag == 0) {
@@ -2027,10 +2026,10 @@ class CardController extends Controller {
                             } else {
                                 $sx = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
                             }
-                            $map_val[$dt] = [$ts, $sx];
+                            $map_val[$dt] = [$ts, number_format($sx, 2, '.', '')];
                             $map_qty[$dt] = 0;
                             $flag = 1;
-                            $previousValue = $sx;
+                            $previousValue = number_format($sx, 2, '.', '');
                         } else {
                             $map_val[$dt] = [$ts, $previousValue];
                             $map_qty[$dt] = 0;
@@ -2043,13 +2042,11 @@ class CardController extends Controller {
                 }
             } else {
                 if (gettype($ind) == "integer") {
-//                    dd('in');
-                    $map_val[$dt] = [$ts, $data['values'][$ind]];
+                    $map_val[$dt] = [$ts, number_format($data['values'][$ind], 2, '.', '')];
                     $map_qty[$dt] = $data['qty'][$ind];
-                    $previousValue = $data['values'][$ind];
+                    $previousValue = number_format($data['values'][$ind], 2, '.', '');
                     $flag = 1;
                 } else {
-//                    dd('else');
                     if ($previousValue != 0 && (($cmpFormat == 'Y-m' && $days != 90) || $cmpFormat == 'Y')) {
                         $map_val[$dt] = [$ts, $previousValue];
                         $map_qty[$dt] = 0;
@@ -2070,10 +2067,10 @@ class CardController extends Controller {
                             } else {
                                 $sx = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
                             }
-                            $map_val[$dt] = [$ts, $sx];
+                            $map_val[$dt] = [$ts, number_format($sx, 2, '.', '')];
                             $map_qty[$dt] = 0;
                             $flag = 1;
-                            $previousValue = $sx;
+                            $previousValue = number_format($sx, 2, '.', '');
                         } else {
                             $map_val[$dt] = [$ts, $previousValue];
                             $map_qty[$dt] = 0;
@@ -2083,7 +2080,6 @@ class CardController extends Controller {
                         $map_val[$dt] = [$ts, $previousValue];
                         $map_qty[$dt] = 0;
                     } elseif ($previousValue == 0 && $flag1 == 0 && (($cmpFormat == 'Y-m' && $days != 90) || $cmpFormat == 'Y')) {
-//                        dd('sdcs');
                         if (is_array($card_ids)) {
                             $salesDate = CardSales::whereIn('card_id', $card_ids)->where('timestamp', '<', $dt)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                         } elseif ($card_ids != 0) {
@@ -2099,10 +2095,10 @@ class CardController extends Controller {
                             } else {
                                 $sx = CardSales::where('timestamp', 'like', '%' . $salesDate['DATE(timestamp)'] . '%')->avg('cost');
                             }
-                            $map_val[$dt] = [$ts, $sx];
+                            $map_val[$dt] = [$ts, number_format($sx, 2, '.', '')];
                             $map_qty[$dt] = 0;
                             $flag = 1;
-                            $previousValue = $sx;
+                            $previousValue = number_format($sx, 2, '.', '');
                         } else {
                             $flag1 = 1;
                         }

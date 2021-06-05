@@ -483,7 +483,9 @@ class UserController extends Controller {
             if ($request->has('sts') && strlen(trim($request->query('sts'))) > 0 && $request->query('sts') != 'null' && strpos($request->query('model'), 'RequestListing') !== false) {
                 $logs = $logs->where('properties->attributes->approved', $request->query('sts'));
             }
-            $logs = $logs->paginate(20);
+            $logs = $logs->paginate(30);
+//            dd($logs);
+//            $logs = $logs->get();
             $items = Collect($logs->items())->map(function($log) {
                 $model = explode('\\', $log->subject_type);
                 $log->subject_type = $model[count($model) - 1];
