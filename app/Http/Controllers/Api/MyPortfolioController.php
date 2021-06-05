@@ -223,7 +223,7 @@ class MyPortfolioController extends Controller {
                 $data[] = [
                     'id' => $card->id,
                     'title' => $card->title,
-                    'price' => $sx_data['sx'],
+                    'price' => number_format($sx_data['sx'], 2, '.', ''),
                 ];
             }
             return response()->json(['status' => 200, 'data' => $data], 200);

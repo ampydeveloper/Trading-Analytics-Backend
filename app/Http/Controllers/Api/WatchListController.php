@@ -87,18 +87,9 @@ class WatchListController extends Controller {
                                 $q->where('sport', $filterBy);
                             }
                         })->with('details')->skip($skip)->take($take)->get();
-//            $cards = $cards->skip($skip)->take($take);
+//            
                 $data = [];
                 foreach ($cards as $key => $card) {
-
-//                $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->avg('cost');
-//                    $sx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-//                    $sx_count = count($sx);
-//                    $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
-//                $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(3)->limit(3)->avg('cost');
-//                    $lastSx = CardSales::where('card_id', $card->id)->orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-//                    $count = count($lastSx);
-//                    $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
                     $sx_data = CardSales::getSxAndLastSx($card->id);
                     $sx = $sx_data['sx'];
                     $lastSx = $sx_data['lastSx'];

@@ -66,7 +66,7 @@ class EbayController extends Controller {
                         }
 
                         if ($request->input('filter_by') == 'ending_soon') {
-                            $q->orwhereDate('listing_ending_at', '<', Carbon::now()->format('Y-m-d h:i:s'));
+                            $q->orwhereDate('listing_ending_at', '>', date('Y-m-d h:i:s'));
                         }
                     })->where('sold_price', '')->orderBy('listing_ending_at', 'desc');
             $items_count = $items->count();
@@ -82,7 +82,7 @@ class EbayController extends Controller {
                 } else if ($galleryURL == null) {
                     $galleryURL = $this->defaultListingImage;
                 }
-                
+
                 date_default_timezone_set("America/Los_Angeles");
                 $datetime1 = new \DateTime($item->listing_ending_at);
                 $datetime2 = new \DateTime('now');
@@ -100,7 +100,7 @@ class EbayController extends Controller {
                 } else {
                     $timeleft = $secs . 's';
                 }
-                
+
                 $data[] = [
                     'id' => $item->id,
                     'card_id' => $item->card_id,
@@ -472,7 +472,6 @@ class EbayController extends Controller {
                 $cards[$ind]['price'] = number_format((float) $sx, 2, '.', '');
                 $cards[$ind]['sx_value'] = str_replace('-', '', number_format($sx - $lastSx, 2, '.', ''));
             }
-
             return response()->json(['status' => 200, 'items' => $items, 'cards' => $cards], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage() . ' - ' . $e->getLine(), 500);
@@ -747,6 +746,12 @@ class EbayController extends Controller {
                 $galleryURL = $this->defaultListingImage;
             }
             $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
+            
+            $sx_data = CardSales::getSxAndLastSx($item->card_id);
+            $sx = $sx_data['sx'];
+            $lastSx = $sx_data['lastSx'];
+            $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+            
             return [
                 'id' => $item->id,
                 'title' => $item->title,
@@ -757,6 +762,9 @@ class EbayController extends Controller {
                 'listing_ending_at' => $item->listing_ending_at,
                 'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
                 'data' => $item,
+                'sx_icon' => $sx_icon,
+                'sx_value' => number_format((float) $sx, 2, '.', ''),
+                'price_diff' => str_replace('-', '', number_format($sx - $lastSx, 2, '.', '')),
             ];
         });
 
@@ -824,6 +832,11 @@ class EbayController extends Controller {
             }
 
             $listingTypeval = ($item->listingInfo ? $item->listingInfo->listingType : '');
+            $sx_data = CardSales::getSxAndLastSx($item->card_id);
+            $sx = $sx_data['sx'];
+            $lastSx = $sx_data['lastSx'];
+            $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+
             return [
                 'id' => $item->id,
                 'title' => $item->title,
@@ -834,6 +847,9 @@ class EbayController extends Controller {
                 'listing_ending_at' => $item->listing_ending_at,
                 'showBuyNow' => ($listingTypeval != 'Auction') ? true : false,
                 'data' => $item,
+                'sx_icon' => $sx_icon,
+                'sx_value' => number_format((float) $sx, 2, '.', ''),
+                'price_diff' => str_replace('-', '', number_format($sx - $lastSx, 2, '.', '')),
             ];
         });
 //        dump($items->toArray());
@@ -1107,7 +1123,7 @@ class EbayController extends Controller {
         try {
 //            $data = UserSearch::with(['userDetails', 'cardDetails'])->skip($skip)->take($take)->get();
 //            return response()->json(['status' => 200, 'data' => $data, 'next' => ($page + 1)], 200);
-            $data = UserSearch::with(['userDetails', 'cardDetails'])->get();
+            $data = UserSearch::with(['userDetails', 'cardDetails'])->orderBy('created_at', 'desc')->get();
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -1640,7 +1656,7 @@ class EbayController extends Controller {
                     'id' => $item->id,
                     'title' => $item->title,
                     'galleryURL' => $galleryURL,
-                    'price' => ($item->sellingStatus ? $item->sellingStatus->price : 0),
+                    'price' => number_format(($item->sellingStatus ? $item->sellingStatus->price : 0), 2, '.', ''),
                     'itemId' => $item->itemId,
                     'viewItemURL' => $item->viewItemURL,
                     'listing_ending_at' => $item->listing_ending_at,

@@ -226,7 +226,6 @@ class CardController extends Controller {
             $grpFormat = 'H:i';
             $from = date('Y-m-d H:i:s');
             $to = date('Y-m-d H:i:s', strtotime('-1 day'));
-            
         } elseif ($days == 2) {
             $grpFormat = 'Y-m-d';
             $from = date('Y-m-d H:i:s');
@@ -611,7 +610,7 @@ class CardController extends Controller {
         }
     }
 
-    public function editCard(Request $request) {
+    public function editCard_old(Request $request) {
         try {
 
 
@@ -643,6 +642,46 @@ class CardController extends Controller {
             ]);
 //            $data = Card::where('id', $request->input('card_id'))->update($updated_array);
             return response()->json(['status' => 200, 'message' => 'Card Updated'], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+
+    public function editCard(Request $request) {
+        try {
+//             Card::where('id', $request->input('id'))->update(array('is_featured'=>$is_featured));
+            if ($request->hasFile('image')) {
+                $save_filename = $request->input('sport') . '/F' . $request->image->getClientOriginalName();
+                $filename = 'F' . $request->image->getClientOriginalName();
+                Storage::disk('public')->put($save_filename, file_get_contents($request->image->getRealPath()));
+            }
+            $update_array = [
+                'sport' => $request->input('sport'),
+                'player' => $request->input('player'),
+                'year' => $request->input('year'),
+                'brand' => $request->input('brand'),
+                'card' => $request->input('card'),
+                'rc' => $request->input('rc'),
+                'title' => $request->input('title'),
+                'variation' => $request->input('variation'),
+                'grade' => $request->input('grade'),
+                'qualifiers' => $request->input('qualifiers'),
+                'qualifiers2' => $request->input('qualifiers2'),
+                'qualifiers3' => $request->input('qualifiers3'),
+                'qualifiers4' => $request->input('qualifiers4'),
+                'qualifiers5' => $request->input('qualifiers5'),
+                'qualifiers6' => $request->input('qualifiers6'),
+                'qualifiers7' => $request->input('qualifiers7'),
+                'qualifiers8' => $request->input('qualifiers8'),
+//                'is_featured' => ((bool) $request->input('is_featured')),
+//                'image' => 
+            ];
+            if ($request->hasFile('image')) {
+                $update_array['image'] = $save_filename;
+            }
+            (Card::where('id', $request->input('id'))->first())->update($update_array);
+//            $data = Card::where('id', $request->input('card_id'))->update($updated_array);
+            return response()->json(['status' => 200, 'message' => 'Card updated successfully.'], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -1206,7 +1245,7 @@ class CardController extends Controller {
             $finalData['values2'] = $temData[1]['values'];
             $finalData['labels2'] = $temData[1]['labels'];
             $finalData['qty2'] = $temData[1]['qty'];
-           
+
             if ($days == 90) {
                 $finalData['rank1'] = $this->getCardRank($cids[0]);
                 $finalData['rank2'] = $this->getCardRank($cids[1]);
@@ -1216,7 +1255,7 @@ class CardController extends Controller {
                 $sx_data00 = CardSales::getSx($cids[0]);
                 $finalData['slabstoxvalue1'] = number_format((float) $sx_data00['sx'], 2, '.', '');
             }
-          
+
             $sx_data0 = CardSales::getGraphSxWithCardId($days, $temData[0], $cids[0]);
             $finalData['sx1'] = number_format((float) $sx_data0['sx'], 2, '.', '');
             if ($days == 90) {
@@ -1399,7 +1438,7 @@ class CardController extends Controller {
             $finalData['labels'] = $data['labels'];
             $finalData['qty'] = $data['qty'];
 //            }
-            
+
             $sx_data = CardSales::getGraphSxWithCardId($days, $data, $card_id);
 //dd('redss');
             $sx = $sx_data['sx'];
@@ -1934,7 +1973,7 @@ class CardController extends Controller {
         } else if ($cmpSfx == 'years') {
             $cmpFormat = 'Y';
         }
-        
+
         if ($days == 7) {
             $start_date = date('Y-m-d', strtotime('-8 days'));
         } elseif ($days == 30) {
@@ -1964,7 +2003,7 @@ class CardController extends Controller {
             $dt = trim($dt->format('Y-m-d'));
 //            dump($dt);
             $ind = array_search($dt, $data['labels']);
-            
+
             if ($boardGraph == 1) {
                 if (gettype($ind) == "integer") {
                     $map_val[$dt] = [$ts, $data['values'][$ind]];
