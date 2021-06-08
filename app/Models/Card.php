@@ -7,13 +7,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use App\Models\AppSettings;
 
-class Card extends Model
-{
-    use SoftDeletes;
-    use LogsActivity;
-    public $timestamps = true;
+class Card extends Model {
 
-    protected $table = 'cards'; 
+    use SoftDeletes;
+
+use LogsActivity;
+
+    public $timestamps = true;
+    protected $table = 'cards';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -46,61 +48,70 @@ class Card extends Model
         'title',
         'views'
     ];
-
     protected static $logFillable = true;
     protected static $logOnlyDirty = true;
-
     protected $appends = [
         'cardImage'
     ];
 
-    public function getCardImageAttribute()
-    {
-         if($this->image != null && $this->image != "0"){
+    public function getCardImageAttribute() {
+        if ($this->image != null && $this->image != "0") {
             return url("storage/" . $this->image);
-//            return url("storage/".strtolower($this->sport). '/' . $this->image);
-        }
-        else{
+//            return url("storage/" . strtolower($this->sport) . '/' . $this->image);
+        } else {
             $settings = AppSettings::first();
             if ($settings) {
-                $default_filename = strtolower($this->sport).'_image';
+                $default_filename = strtolower($this->sport) . '_image';
                 return $settings->$default_filename;
-            }else{
+            } else {
                 return asset('/img/default-image.jpg');
             }
         }
     }
 
-    public function getImageFileName($id, $sport)
-    {
-        $card_url = public_path('storage/'.$sport.'/F' . $id . '.jpg');
-        if(file_exists($card_url)){
-            return env('APP_URL').'/storage/'.$sport.'/F'.$id.'.jpg';
-        }else{
-            if($id > 0) {
-                return $this->getImageFileName(($id-1), $sport);
-            }else{
+    public function getCardImageAttribute_sukhi() {
+        if ($this->image != null && $this->image != "0") {
+            return "https://s3.ap-south-1.amazonaws.com/" . env('AWS_BUCKET') . '/' . $this->sport . '/' . $this->image;
+//            return url("storage/" . $this->image);
+//            return url("storage/".strtolower($this->sport). '/' . $this->image);
+        } else {
+            $settings = AppSettings::first();
+            if ($settings) {
+                $default_filename = strtolower($this->sport) . '_image';
+                return $settings->$default_filename;
+            } else {
+                return asset('/img/default-image.jpg');
+            }
+        }
+    }
+
+    public function getImageFileName($id, $sport) {
+        $card_url = public_path('storage/' . $sport . '/F' . $id . '.jpg');
+        if (file_exists($card_url)) {
+            return env('APP_URL') . '/storage/' . $sport . '/F' . $id . '.jpg';
+        } else {
+            if ($id > 0) {
+                return $this->getImageFileName(($id - 1), $sport);
+            } else {
                 return false;
             }
         }
     }
 
-    public function value()
-    {
+    public function value() {
         return $this->hasOne(CardValues::class, 'card_id');
     }
 
-    public function details()
-    {
+    public function details() {
         return $this->hasOne(CardDetails::class, 'card_id');
     }
-    public function player_details()
-    {
+
+    public function player_details() {
         return $this->hasOne(CardPlayerDetails::class, 'card_id');
     }
-    
-     public function sales()
-    {
+
+    public function sales() {
         return $this->hasMany(CardSales::class, 'card_id');
     }
+
 }
