@@ -858,33 +858,27 @@ class CardController extends Controller {
                 $to = date('Y-m-d 00:00:00');
             } elseif ($days == 7) {
                 $grpFormat = 'Y-m-d';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-8 days'));
             } elseif ($days == 30) {
                 $grpFormat = 'Y-m-d';
                 $lblFormat = 'H:i';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-30 days'));
             } elseif ($days == 90) {
                 $grpFormat = 'Y-m';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-90 days'));
             } elseif ($days == 180) {
                 $grpFormat = 'Y-m';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-180 days'));
             } elseif ($days == 365) {
                 $grpFormat = 'Y-m';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-365 days'));
             } elseif ($days == 1825) {
                 $grpFormat = 'Y';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }
@@ -1039,28 +1033,28 @@ class CardController extends Controller {
                 $to = date('Y-m-d H:i:s', strtotime('-1 day'));
             } elseif ($days == 7) {
                 $grpFormat = 'Y-m-d';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-8 days'));
             } elseif ($days == 30) {
                 $grpFormat = 'Y-m-d';
                 $lblFormat = 'H:i';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-30 days'));
             } elseif ($days == 90) {
                 $grpFormat = 'Y-m';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-90 days'));
             } elseif ($days == 180) {
                 $grpFormat = 'Y-m';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-180 days'));
             } elseif ($days == 365) {
                 $grpFormat = 'Y-m';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-365 days'));
             } elseif ($days == 1825) {
                 $grpFormat = 'Y';
-                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
+                $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }
 
@@ -1152,33 +1146,27 @@ class CardController extends Controller {
                 $to = date('Y-m-d 00:00:00');
             } elseif ($days == 7) {
                 $grpFormat = 'Y-m-d';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-8 days'));
             } elseif ($days == 30) {
                 $grpFormat = 'Y-m-d';
                 $lblFormat = 'H:i';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-30 days'));
             } elseif ($days == 90) {
                 $grpFormat = 'Y-m';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-90 days'));
             } elseif ($days == 180) {
                 $grpFormat = 'Y-m';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-180 days'));
             } elseif ($days == 365) {
                 $grpFormat = 'Y-m';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-365 days'));
             } elseif ($days == 1825) {
                 $grpFormat = 'Y';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }
@@ -1338,33 +1326,27 @@ class CardController extends Controller {
                 $to = date('Y-m-d 00:00:00');
             } elseif ($days == 7) {
                 $grpFormat = 'Y-m-d';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-8 days'));
             } elseif ($days == 30) {
                 $grpFormat = 'Y-m-d';
                 $lblFormat = 'H:i';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-30 days'));
             } elseif ($days == 90) {
                 $grpFormat = 'Y-m';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-90 days'));
             } elseif ($days == 180) {
                 $grpFormat = 'Y-m';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-180 days'));
             } elseif ($days == 365) {
                 $grpFormat = 'Y-m';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-365 days'));
             } elseif ($days == 1825) {
                 $grpFormat = 'Y';
-//                $from = date('Y-m-d H:i:s', strtotime('-1 day'));
                 $from = date('Y-m-d H:i:s');
                 $to = date('Y-m-d H:i:s', strtotime('-1825 days'));
             }

@@ -43,13 +43,13 @@ class EbayController extends Controller {
 //        dd(Carbon::now()->setTimezone('America/Los_Angeles')->format('Y-m-d h:i:s'));
         try {
 
-            $itemsSpecsIds = EbayItemSpecific::where('value', 'like', '%' . $search . '%')->groupBy('itemId')->pluck('itemId');
-            if ($sport != null) {
-                $itemsCatsIds = EbayItemCategories::where('name', 'like', '%' . $sport . '%')->pluck('categoryId');
-                $itemsIdsCombine = array_merge($itemsSpecsIds->toArray(), $itemsCatsIds->toArray());
-            } else {
-                $itemsIdsCombine = $itemsSpecsIds;
-            }
+            $itemsIdsCombine = EbayItemSpecific::where('value', 'like', '%' . $search . '%')->groupBy('itemId')->pluck('itemId');
+//            if ($sport != null) {
+//                $itemsCatsIds = EbayItemCategories::where('name', 'like', '%' . $sport . '%')->pluck('categoryId');
+//                $itemsIdsCombine = array_merge($itemsSpecsIds->toArray(), $itemsCatsIds->toArray());
+//            } else {
+//                $itemsIdsCombine = $itemsSpecsIds;
+//            }
             $items = EbayItems::with(['sellingStatus', 'card', 'listingInfo'])->where(function ($q) use ($itemsIdsCombine, $search, $request) {
                         if ($search != null) {
                             if (count($itemsIdsCombine) > 0) {
@@ -66,9 +66,14 @@ class EbayController extends Controller {
                         }
 
                         if ($request->input('filter_by') == 'ending_soon') {
-                            $q->orwhereDate('listing_ending_at', '>', date('Y-m-d h:i:s'));
+//                            $q->orwhereDate('listing_ending_at', '>', date('Y-m-d h:i:s'));
+
+                            $date_one = Carbon::now()->addDay();
+                            $date_one->setTimezone('America/Los_Angeles');
+                            $q->where("listing_ending_at", ">", $date_one);
                         }
-                    })->where('sold_price', '')->orderBy('listing_ending_at', 'desc');
+                    })->where('sold_price', '')->orderBy('listing_ending_at', 'asc');
+
             $items_count = $items->count();
             $all_pages = ceil($items_count / $take);
             $items = $items->skip($skip)->take($take)->get();
@@ -746,12 +751,12 @@ class EbayController extends Controller {
                 $galleryURL = $this->defaultListingImage;
             }
             $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
-            
+
             $sx_data = CardSales::getSxAndLastSx($item->card_id);
             $sx = $sx_data['sx'];
             $lastSx = $sx_data['lastSx'];
             $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-            
+
             return [
                 'id' => $item->id,
                 'title' => $item->title,
@@ -880,6 +885,7 @@ class EbayController extends Controller {
                             'Basketball' => '3',
                             'Soccer' => '4',
                             'Pokemon' => '10',
+                            'Hockey' => '11',
                         );
                         if (!empty($card_details->sport)) {
                             $cat_id = $cat[ucfirst($card_details->sport)];
@@ -998,6 +1004,7 @@ class EbayController extends Controller {
                             'Basketball' => '3',
                             'Soccer' => '4',
                             'Pokemon' => '10',
+                            'Hockey' => '11',
                         );
                         if (!empty($card_details->sport)) {
                             $cat_id = $cat[ucfirst($card_details->sport)];
@@ -1377,7 +1384,7 @@ class EbayController extends Controller {
     public function getAdanceSearchData(Request $request) {
         try {
             $last_entry = AdvanceSearchOptions::latest()->first();
-            $previous_date = date('Y-m-d H:i:s', strtotime('-30 days'));
+            $previous_date = date('Y-m-d H:i:s', strtotime('-3 days'));
             if (!empty($last_entry) && $last_entry['updated_at'] < $previous_date) {
                 $this->updateAdanceSearchOptions($request);
             }
@@ -1518,11 +1525,15 @@ class EbayController extends Controller {
                     $q->orWhere('is_random_bin', 1);
                 }
                 if ($search != null) {
-                    if (count($itemsSpecsIds) > 0) {
-                        $q->whereIn('itemId', $itemsSpecsIds);
-                    } else {
-                        $q->where('title', 'like', '%' . $search . '%');
-                    }
+//                    if (count($itemsSpecsIds) > 0) {
+//                        $q->whereIn('itemId', $itemsSpecsIds);
+//                    } else {
+//                        $q->where('title', 'like', '%' . $search . '%');
+//                    }
+//                    $q->orWhereHas('card', function ($qq) use ($request) {
+//                        $qq->where('player', 'like', '%' . $request->input('search') . '%');
+//                    });
+                    $q->where('title', 'like', '%' . $search . '%');
                 }
                 if ($filterBy == 'buy_it_now') {
                     $q->orWhereHas('listingInfo', function ($qq) {
@@ -1538,7 +1549,7 @@ class EbayController extends Controller {
             if ($filterBy == 'ending_soon') {
                 $date_one = Carbon::now()->addDay();
                 $date_one->setTimezone('America/Los_Angeles');
-                $date_two = Carbon::now()->setTimezone('America/Los_Angeles');
+//                $date_two = Carbon::now()->setTimezone('America/Los_Angeles');
                 $items = $items->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one);
             }
             $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
