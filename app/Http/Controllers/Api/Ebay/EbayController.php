@@ -757,6 +757,24 @@ class EbayController extends Controller {
             $lastSx = $sx_data['lastSx'];
             $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
 
+            date_default_timezone_set("America/Los_Angeles");
+            $datetime1 = new \DateTime($item->listing_ending_at);
+            $datetime2 = new \DateTime('now');
+            $interval = $datetime1->diff($datetime2);
+            $days = $interval->format('%d');
+            $hours = $interval->format('%h');
+            $mins = $interval->format('%i');
+            $secs = $interval->format('%s');
+            if ($days > 0) {
+                $timeleft = $days . 'd ' . $hours . 'h';
+            } else if ($hours > 1) {
+                $timeleft = $hours . 'h ' . $mins . 'm';
+            } else if ($mins > 1) {
+                $timeleft = $mins . 'm ' . $secs . 's';
+            } else {
+                $timeleft = $secs . 's';
+            }
+
             return [
                 'id' => $item->id,
                 'title' => $item->title,
@@ -770,6 +788,7 @@ class EbayController extends Controller {
                 'sx_icon' => $sx_icon,
                 'sx_value' => number_format((float) $sx, 2, '.', ''),
                 'price_diff' => str_replace('-', '', number_format($sx - $lastSx, 2, '.', '')),
+                'timeleft' => $timeleft,
             ];
         });
 
@@ -842,6 +861,24 @@ class EbayController extends Controller {
             $lastSx = $sx_data['lastSx'];
             $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
 
+            date_default_timezone_set("America/Los_Angeles");
+            $datetime1 = new \DateTime($item->listing_ending_at);
+            $datetime2 = new \DateTime('now');
+            $interval = $datetime1->diff($datetime2);
+            $days = $interval->format('%d');
+            $hours = $interval->format('%h');
+            $mins = $interval->format('%i');
+            $secs = $interval->format('%s');
+            if ($days > 0) {
+                $timeleft = $days . 'd ' . $hours . 'h';
+            } else if ($hours > 1) {
+                $timeleft = $hours . 'h ' . $mins . 'm';
+            } else if ($mins > 1) {
+                $timeleft = $mins . 'm ' . $secs . 's';
+            } else {
+                $timeleft = $secs . 's';
+            }
+
             return [
                 'id' => $item->id,
                 'title' => $item->title,
@@ -855,6 +892,7 @@ class EbayController extends Controller {
                 'sx_icon' => $sx_icon,
                 'sx_value' => number_format((float) $sx, 2, '.', ''),
                 'price_diff' => str_replace('-', '', number_format($sx - $lastSx, 2, '.', '')),
+                'timeleft' => $timeleft,
             ];
         });
 //        dump($items->toArray());
@@ -1208,6 +1246,25 @@ class EbayController extends Controller {
                 $galleryURL = $this->defaultListingImage;
             }
             $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
+            
+            date_default_timezone_set("America/Los_Angeles");
+                $datetime1 = new \DateTime($item->listing_ending_at);
+                $datetime2 = new \DateTime('now');
+                $interval = $datetime1->diff($datetime2);
+                $days = $interval->format('%d');
+                $hours = $interval->format('%h');
+                $mins = $interval->format('%i');
+                $secs = $interval->format('%s');
+                if ($days > 0) {
+                    $timeleft = $days . 'd ' . $hours . 'h';
+                } else if ($hours > 1) {
+                    $timeleft = $hours . 'h ' . $mins . 'm';
+                } else if ($mins > 1) {
+                    $timeleft = $mins . 'm ' . $secs . 's';
+                } else {
+                    $timeleft = $secs . 's';
+                }
+                
             return [
                 'id' => $item->id,
                 'title' => $item->title,
@@ -1218,6 +1275,7 @@ class EbayController extends Controller {
                 'listing_ending_at' => $item->listing_ending_at,
                 'showBuyNow' => ($listingTypeVal != 'Auction') ? true : false,
                 'data' => $item,
+                'timeleft' => $timeleft,
             ];
         });
         return ['data' => $items, 'next' => ($page + 1), 'cards' => $cardsIds];
