@@ -335,14 +335,15 @@ class CardController extends Controller {
                     $cards = $cards->values()->all();
                 }
 
-//                dump($cards);
                 if ($top_trend) {
-//                    dump('5');
                     $cards = Collect($cards)->unique('sport');
+                    foreach ($cards as $key => $item) {
+                        if ($item->sport == 'Pokémon') {
+                            $cards->forget($key);
+                        }
+                    }
                 }
-//                dd($cards);
                 if (!$top_trend) {
-//                    dump('10');
                     $cards = Collect($cards)->skip($skip)->take($take);
                 }
 //                if ($top_trend) { //moved up
@@ -559,15 +560,15 @@ class CardController extends Controller {
 //             dd($request->all());
             $data = Card::where('sport', $request->input('sport'))->orderBy('updated_at', 'desc')->first();
             if ($request->hasFile('image')) {
-                $filename = $request->image->getClientOriginalName().date("mdYHis");
-                Storage::disk('s3')->put($request->sport.'/'.$filename,file_get_contents($request->image),'public');
+                $filename = $request->image->getClientOriginalName() . date("mdYHis");
+                Storage::disk('s3')->put($request->sport . '/' . $filename, file_get_contents($request->image), 'public');
             } else {
                 $ext = pathinfo(parse_url($request->input('image'), PHP_URL_PATH), PATHINFO_EXTENSION);
                 $storeName = $request->input('sport') . '/F' . ((int) $data->row_id + 1) . '.' . $ext;
                 $file_name = 'F' . ((int) $data->row_id + 1) . '.' . $ext;
-                Storage::disk('s3')->put($request->sport.'/'.$storeName,file_get_contents($request->input('image')),'public');
+                Storage::disk('s3')->put($request->sport . '/' . $storeName, file_get_contents($request->input('image')), 'public');
             }
-            
+
             Card::create([
                 'row_id' => (int) $data->row_id + 1,
                 'sport' => $request->input('sport'),
@@ -601,7 +602,7 @@ class CardController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
-    
+
     public function create(Request $request) {
         try {
             // dd($request->all());
@@ -659,7 +660,7 @@ class CardController extends Controller {
         }
     }
 
-     public function editCard(Request $request) {
+    public function editCard(Request $request) {
         try {
 //             Card::where('id', $request->input('id'))->update(array('is_featured'=>$is_featured));
             if ($request->hasFile('image')) {
@@ -697,13 +698,13 @@ class CardController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
-    
+
     public function editCard_sukhi(Request $request) {
         try {
 //             Card::where('id', $request->input('id'))->update(array('is_featured'=>$is_featured));
             if ($request->hasFile('image')) {
-                $filename = $request->image->getClientOriginalName().date("mdYHis");
-                Storage::disk('s3')->put($request->sport.'/'.$filename,file_get_contents($request->image),'public');
+                $filename = $request->image->getClientOriginalName() . date("mdYHis");
+                Storage::disk('s3')->put($request->sport . '/' . $filename, file_get_contents($request->image), 'public');
             }
             $update_array = [
                 'sport' => $request->input('sport'),
@@ -1879,8 +1880,9 @@ class CardController extends Controller {
                             $zip->extractTo(public_path("storage/Pokemon"));
                             $dir = 'Pokemon/';
                             $zip->close();
-                        } 
-                        StoreZipImages::dispatch($filename,$dir)->delay(now()->addMinutes(1));;
+                        }
+                        StoreZipImages::dispatch($filename, $dir)->delay(now()->addMinutes(1));
+                        ;
                         Storage::disk('public')->delete($filename);
                     } else {
                         return response()->json(['message' => 'Error while extracting the files.'], 500);
@@ -1926,6 +1928,7 @@ class CardController extends Controller {
             return response()->json(['message' => $e->getMessage()], 500);
         }
     }
+
     public function uploadSlabForExcelImport(Request $request) {
         try {
             if ($request->has('file1')) {
@@ -2157,7 +2160,7 @@ class CardController extends Controller {
                     $previousValue = number_format($data['values'][$ind], 2, '.', '');
                     $flag = 1;
                 } else {
-                    
+
 //                    if ($previousValue != 0 && (($cmpFormat == 'Y-m' && $days != 90) || $cmpFormat == 'Y')) {
                     if ($previousValue != 0) {
                         $map_val[$dt] = [$ts, $previousValue];

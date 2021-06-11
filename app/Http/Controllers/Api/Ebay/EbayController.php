@@ -92,18 +92,22 @@ class EbayController extends Controller {
                 $datetime1 = new \DateTime($item->listing_ending_at);
                 $datetime2 = new \DateTime('now');
                 $interval = $datetime1->diff($datetime2);
-                $days = $interval->format('%d');
-                $hours = $interval->format('%h');
-                $mins = $interval->format('%i');
-                $secs = $interval->format('%s');
-                if ($days > 0) {
-                    $timeleft = $days . 'd ' . $hours . 'h';
-                } else if ($hours > 1) {
-                    $timeleft = $hours . 'h ' . $mins . 'm';
-                } else if ($mins > 1) {
-                    $timeleft = $mins . 'm ' . $secs . 's';
+                if ($interval->invert == 1) {
+                    $days = $interval->format('%d');
+                    $hours = $interval->format('%h');
+                    $mins = $interval->format('%i');
+                    $secs = $interval->format('%s');
+                    if ($days > 0) {
+                        $timeleft = $days . 'd ' . $hours . 'h';
+                    } else if ($hours > 1) {
+                        $timeleft = $hours . 'h ' . $mins . 'm';
+                    } else if ($mins > 1) {
+                        $timeleft = $mins . 'm ' . $secs . 's';
+                    } else {
+                        $timeleft = $secs . 's';
+                    }
                 } else {
-                    $timeleft = $secs . 's';
+                    $timeleft = '0s';
                 }
 
                 $data[] = [
@@ -569,18 +573,22 @@ class EbayController extends Controller {
                 $datetime1 = new \DateTime($item->listing_ending_at);
                 $datetime2 = new \DateTime('now');
                 $interval = $datetime1->diff($datetime2);
-                $days = $interval->format('%d');
-                $hours = $interval->format('%h');
-                $mins = $interval->format('%i');
-                $secs = $interval->format('%s');
-                if ($days > 0) {
-                    $timeleft = $days . 'd ' . $hours . 'h';
-                } else if ($hours > 1) {
-                    $timeleft = $hours . 'h ' . $mins . 'm';
-                } else if ($mins > 1) {
-                    $timeleft = $mins . 'm ' . $secs . 's';
+                if ($interval->invert == 1) {
+                    $days = $interval->format('%d');
+                    $hours = $interval->format('%h');
+                    $mins = $interval->format('%i');
+                    $secs = $interval->format('%s');
+                    if ($days > 0) {
+                        $timeleft = $days . 'd ' . $hours . 'h';
+                    } else if ($hours > 1) {
+                        $timeleft = $hours . 'h ' . $mins . 'm';
+                    } else if ($mins > 1) {
+                        $timeleft = $mins . 'm ' . $secs . 's';
+                    } else {
+                        $timeleft = $secs . 's';
+                    }
                 } else {
-                    $timeleft = $secs . 's';
+                    $timeleft = '0s';
                 }
 
                 $sx_data = CardSales::getSxAndLastSx($item->card_id);
@@ -761,18 +769,22 @@ class EbayController extends Controller {
             $datetime1 = new \DateTime($item->listing_ending_at);
             $datetime2 = new \DateTime('now');
             $interval = $datetime1->diff($datetime2);
-            $days = $interval->format('%d');
-            $hours = $interval->format('%h');
-            $mins = $interval->format('%i');
-            $secs = $interval->format('%s');
-            if ($days > 0) {
-                $timeleft = $days . 'd ' . $hours . 'h';
-            } else if ($hours > 1) {
-                $timeleft = $hours . 'h ' . $mins . 'm';
-            } else if ($mins > 1) {
-                $timeleft = $mins . 'm ' . $secs . 's';
+            if ($interval->invert == 1) {
+                $days = $interval->format('%d');
+                $hours = $interval->format('%h');
+                $mins = $interval->format('%i');
+                $secs = $interval->format('%s');
+                if ($days > 0) {
+                    $timeleft = $days . 'd ' . $hours . 'h';
+                } else if ($hours > 1) {
+                    $timeleft = $hours . 'h ' . $mins . 'm';
+                } else if ($mins > 1) {
+                    $timeleft = $mins . 'm ' . $secs . 's';
+                } else {
+                    $timeleft = $secs . 's';
+                }
             } else {
-                $timeleft = $secs . 's';
+                $timeleft = '0s';
             }
 
             return [
@@ -865,18 +877,22 @@ class EbayController extends Controller {
             $datetime1 = new \DateTime($item->listing_ending_at);
             $datetime2 = new \DateTime('now');
             $interval = $datetime1->diff($datetime2);
-            $days = $interval->format('%d');
-            $hours = $interval->format('%h');
-            $mins = $interval->format('%i');
-            $secs = $interval->format('%s');
-            if ($days > 0) {
-                $timeleft = $days . 'd ' . $hours . 'h';
-            } else if ($hours > 1) {
-                $timeleft = $hours . 'h ' . $mins . 'm';
-            } else if ($mins > 1) {
-                $timeleft = $mins . 'm ' . $secs . 's';
+            if ($interval->invert == 1) {
+                $days = $interval->format('%d');
+                $hours = $interval->format('%h');
+                $mins = $interval->format('%i');
+                $secs = $interval->format('%s');
+                if ($days > 0) {
+                    $timeleft = $days . 'd ' . $hours . 'h';
+                } else if ($hours > 1) {
+                    $timeleft = $hours . 'h ' . $mins . 'm';
+                } else if ($mins > 1) {
+                    $timeleft = $mins . 'm ' . $secs . 's';
+                } else {
+                    $timeleft = $secs . 's';
+                }
             } else {
-                $timeleft = $secs . 's';
+                $timeleft = '0s';
             }
 
             return [
@@ -910,6 +926,7 @@ class EbayController extends Controller {
             $item = EbayItems::where('card_id', $data['card_id'])->where('itemId', $data['itemId'])->first();
             if ($item == null) {
                 $cat_id = 1;
+               
                 if (isset($data['details']['PrimaryCategoryID'])) {
                     $cat_id = EbayItemCategories::where('categoryId', $data['details']['PrimaryCategoryID'])->first()['id'];
                 } else {
@@ -922,7 +939,7 @@ class EbayController extends Controller {
                             'Baseball' => '2',
                             'Basketball' => '3',
                             'Soccer' => '4',
-                            'Pokemon' => '10',
+                            'Pokémon' => '10',
                             'Hockey' => '11',
                         );
                         if (!empty($card_details->sport)) {
@@ -1041,7 +1058,7 @@ class EbayController extends Controller {
                             'Baseball' => '2',
                             'Basketball' => '3',
                             'Soccer' => '4',
-                            'Pokemon' => '10',
+                            'Pokémon' => '10',
                             'Hockey' => '11',
                         );
                         if (!empty($card_details->sport)) {
@@ -1246,11 +1263,12 @@ class EbayController extends Controller {
                 $galleryURL = $this->defaultListingImage;
             }
             $listingTypeVal = ($item->listingInfo ? $item->listingInfo->listingType : '');
-            
+
             date_default_timezone_set("America/Los_Angeles");
-                $datetime1 = new \DateTime($item->listing_ending_at);
-                $datetime2 = new \DateTime('now');
-                $interval = $datetime1->diff($datetime2);
+            $datetime1 = new \DateTime($item->listing_ending_at);
+            $datetime2 = new \DateTime('now');
+            $interval = $datetime1->diff($datetime2);
+            if ($interval->invert == 1) {
                 $days = $interval->format('%d');
                 $hours = $interval->format('%h');
                 $mins = $interval->format('%i');
@@ -1264,7 +1282,10 @@ class EbayController extends Controller {
                 } else {
                     $timeleft = $secs . 's';
                 }
-                
+            } else {
+                $timeleft = '0s';
+            }
+
             return [
                 'id' => $item->id,
                 'title' => $item->title,
@@ -1292,18 +1313,26 @@ class EbayController extends Controller {
             $datetime1 = new \DateTime($data['items']->listing_ending_at);
             $datetime2 = new \DateTime('now');
             $interval = $datetime1->diff($datetime2);
-            $data['items']['time_days'] = $days = $interval->format('%d');
-            $data['items']['time_hours'] = $hours = $interval->format('%h');
-            $data['items']['time_mins'] = $mins = $interval->format('%i');
-            $data['items']['time_secs'] = $secs = $interval->format('%s');
-            if ($days > 0) {
-                $timeleft = $days . 'd ' . $hours . 'h';
-            } else if ($hours > 1) {
-                $timeleft = $hours . 'h ' . $mins . 'm';
-            } else if ($mins > 1) {
-                $timeleft = $mins . 'm ' . $secs . 's';
+            if ($interval->invert == 1) {
+                $data['items']['time_days'] = $days = $interval->format('%d');
+                $data['items']['time_hours'] = $hours = $interval->format('%h');
+                $data['items']['time_mins'] = $mins = $interval->format('%i');
+                $data['items']['time_secs'] = $secs = $interval->format('%s');
+                if ($days > 0) {
+                    $timeleft = $days . 'd ' . $hours . 'h';
+                } else if ($hours > 1) {
+                    $timeleft = $hours . 'h ' . $mins . 'm';
+                } else if ($mins > 1) {
+                    $timeleft = $mins . 'm ' . $secs . 's';
+                } else {
+                    $timeleft = $secs . 's';
+                }
             } else {
-                $timeleft = $secs . 's';
+                $data['items']['time_days'] = 0;
+                $data['items']['time_hours'] = 0;
+                $data['items']['time_mins'] = 0;
+                $data['items']['time_secs'] = 0;
+                $timeleft = '0s';
             }
             $data['timeleft'] = $timeleft;
             $data['items']['time_now'] = date('Y-m-d H:i:s');
@@ -1403,18 +1432,22 @@ class EbayController extends Controller {
                 $datetime1 = new \DateTime($item->listing_ending_at);
                 $datetime2 = new \DateTime('now');
                 $interval = $datetime1->diff($datetime2);
-                $days = $interval->format('%d');
-                $hours = $interval->format('%h');
-                $mins = $interval->format('%i');
-                $secs = $interval->format('%s');
-                if ($days > 0) {
-                    $timeleft = $days . 'd ' . $hours . 'h';
-                } else if ($hours > 1) {
-                    $timeleft = $hours . 'h ' . $mins . 'm';
-                } else if ($mins > 1) {
-                    $timeleft = $mins . 'm ' . $secs . 's';
+                if ($interval->invert == 1) {
+                    $days = $interval->format('%d');
+                    $hours = $interval->format('%h');
+                    $mins = $interval->format('%i');
+                    $secs = $interval->format('%s');
+                    if ($days > 0) {
+                        $timeleft = $days . 'd ' . $hours . 'h';
+                    } else if ($hours > 1) {
+                        $timeleft = $hours . 'h ' . $mins . 'm';
+                    } else if ($mins > 1) {
+                        $timeleft = $mins . 'm ' . $secs . 's';
+                    } else {
+                        $timeleft = $secs . 's';
+                    }
                 } else {
-                    $timeleft = $secs . 's';
+                    $timeleft = '0s';
                 }
 
                 return [
@@ -1443,15 +1476,15 @@ class EbayController extends Controller {
         try {
             $last_entry = AdvanceSearchOptions::latest()->first();
             $previous_date = date('Y-m-d H:i:s', strtotime('-3 days'));
+
             if (!empty($last_entry) && $last_entry['updated_at'] < $previous_date) {
                 $this->updateAdanceSearchOptions($request);
             }
             if (empty($last_entry)) {
                 $this->updateAdanceSearchOptions($request);
             }
-
             $advanceSearchData = [
-                'sports' => [],
+                'sport' => [],
                 'year' => [],
                 'team' => [],
                 'season' => [],
@@ -1472,10 +1505,10 @@ class EbayController extends Controller {
     public function updateAdanceSearchOptions(Request $request) {
         try {
             $advanceSearchData = [];
-            $includeParams = ['Sport', 'Year', 'Card Manufacturer', 'Series', 'Grade', 'Product', 'Team', 'Season'];
+            $includeParams = ['Sport', 'Sport:', 'Year', 'Year:', 'Card Manufacturer', 'Card Manufacturer:', 'Series', 'Series:', 'Grade', 'Grade:', 'Product', 'Product:', 'Team', 'Team:', 'Season', 'Season:'];
             $specifics = EbayItemSpecific::whereIn('name', $includeParams)->select('name')->groupBy('name')->get();
             foreach ($specifics->toArray() as $key => $value) {
-                $index = str_replace(array('/', ' '), array('', ''), strtolower($value['name']));
+                $index = str_replace(array('/', ' ', ':'), array('', '', ''), strtolower($value['name']));
                 $data = [];
                 $c = EbayItemSpecific::where('name', $value['name'])
                                 ->where('value', '!=', 'N/A')
@@ -1634,18 +1667,22 @@ class EbayController extends Controller {
                 $datetime1 = new \DateTime($item->listing_ending_at);
                 $datetime2 = new \DateTime('now');
                 $interval = $datetime1->diff($datetime2);
-                $days = $interval->format('%d');
-                $hours = $interval->format('%h');
-                $mins = $interval->format('%i');
-                $secs = $interval->format('%s');
-                if ($days > 0) {
-                    $timeleft = $days . 'd ' . $hours . 'h';
-                } else if ($hours > 1) {
-                    $timeleft = $hours . 'h ' . $mins . 'm';
-                } else if ($mins > 1) {
-                    $timeleft = $mins . 'm ' . $secs . 's';
+                if ($interval->invert == 1) {
+                    $days = $interval->format('%d');
+                    $hours = $interval->format('%h');
+                    $mins = $interval->format('%i');
+                    $secs = $interval->format('%s');
+                    if ($days > 0) {
+                        $timeleft = $days . 'd ' . $hours . 'h';
+                    } else if ($hours > 1) {
+                        $timeleft = $hours . 'h ' . $mins . 'm';
+                    } else if ($mins > 1) {
+                        $timeleft = $mins . 'm ' . $secs . 's';
+                    } else {
+                        $timeleft = $secs . 's';
+                    }
                 } else {
-                    $timeleft = $secs . 's';
+                    $timeleft = '0s';
                 }
 
                 $sx_data = CardSales::getSxAndLastSx($item->card_id);
@@ -1701,18 +1738,22 @@ class EbayController extends Controller {
                 $datetime1 = new \DateTime($item->listing_ending_at);
                 $datetime2 = new \DateTime('now');
                 $interval = $datetime1->diff($datetime2);
-                $days = $interval->format('%d');
-                $hours = $interval->format('%h');
-                $mins = $interval->format('%i');
-                $secs = $interval->format('%s');
-                if ($days > 0) {
-                    $timeleft = $days . 'd ' . $hours . 'h';
-                } else if ($hours > 1) {
-                    $timeleft = $hours . 'h ' . $mins . 'm';
-                } else if ($mins > 1) {
-                    $timeleft = $mins . 'm ' . $secs . 's';
+                if ($interval->invert == 1) {
+                    $days = $interval->format('%d');
+                    $hours = $interval->format('%h');
+                    $mins = $interval->format('%i');
+                    $secs = $interval->format('%s');
+                    if ($days > 0) {
+                        $timeleft = $days . 'd ' . $hours . 'h';
+                    } else if ($hours > 1) {
+                        $timeleft = $hours . 'h ' . $mins . 'm';
+                    } else if ($mins > 1) {
+                        $timeleft = $mins . 'm ' . $secs . 's';
+                    } else {
+                        $timeleft = $secs . 's';
+                    }
                 } else {
-                    $timeleft = $secs . 's';
+                    $timeleft = '0s';
                 }
 
                 $sx_data = CardSales::getSxAndLastSx($item->card_id);
