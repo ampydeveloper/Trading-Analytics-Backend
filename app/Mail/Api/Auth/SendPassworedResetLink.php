@@ -38,7 +38,7 @@ class SendPassworedResetLink extends Mailable
     {
         return $this->to($this->request->email, $this->request->name)
             ->view('api.mail.forget-password')
-            ->subject('Password Reset '.app_name())
+            ->subject(app_name().' - Password Reset')
             ->from(config('mail.from.address'), config('mail.from.name'));
     }
 }

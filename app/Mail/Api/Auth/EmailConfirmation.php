@@ -38,7 +38,7 @@ class EmailConfirmation extends Mailable
     {
         return $this->to($this->request->email, $this->request->first_name)
             ->view('api.mail.email-confirmation')
-            ->subject('Email Confirmation '.app_name())
+            ->subject('Welcome to '.app_name())
             ->from(config('mail.from.address'), config('mail.from.name'));
     }
 }
