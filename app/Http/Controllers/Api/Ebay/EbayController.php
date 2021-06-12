@@ -68,7 +68,7 @@ class EbayController extends Controller {
                         if ($request->input('filter_by') == 'ending_soon') {
 //                            $q->orwhereDate('listing_ending_at', '>', date('Y-m-d h:i:s'));
 
-                            $date_one = Carbon::now()->addDay();
+                            $date_one = Carbon::now();
                             $date_one->setTimezone('America/Los_Angeles');
                             $q->where("listing_ending_at", ">", $date_one);
                         }
@@ -99,9 +99,9 @@ class EbayController extends Controller {
                     $secs = $interval->format('%s');
                     if ($days > 0) {
                         $timeleft = $days . 'd ' . $hours . 'h';
-                    } else if ($hours > 1) {
+                    } else if ($hours >= 1) {
                         $timeleft = $hours . 'h ' . $mins . 'm';
-                    } else if ($mins > 1) {
+                    } else if ($mins >= 1) {
                         $timeleft = $mins . 'm ' . $secs . 's';
                     } else {
                         $timeleft = $secs . 's';
@@ -489,77 +489,10 @@ class EbayController extends Controller {
 
     public function getRecentAuctionList(Request $request) {
         try {
-//            $filter = $request->input('filter', null);
-//            $searchCard = $request->input('searchCard', null);
-//            if ($filter != null && $this->checkForAdvanceSearch($filter)) {
-//                $items = $this->_advanceSearch($request);
-//            } else {
-//                $items = $this->_basicSearch($request);
-//            }
-//            if ($searchCard != null) {
-//                $cards = Card::where('id', $searchCard)->with('details')->get();
-//            } else {
-//                $cards = Card::whereIn('id', $items['cards'])->with('details')->get();
-//            }
-//            foreach ($cards as $ind => $card) {
-//                $cardValues = CardValues::where('card_id', $card->id)->orderBy('date', 'DESC')->limit(2)->get('avg_value');
-//                $sx = 0;
-//                $sx_icon = 'up';
-//                if (count($cardValues) == 2) {
-//                    foreach ($cardValues as $cv) {
-//                        if ($sx == 0) {
-//                            $sx = $cv['avg_value'];
-//                        } else {
-//                            $sx = $sx - $cv['avg_value'];
-//                        }
-//                    }
-//                }
-//                if ($sx < 0) {
-//                    $sx = abs($sx);
-//                    $sx_icon = 'down';
-//                }
-//                $cards[$ind]['sx_value'] = number_format((float) $sx, 2, '.', '');
-//                $cards[$ind]['sx_icon'] = $sx_icon;
-//                $cards[$ind]['price'] = 0;
-//                if (isset($card->details->currentPrice)) {
-//                    $cards[$ind]['price'] = $card->details->currentPrice;
-//                }
-//            }
-//            $cardsIds = [];
-//        $search = $request->input('search', null);
-//        $page = $request->input('page', 1);
             $take = $request->input('take', 30);
-//        $searchCard = $request->input('searchCard', null);
-//        $filterBy = $request->input('filterBy', null);
-//        $skip = $take * $page;
-//        $skip = $skip - $take;
-//        $cardsId = null;
-//        if ($search != null && $search != '') {
-//            $cardsId = Card::where(function($q) use ($search) {
-//                        $search = explode(' ', $search);
-//                        foreach ($search as $key => $keyword) {
-//                            $q->orWhere('title', 'like', '%' . $keyword . '%');
-//                        }
-//                    })->pluck('id');
-//        }
             $items = EbayItems::with(['category', 'card', 'card.value', 'details', 'playerDetails', 'condition', 'sellerInfo', 'listingInfo', 'sellingStatus', 'shippingInfo', 'specifications'])
                             ->where('status', 0)->orderBy('created_at', 'desc')->take($take)->get();
-//        if ($filterBy == 'ending_soon') {
-//            $date_one = Carbon::now()->addDay();
-//            $date_one->setTimezone('UTC');
-//            // $date_two = Carbon::now()->setTimezone('UTC');
-//            $items = $items->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one);
-//            $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
-//        } else {
-//            $items = $items->where('status', 0)->orderBy('updated_at', 'desc')->get();
-//        }
-//        if ($filterBy == 'price_low_to_high') {
-//            $items = $items->sortBy(function($query) {
-//                return $query->sellingStatus->currentPrice;
-//            });
-//        }
             $items = $items->map(function($item, $key) {
-//            $cardsIds[] = $item->card_id;
                 $galleryURL = $item->galleryURL;
                 if ($item->pictureURLLarge != null) {
                     $galleryURL = $item->pictureURLLarge;
@@ -580,9 +513,9 @@ class EbayController extends Controller {
                     $secs = $interval->format('%s');
                     if ($days > 0) {
                         $timeleft = $days . 'd ' . $hours . 'h';
-                    } else if ($hours > 1) {
+                    } else if ($hours >= 1) {
                         $timeleft = $hours . 'h ' . $mins . 'm';
-                    } else if ($mins > 1) {
+                    } else if ($mins >= 1) {
                         $timeleft = $mins . 'm ' . $secs . 's';
                     } else {
                         $timeleft = $secs . 's';
@@ -613,8 +546,6 @@ class EbayController extends Controller {
                     'timeleft' => $timeleft,
                 ];
             });
-//        return ['data' => $items, 'next' => ($page + 1), 'cards' => $cardsIds];
-
             return response()->json(['status' => 200, 'items' => $items], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage() . ' - ' . $e->getLine(), 500);
@@ -734,7 +665,7 @@ class EbayController extends Controller {
         });
 
         if ($filterBy == 'ending_soon') {
-            $date_one = Carbon::now()->addDay();
+            $date_one = Carbon::now();
             $date_one->setTimezone('America/Los_Angeles');
             // $date_two = Carbon::now()->setTimezone('UTC');
             $ebayitems = $ebayitems->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one);
@@ -776,9 +707,9 @@ class EbayController extends Controller {
                 $secs = $interval->format('%s');
                 if ($days > 0) {
                     $timeleft = $days . 'd ' . $hours . 'h';
-                } else if ($hours > 1) {
+                } else if ($hours >= 1) {
                     $timeleft = $hours . 'h ' . $mins . 'm';
-                } else if ($mins > 1) {
+                } else if ($mins >= 1) {
                     $timeleft = $mins . 'm ' . $secs . 's';
                 } else {
                     $timeleft = $secs . 's';
@@ -842,7 +773,7 @@ class EbayController extends Controller {
             }
         });
         if ($filterBy == 'ending_soon') {
-            $date_one = Carbon::now()->addDay();
+            $date_one = Carbon::now();
             $date_one->setTimezone('America/Los_Angeles');
             // $date_two = Carbon::now()->setTimezone('UTC');
             $items = $items->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one);
@@ -884,9 +815,9 @@ class EbayController extends Controller {
                 $secs = $interval->format('%s');
                 if ($days > 0) {
                     $timeleft = $days . 'd ' . $hours . 'h';
-                } else if ($hours > 1) {
+                } else if ($hours >= 1) {
                     $timeleft = $hours . 'h ' . $mins . 'm';
-                } else if ($mins > 1) {
+                } else if ($mins >= 1) {
                     $timeleft = $mins . 'm ' . $secs . 's';
                 } else {
                     $timeleft = $secs . 's';
@@ -923,10 +854,10 @@ class EbayController extends Controller {
             \DB::beginTransaction();
             $data = $request->all();
             $data['card_id'] = ($data['card_id'] == "null" ? null : $data['card_id']);
-            $item = EbayItems::where('card_id', $data['card_id'])->where('itemId', $data['itemId'])->first();
+            $item = EbayItems::where('itemId', $data['itemId'])->first();
             if ($item == null) {
                 $cat_id = 1;
-               
+
                 if (isset($data['details']['PrimaryCategoryID'])) {
                     $cat_id = EbayItemCategories::where('categoryId', $data['details']['PrimaryCategoryID'])->first()['id'];
                 } else {
@@ -1240,7 +1171,7 @@ class EbayController extends Controller {
         });
         if ($filterBy != null) {
             if ($filterBy == 'ending_soon') {
-                $date_one = Carbon::now()->addDay();
+                $date_one = Carbon::now();
                 $date_one->setTimezone('America/Los_Angeles');
                 // $date_two = Carbon::now()->setTimezone('UTC');
                 $items = $items->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one);
@@ -1275,9 +1206,9 @@ class EbayController extends Controller {
                 $secs = $interval->format('%s');
                 if ($days > 0) {
                     $timeleft = $days . 'd ' . $hours . 'h';
-                } else if ($hours > 1) {
+                } else if ($hours >= 1) {
                     $timeleft = $hours . 'h ' . $mins . 'm';
-                } else if ($mins > 1) {
+                } else if ($mins >= 1) {
                     $timeleft = $mins . 'm ' . $secs . 's';
                 } else {
                     $timeleft = $secs . 's';
@@ -1320,9 +1251,9 @@ class EbayController extends Controller {
                 $data['items']['time_secs'] = $secs = $interval->format('%s');
                 if ($days > 0) {
                     $timeleft = $days . 'd ' . $hours . 'h';
-                } else if ($hours > 1) {
+                } else if ($hours >= 1) {
                     $timeleft = $hours . 'h ' . $mins . 'm';
-                } else if ($mins > 1) {
+                } else if ($mins >= 1) {
                     $timeleft = $mins . 'm ' . $secs . 's';
                 } else {
                     $timeleft = $secs . 's';
@@ -1439,9 +1370,9 @@ class EbayController extends Controller {
                     $secs = $interval->format('%s');
                     if ($days > 0) {
                         $timeleft = $days . 'd ' . $hours . 'h';
-                    } else if ($hours > 1) {
+                    } else if ($hours >= 1) {
                         $timeleft = $hours . 'h ' . $mins . 'm';
-                    } else if ($mins > 1) {
+                    } else if ($mins >= 1) {
                         $timeleft = $mins . 'm ' . $secs . 's';
                     } else {
                         $timeleft = $secs . 's';
@@ -1637,12 +1568,11 @@ class EbayController extends Controller {
                     $q->where('active', 1);
                 });
             }
-            if ($filterBy == 'ending_soon') {
-                $date_one = Carbon::now()->addDay();
+//            if ($filterBy == 'ending_soon') {
+                $date_one = Carbon::now();
                 $date_one->setTimezone('America/Los_Angeles');
-//                $date_two = Carbon::now()->setTimezone('America/Los_Angeles');
-                $items = $items->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one);
-            }
+                $items = $items->where("listing_ending_at", ">", $date_one);
+//            }
             $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
             if ($filterBy == 'price_low_to_high') {
                 $items = $items->sortBy(function($query) {
@@ -1674,9 +1604,9 @@ class EbayController extends Controller {
                     $secs = $interval->format('%s');
                     if ($days > 0) {
                         $timeleft = $days . 'd ' . $hours . 'h';
-                    } else if ($hours > 1) {
+                    } else if ($hours >= 1) {
                         $timeleft = $hours . 'h ' . $mins . 'm';
-                    } else if ($mins > 1) {
+                    } else if ($mins >= 1) {
                         $timeleft = $mins . 'm ' . $secs . 's';
                     } else {
                         $timeleft = $secs . 's';
@@ -1719,7 +1649,7 @@ class EbayController extends Controller {
         $skip = $take * $page;
         $skip = $skip - $take;
         try {
-            $date_one = Carbon::now()->addDay();
+            $date_one = Carbon::now();
             $date_one->setTimezone('America/Los_Angeles');
             // $date_two = Carbon::now()->setTimezone('UTC');
             $items = EbayItems::with(['sellingStatus', 'card', 'card.value', 'listingInfo'])->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one)
@@ -1745,9 +1675,9 @@ class EbayController extends Controller {
                     $secs = $interval->format('%s');
                     if ($days > 0) {
                         $timeleft = $days . 'd ' . $hours . 'h';
-                    } else if ($hours > 1) {
+                    } else if ($hours >= 1) {
                         $timeleft = $hours . 'h ' . $mins . 'm';
-                    } else if ($mins > 1) {
+                    } else if ($mins >= 1) {
                         $timeleft = $mins . 'm ' . $secs . 's';
                     } else {
                         $timeleft = $secs . 's';

@@ -172,9 +172,9 @@ class AuthController extends Controller {
             } catch (\Expection $e) {
                 \Log::error($e);
             }
-            return response()->json(['error' => 'Somthing went wrong'], 200);
+            return response()->json(['error' => 'There has been an error.Please try again.'], 200);
         }
-        return response()->json(['error' => 'This email not registered with us'], 200);
+        return response()->json(['error' => 'No account with this email is registered with us. Check your email address.'], 200);
     }
 
     public function passwordResetRequest(Request $request) {
