@@ -490,8 +490,31 @@ class EbayController extends Controller {
     public function getRecentAuctionList(Request $request) {
         try {
             $take = $request->input('take', 30);
+            $search = $request->input('search', null);
+            $filterBy = $request->input('filterBy', null);
             $items = EbayItems::with(['category', 'card', 'card.value', 'details', 'playerDetails', 'condition', 'sellerInfo', 'listingInfo', 'sellingStatus', 'shippingInfo', 'specifications'])
-                            ->where('status', 0)->orderBy('created_at', 'desc')->take($take)->get();
+                    ->where(function ($q) use ($search, $request, $filterBy) {
+                if ($search != null) {
+                    $q->where('title', 'like', '%' . $search . '%');
+                }
+                if ($filterBy == 'buy_it_now') {
+                    $q->orWhereHas('listingInfo', function ($qq) {
+                        $qq->where('listingType', '!=', 'Auction');
+                    });
+                }
+            });
+            if ($filterBy == 'ending_soon') {
+                $date_one = Carbon::now();
+                $date_one->setTimezone('America/Los_Angeles');
+                $items = $items->where("listing_ending_at", ">", $date_one);
+            }
+            $items = $items->where('status', 0)->orderBy('created_at', 'desc')->take($take)->get();
+            if ($filterBy == 'price_low_to_high') {
+                $items = $items->sortBy(function($query) {
+                    return ($query->sellingStatus ? $query->sellingStatus->currentPrice : null);
+                });
+            }
+
             $items = $items->map(function($item, $key) {
                 $galleryURL = $item->galleryURL;
                 if ($item->pictureURLLarge != null) {
@@ -501,6 +524,7 @@ class EbayController extends Controller {
                 } else if ($galleryURL == null) {
                     $galleryURL = $this->defaultListingImage;
                 }
+             
                 $listingTypeval = ($item->listingInfo ? $item->listingInfo->listingType : '');
                 date_default_timezone_set("America/Los_Angeles");
                 $datetime1 = new \DateTime($item->listing_ending_at);
@@ -1569,9 +1593,9 @@ class EbayController extends Controller {
                 });
             }
 //            if ($filterBy == 'ending_soon') {
-                $date_one = Carbon::now();
-                $date_one->setTimezone('America/Los_Angeles');
-                $items = $items->where("listing_ending_at", ">", $date_one);
+            $date_one = Carbon::now();
+            $date_one->setTimezone('America/Los_Angeles');
+            $items = $items->where("listing_ending_at", ">", $date_one);
 //            }
             $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
             if ($filterBy == 'price_low_to_high') {
@@ -1646,14 +1670,37 @@ class EbayController extends Controller {
     public function getEndingSoonList(Request $request) {
         $page = $request->input('page', 1);
         $take = $request->input('take', 30);
+        $search = $request->input('search', null);
+        $filterBy = $request->input('filterBy', null);
         $skip = $take * $page;
         $skip = $skip - $take;
         try {
             $date_one = Carbon::now();
             $date_one->setTimezone('America/Los_Angeles');
-            // $date_two = Carbon::now()->setTimezone('UTC');
-            $items = EbayItems::with(['sellingStatus', 'card', 'card.value', 'listingInfo'])->where("listing_ending_at", ">", $date_one); //->where("listing_ending_at", "<", $date_one)
+            $items = EbayItems::with(['sellingStatus', 'card', 'card.value', 'listingInfo'])->where("listing_ending_at", ">", $date_one)
+                    ->where(function ($q) use ($search, $request, $filterBy) {
+                if ($search != null) {
+                    $q->where('title', 'like', '%' . $search . '%');
+                }
+                if ($filterBy == 'buy_it_now') {
+                    $q->orWhereHas('listingInfo', function ($qq) {
+                        $qq->where('listingType', '!=', 'Auction');
+                    });
+                }
+            });
+            if ($filterBy == 'ending_soon') {
+                $date_one = Carbon::now();
+                $date_one->setTimezone('America/Los_Angeles');
+                $items = $items->where("listing_ending_at", ">", $date_one);
+            }
             $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
+            if ($filterBy == 'price_low_to_high') {
+                $items = $items->sortBy(function($query) {
+                    return ($query->sellingStatus ? $query->sellingStatus->currentPrice : null);
+                });
+            }
+
+//            $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
             $items = $items->skip($skip)->take($take)->map(function($item, $key) {
                 $galleryURL = $item->galleryURL;
                 if ($item->pictureURLLarge != null) {
@@ -1691,12 +1738,11 @@ class EbayController extends Controller {
                 $lastSx = $sx_data['lastSx'];
 
                 $price_diff = (float) str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
                     'galleryURL' => $galleryURL,
-                    'price' => number_format(($item->sellingStatus ? $item->sellingStatus->price : 0), 2, '.', ''),
+                    'price' => number_format((float) ($item->sellingStatus ? $item->sellingStatus->price : 0), 2, '.', ''),
                     'itemId' => $item->itemId,
                     'viewItemURL' => $item->viewItemURL,
                     'listing_ending_at' => $item->listing_ending_at,

@@ -35,8 +35,8 @@ class AuthController extends Controller {
             $request->email_confirmation_link = url('/') . '/api/auth/email-confirmation/' . $user->confirmation_code;
             \Mail::send(new EmailConfirmation($request));
 
-            return response()->json([
-                        'message' => 'You have registered successfully. Email has been sent to you. Please verify your email to login.',
+          return response()->json([
+                        'message' => 'You have registered successfully. Email has been sent to you. Please verify it to login.',
                             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -53,14 +53,14 @@ class AuthController extends Controller {
         if ($user != null) {
             if ($user->confirmed == false) {
                 User::whereId($user->id)->update(['confirmed' => 1]);
-                $message = 'Email has been confirmed successfully.';
+             $message = 'Email has been confirmed successfully. You can login now.';
                 return view('frontend.email-confirmation', compact('message'));
             } else {
-                $message = 'Email is already confirmed.';
+                    $message = 'Email is already confirmed. You can login.';
                 return view('frontend.email-confirmation', compact('message'));
             }
         } else {
-            $message = 'Invalid Token. Please try again.';
+            $message = 'Your email verification token is invalid. Try forgot password option to proceed further.';
             return view('frontend.email-confirmation', compact('message'));
         }
     }
@@ -68,9 +68,9 @@ class AuthController extends Controller {
     public function login(Request $request) {
         try {
             if (User::where('email', $request->email)->where('confirmed', false)->exists()) {
-                return response()->json([
+               return response()->json([
                             'error' => [
-                                'message' => 'Please confirm your email.',
+                                'message' => 'Your account has not been confirmed. Please check your email and verify it to login.',
                             ],
                                 ], 500);
             }
@@ -101,7 +101,7 @@ class AuthController extends Controller {
 
             // Check the combination of email and password, also check for activation status
             if (!$token = auth('api')->attempt($credentials)) {
-                return response()->json(['error' => 'Unauthorized', 'token' => $token], Response::HTTP_UNAUTHORIZED);
+                return response()->json(['error' => [ 'message' => 'Invalid Email or Password. Try again.'], 'token' => $token], Response::HTTP_UNAUTHORIZED);
             }
             auth('api')->setToken($token);
             $user = auth('api')->authenticate();
@@ -115,9 +115,9 @@ class AuthController extends Controller {
             }
 
             auth()->logout();
-            return response()->json([
+           return response()->json([
                         'error' => [
-                            'message' => 'Google Auth Error',
+                            'message' => 'Google authentication is not working. Please try again.',
                         ],
                             ], 500);
         } catch (\Exception $e) {
@@ -158,7 +158,6 @@ class AuthController extends Controller {
             return response()->json($validator->errors(), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-//        dd($request->all());
         $user = User::where('email', $request->input('email'))->first();
         if ($user) {
             try {
@@ -167,14 +166,14 @@ class AuthController extends Controller {
                     $request->reset_link = env('VUE_URL') . 'reset-password?token=' . $token;
                     $request->name = $user->first_name . ' ' . $user->last_name;
                     \Mail::send(new SendPassworedResetLink($request));
-                    return response()->json(['message' => 'Email sent to you'], 200);
+                    return response()->json(['message' => 'An email has been sent to you successfully.'], 200);
                 }
             } catch (\Expection $e) {
                 \Log::error($e);
             }
             return response()->json(['error' => 'There has been an error.Please try again.'], 200);
         }
-        return response()->json(['error' => 'No account with this email is registered with us. Check your email address.'], 200);
+        return response()->json(['error' => 'No account with this email is registered with us. Check your email address and try again.'], 200);
     }
 
     public function passwordResetRequest(Request $request) {
@@ -191,15 +190,15 @@ class AuthController extends Controller {
         if ($user) {
             try {
                 if ($user->update(['password' => $request->input('password')])) {
-                    return response()->json(['message' => 'Password has been reset successfully. YOu can login now.'], 200);
+                    return response()->json(['message' => 'Your account password has been reset successfully. You can login now.'], 200);
                 }
             } catch (\Expection $e) {
                 \Log::error($e);
                 //return response()->json(['error'=>$e->getMessage()],200);        
             }
-            return response()->json(['error' => 'Somthing went wrong'], 200);
+            return response()->json(['error' => 'There has been an error. Please try again.'], 200);
         }
-        return response()->json(['error' => 'Invalid Token'], 200);
+        return response()->json(['error' => 'Your passsword verification token is invalid. Try forgot password option again to proceed further.'], 200);
     }
 
     public function generateGoogleAuthQR($user) {
@@ -236,11 +235,11 @@ class AuthController extends Controller {
                 $u->update(['two_factor_secret_activated' => 1]);
                 return response()->json(['token' => $request->token], 200);
             } else {
-                return response()->json(['error' => 'Invalid Code'], 200);
+                return response()->json(['error' => 'Google authentication code is invalid. Please try again.'], 200);
             }
         } catch (\Expection $e) {
             \Log::error($e);
-            return response()->json(['not able to verify'], 500);
+            return response()->json(['Google authentication is not working. Please try again.'], 500);
         }
     }
 

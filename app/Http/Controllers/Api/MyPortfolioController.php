@@ -189,7 +189,7 @@ class MyPortfolioController extends Controller {
                         'id' => $card->id,
                         'title' => $card->title,
                         'cardImage' => $card->cardImage,
-                        'sx_value' => $sx,
+                        'sx_value' => number_format((float) $sx, 2, '.', ''),
                         'sx_icon' => $sx_icon,
                         'price' => (isset($card->details->currentPrice) ? $card->details->currentPrice : ''),
                         'purchase_price' => $purchase_price,
@@ -338,7 +338,7 @@ class MyPortfolioController extends Controller {
                         'diff_value' => $diff,
                         'diff_icon' => $diff_icon,
 //                        'updated' => $updated,
-                        'total_purchases' => $total_purchases,
+                        'total_purchases' => number_format($total_purchases, 2, '.', ''),
                         'percent_differ' => $percent_diff,
                         'percent_diff_icon' => $percent_diff_icon
                             ], 200);

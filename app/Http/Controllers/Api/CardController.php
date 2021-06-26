@@ -64,7 +64,8 @@ class CardController extends Controller {
         if ($itemId != null) {
             try {
 //                $response = EbayService::getSingleItemDetails($itemId);
-                $script_link = '/home/ubuntu/ebay/ebayFetch/bin/python3 /home/ubuntu/ebay/core.py """' . $itemId . '"""';
+//                $script_link = '/home/ubuntu/ebay/ebayFetch/bin/python3 /home/ubuntu/ebay/core.py """' . $itemId . '"""';
+                $script_link = '/home/' . env('SCRAP_USER') . '/ebay/ebayFetch/bin/python3 /home/' . env('SCRAP_USER') . '/ebay/core.py """' . $itemId . '"""';
                 $scrap_response = shell_exec($script_link . " 2>&1");
                 $response = json_decode($scrap_response);
                 return response()->json(['status' => 200, 'data' => $response], 200);
@@ -229,6 +230,7 @@ class CardController extends Controller {
             $grpFormat = 'H:i';
             $from = date('Y-m-d H:i:s');
             $to = date('Y-m-d H:i:s', strtotime('-1 day'));
+            $daysForSx = 0;
         } elseif ($days == 2) {
             $grpFormat = 'Y-m-d';
             $from = date('Y-m-d H:i:s');
@@ -494,7 +496,15 @@ class CardController extends Controller {
 
     public function getSmartKeywordOnlyName(Request $request) {
         try {
-            $data = Card::select('player')->where('player', 'like', '%' . $request->input('keyword') . '%')->where('sport', $request->input('sport'))->where('active', 1)->distinct()->get()->take(10);
+            if ($request->input('sport') != null) {
+                $data = Card::select('player')->where('player', 'like', '%' . $request->input('keyword') . '%')
+                                ->where('sport', $request->input('sport'))
+                                ->where('active', 1)->distinct()->get()->take(10);
+            } else {
+                $data = Card::select('player')->where('player', 'like', '%' . $request->input('keyword') . '%')
+                                ->where('active', 1)->distinct()->get()->take(10);
+            }
+
             return response()->json(['status' => 200, 'data' => $data, 'keyword' => $request->input('keyword')], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -739,25 +749,24 @@ class CardController extends Controller {
             return response()->json($e->getMessage(), 500);
         }
     }
-    
-    private function __setTotalSxValueByDate($date)
-    {
+
+    private function __setTotalSxValueByDate($date) {
         $saleTotal = CardSales::where('timestamp', 'like', '%' . Carbon::create($date)->format('Y-m-d') . '%')->get();
-        
-        if(CardsTotalSx::where('date',Carbon::create($date)->format('Y-m-d'))->exists()){
-            CardsTotalSx::where('date',Carbon::create($date)->format('Y-m-d'))
-                    ->update(["amount"=> $saleTotal->avg('cost'),"quantity"=> $saleTotal->sum('quantity')]);
+
+        if (CardsTotalSx::where('date', Carbon::create($date)->format('Y-m-d'))->exists()) {
+            CardsTotalSx::where('date', Carbon::create($date)->format('Y-m-d'))
+                    ->update(["amount" => $saleTotal->avg('cost'), "quantity" => $saleTotal->sum('quantity')]);
         } else {
             CardsTotalSx::create([
-                "date"      => Carbon::create($date)->format('Y-m-d'),
-                "quantity"  => $saleTotal->sum('quantity'),
-                "amount"    => $saleTotal->avg('cost'),
+                "date" => Carbon::create($date)->format('Y-m-d'),
+                "quantity" => $saleTotal->sum('quantity'),
+                "amount" => $saleTotal->avg('cost'),
             ]);
         }
-        
+
         $total = CardSales::avg("cost");
 //        $total = CardsSx::sum("sx");
-        AppSettings::first()->update(["total_sx_value"=>$total]);
+        AppSettings::first()->update(["total_sx_value" => $total]);
     }
 
     public function createSales(Request $request) {
@@ -771,11 +780,11 @@ class CardController extends Controller {
                 'source' => $request->input('source'),
                 'type' => $request->input('type'),
             ]);
-            
-            $this->__uploadSalesSx($request->input('card_id'),$request->input('timestamp'),$request->input('cost'));
-            
+
+            $this->__uploadSalesSx($request->input('card_id'), $request->input('timestamp'), $request->input('cost'));
+
             $this->__setTotalSxValueByDate($request->input('timestamp'));
-            
+
             return response()->json(['status' => 200, 'message' => 'Sales data added.'], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -806,7 +815,7 @@ class CardController extends Controller {
             $existedCardSale = CardSales::where('id', $request->input('id'))->first();
             $lastCost = $existedCardSale->cost;
             $cardId = $existedCardSale->card_id;
-            
+
             CardSales::where('id', $request->input('id'))->update([
 //                'card_id'=> $request->input('card_id'),
                 'timestamp' => Carbon::create($request->input('timestamp'))->format('Y-m-d'),
@@ -815,53 +824,53 @@ class CardController extends Controller {
                 'source' => $request->input('source'),
                 'type' => $request->input('type'),
             ]);
-            
-            $this->__uploadSalesSx($cardId,$request->input('timestamp'),$request->input('cost'));
-            $cards = CardsSx::where("card_id",$cardId)
-                    ->where('date','!=',Carbon::create($request->input('timestamp'))->format('Y-m-d'))
+
+            $this->__uploadSalesSx($cardId, $request->input('timestamp'), $request->input('cost'));
+            $cards = CardsSx::where("card_id", $cardId)
+                    ->where('date', '!=', Carbon::create($request->input('timestamp'))->format('Y-m-d'))
                     ->get();
-            foreach($cards as $card){
-                $existedSales = CardSales::where("card_id",$request->input('card_id'))
-                    ->where('timestamp', 'like', '%' .  $card->date . '%')
-                    ->count();
-                
-                if($existedSales > 0){
-                    $salesAvg = CardSales::where("card_id",$request->input('card_id'))
-                        ->where('timestamp', 'like', '%' .  $card->date . '%')
-                        ->avg('cost');
-                    CardsSx::where("card_id",$request->input('card_id'))
-                        ->where('date',$card->date)
-                        ->update(["sx"=>$salesAvg]);
+            foreach ($cards as $card) {
+                $existedSales = CardSales::where("card_id", $request->input('card_id'))
+                        ->where('timestamp', 'like', '%' . $card->date . '%')
+                        ->count();
+
+                if ($existedSales > 0) {
+                    $salesAvg = CardSales::where("card_id", $request->input('card_id'))
+                            ->where('timestamp', 'like', '%' . $card->date . '%')
+                            ->avg('cost');
+                    CardsSx::where("card_id", $request->input('card_id'))
+                            ->where('date', $card->date)
+                            ->update(["sx" => $salesAvg]);
                 } else {
-                    CardsSx::where("card_id",$request->input('card_id'))
-                        ->where('date',$card->date)
-                        ->forceDelete();
+                    CardsSx::where("card_id", $request->input('card_id'))
+                            ->where('date', $card->date)
+                            ->forceDelete();
                 }
             }
             $this->__setTotalSxValueByDate($request->input('timestamp'));
-            
+
             return response()->json(['status' => 200, 'message' => 'Sales data edited.'], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
     }
-    
-    private function __uploadSalesSx($cardId,$timestamp,$cost) {
-        if(CardsSx::where('card_id',$cardId)
-            ->where('date',Carbon::create($timestamp)->format('Y-m-d'))
-            ->exists()) {
-            $existedSales = CardSales::where("card_id",$cardId)
-                ->where('timestamp', 'like', '%' .  Carbon::create($timestamp)->format('Y-m-d') . '%')
-                ->avg('cost');
 
-            CardsSx::where("card_id",$cardId)
-                ->where('date',Carbon::create($timestamp)->format('Y-m-d'))
-                ->update(["sx"=>$existedSales]);
+    private function __uploadSalesSx($cardId, $timestamp, $cost) {
+        if (CardsSx::where('card_id', $cardId)
+                        ->where('date', Carbon::create($timestamp)->format('Y-m-d'))
+                        ->exists()) {
+            $existedSales = CardSales::where("card_id", $cardId)
+                    ->where('timestamp', 'like', '%' . Carbon::create($timestamp)->format('Y-m-d') . '%')
+                    ->avg('cost');
+
+            CardsSx::where("card_id", $cardId)
+                    ->where('date', Carbon::create($timestamp)->format('Y-m-d'))
+                    ->update(["sx" => $existedSales]);
         } else {
             CardsSx::Create([
-                "card_id"   => $cardId,
-                "date"      => Carbon::create($timestamp)->format('Y-m-d'),
-                "sx"        => $cost,
+                "card_id" => $cardId,
+                "date" => Carbon::create($timestamp)->format('Y-m-d'),
+                "sx" => $cost,
             ]);
         }
     }
@@ -879,11 +888,9 @@ class CardController extends Controller {
 //                $data['sale'] += $sale['sx'];
 //            }
 //                $sale = CardSales::getSx();
-                $total = AppSettings::first();
-                $data['sale'] = $total['total_sx_value'];
+            $total = AppSettings::first();
+            $data['sale'] = $total['total_sx_value'];
 //            $data['sale'] = number_format($data['sale'], 2, '.', '');
-
-
 //            $all_cards = Card::pluck('id');
 //            $data['all_sales_value'] = CardSales::whereIn('card_id', $all_cards)->groupBy('card_id')->orderBy('timestamp', 'DESC')->get();
 //                    ->limit(3)->avg('cost');
@@ -908,7 +915,7 @@ class CardController extends Controller {
 //            $lastSx = CardSales::orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
 //            $count = count($lastSx);
 //            $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
-            
+
             $salesDate = CardsTotalSx::groupBy(DB::raw('DATE(date)'))->orderBy('date', 'DESC')->get();
             $count = $salesDate->count();
 //            dd($salesDate);
@@ -926,8 +933,6 @@ class CardController extends Controller {
                 $sx_data['oldestSx'] = 0;
             }
 //            dd($sx_data);
-            
-            
 //            $sx_data = CardSales::getSlabstoxSx();
             $sx = $sx_data['sx'];
             $lastSx = $sx_data['lastSx'];
@@ -1834,7 +1839,8 @@ class CardController extends Controller {
             }
 
             // Scrap Data
-            $script_link = '/home/ubuntu/ebay/ebayFetch/bin/python3 /home/ubuntu/ebay/core.py """' . $req->link . '"""';
+//            $script_link = '/home/ubuntu/ebay/ebayFetch/bin/python3 /home/ubuntu/ebay/core.py """' . $req->link . '"""';
+            $script_link = '/home/' . env('SCRAP_USER') . '/ebay/ebayFetch/bin/python3 /home/' . env('SCRAP_USER') . '/ebay/core.py """' . $req->link . '"""';
             $scrap_response = shell_exec($script_link . " 2>&1");
             $response = json_decode($scrap_response);
 //            $data = (array) json_decode($scrap_response);
@@ -2023,43 +2029,43 @@ class CardController extends Controller {
             return response()->json(['message' => $e->getMessage()], 500);
         }
     }
-    
+
     private function setSalesSxOnExcelUpload() {
         $salesData = CardSales::groupBy(DB::raw('DATE(timestamp)'))->orderBy('timestamp', 'DESC')->pluck('timestamp');
-        foreach($salesData as $key=>$data) {
+        foreach ($salesData as $key => $data) {
             $cardsByTimestamp = CardSales::where('timestamp', 'like', '%' . Carbon::create($data)->format('Y-m-d') . '%')->get();
-            foreach($cardsByTimestamp as $value){
-                $sale = CardSales::where("card_id",$value->card_id)->where('timestamp', 'like', '%' . Carbon::create($value->timestamp)->format('Y-m-d') . '%')->get();
-            
-                if(CardsSx::where("card_id",$value->card_id)
-                        ->where('date', 'like', '%' . Carbon::create($value->timestamp)->format('Y-m-d') . '%')
-                        ->exists()){
-                    CardsSx::where("card_id",$value->card_id)
+            foreach ($cardsByTimestamp as $value) {
+                $sale = CardSales::where("card_id", $value->card_id)->where('timestamp', 'like', '%' . Carbon::create($value->timestamp)->format('Y-m-d') . '%')->get();
+
+                if (CardsSx::where("card_id", $value->card_id)
+                                ->where('date', 'like', '%' . Carbon::create($value->timestamp)->format('Y-m-d') . '%')
+                                ->exists()) {
+                    CardsSx::where("card_id", $value->card_id)
                             ->where('date', 'like', '%' . Carbon::create($value->timestamp)->format('Y-m-d') . '%')
-                            ->update(["sx"=> $sale->avg('cost'),"quantity"=> $sale->sum('quantity')]);
+                            ->update(["sx" => $sale->avg('cost'), "quantity" => $sale->sum('quantity')]);
                 } else {
                     CardsSx::create([
-                        "card_id"   => $value->card_id,
-                        "date"      => Carbon::create($value->timestamp)->format('Y-m-d'),
-                        "sx"        => $sale->avg('cost'),
-                        "quantity"        => $sale->sum('quantity'),
+                        "card_id" => $value->card_id,
+                        "date" => Carbon::create($value->timestamp)->format('Y-m-d'),
+                        "sx" => $sale->avg('cost'),
+                        "quantity" => $sale->sum('quantity'),
                     ]);
                 }
                 $saleTotal = CardSales::where('timestamp', 'like', '%' . Carbon::create($value->timestamp)->format('Y-m-d') . '%')->get();
-                if(CardsTotalSx::where('date',Carbon::create($value->timestamp)->format('Y-m-d'))->exists()){
-                    CardsTotalSx::where('date',Carbon::create($value->timestamp)->format('Y-m-d'))
-                            ->update(["amount"=> $saleTotal->avg('cost'),"quantity"=> $saleTotal->sum('quantity')]);
+                if (CardsTotalSx::where('date', Carbon::create($value->timestamp)->format('Y-m-d'))->exists()) {
+                    CardsTotalSx::where('date', Carbon::create($value->timestamp)->format('Y-m-d'))
+                            ->update(["amount" => $saleTotal->avg('cost'), "quantity" => $saleTotal->sum('quantity')]);
                 } else {
                     CardsTotalSx::create([
-                        "date"      => Carbon::create($value->timestamp)->format('Y-m-d'),
-                        "quantity"  => $saleTotal->sum('quantity'),
-                        "amount"    => $saleTotal->avg('cost'),
+                        "date" => Carbon::create($value->timestamp)->format('Y-m-d'),
+                        "quantity" => $saleTotal->sum('quantity'),
+                        "amount" => $saleTotal->avg('cost'),
                     ]);
                 }
             }
         }
     }
-    
+
     public function uploadSlabForExcelImport(Request $request) {
         try {
             $this->setSalesSxOnExcelUpload();
