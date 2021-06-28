@@ -570,6 +570,7 @@ class EbayController extends Controller {
                     'timeleft' => $timeleft,
                 ];
             });
+//            dd($items->toArray());
             return response()->json(['status' => 200, 'items' => $items], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage() . ' - ' . $e->getLine(), 500);
@@ -1603,7 +1604,6 @@ class EbayController extends Controller {
                     return ($query->sellingStatus ? $query->sellingStatus->currentPrice : null);
                 });
             }
-
 
             // $items = EbayItems::with('sellingStatus','card')->where(function($q) use ($request){
             // })->orderBy('updated_at', 'desc')->get();

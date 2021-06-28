@@ -234,6 +234,18 @@ class StoxtickerController extends Controller {
         }
         return $data;
     }
+    private function __getSlabstoxSxAllData($days, $to, $from) {
+        $to = Carbon::create($to)->format('Y-m-d');
+        $from = Carbon::create($from)->format('Y-m-d');
+        $cvs = CardsTotalSx::whereBetween('date', [$to, $from])->orderBy('date', 'DESC')->get();
+        $data['values'] = $cvs->pluck('amount')->toArray();
+        $data['labels'] = $cvs->pluck('date')->toArray();
+        $data['qty'] = $cvs->pluck('quantity')->toArray();
+        if ($days > 2) {
+            $data = $this->__groupGraphDataPerDay($days, $data);
+        }
+        return $data;
+    }
 
     public function getStoxtickerAllData($days = 2) {
         try {
@@ -284,7 +296,7 @@ class StoxtickerController extends Controller {
                 $data['labels'] = $cvs->pluck('timestamp')->toArray();
                 $data['qty'] = $cvs->pluck('quantity')->toArray();
             } else {
-                $data = $this->__getSxAllData($days, $to, $from);
+                $data = $this->__getSlabstoxSxAllData($days, $to, $from);
             }
             if ($days == 2) {
                 $labels = [];

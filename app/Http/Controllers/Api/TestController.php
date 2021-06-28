@@ -43,48 +43,49 @@ class TestController extends Controller {
 
     public function updateSxValueInTable(Request $request) {
 
-//        $cvs = CardSales::orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) {
-//                    return Carbon::parse($cs->timestamp)->format('Y-m-d');
-//                })->map(function ($cs, $timestamp) {
-//            return [
-//            'cost' => round((clone $cs)->avg('cost'), 2),
-//            'timestamp' => $timestamp,
-//            'quantity' => $cs->map(function ($qty) {
-//            return (int) $qty->quantity;
-//            })->sum()
-//            ];
-//        });
-//        foreach ($cvs as $sxData) {
-//            CardsTotalSx::create([
-//                'date' => $sxData['timestamp'],
-//                'amount' => $sxData['cost'],
-//                'quantity' => $sxData['quantity'],
-//            ]);
-//        }
-//
-//        $cardIds = CardSales::distinct('card_id')->pluck('card_id');
-//        foreach ($cardIds as $cardId) {
-//            $cvs = CardSales::where('card_id', $cardId)->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) {
-//                        return Carbon::parse($cs->timestamp)->format('Y-m-d');
-//                    })->map(function ($cs, $timestamp) {
-//                return [
-//                'cost' => round((clone $cs)->avg('cost'), 2),
-//                'timestamp' => $timestamp,
-//                'quantity' => $cs->map(function ($qty) {
-//                return (int) $qty->quantity;
-//                })->sum()
-//                ];
-//            });
-//            foreach ($cvs as $sxData) {
-//                CardsSx::create([
-//                    'card_id' => $cardId,
-//                    'date' => $sxData['timestamp'],
-//                    'sx' => $sxData['cost'],
-//                    'quantity' => $sxData['quantity'],
-//                ]);
-//            }
-//        }
-         $cardIds = CardSales::distinct('card_id')->pluck('card_id');
+        $cvs = CardSales::orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) {
+                    return Carbon::parse($cs->timestamp)->format('Y-m-d');
+                })->map(function ($cs, $timestamp) {
+            return [
+            'cost' => round((clone $cs)->avg('cost'), 2),
+            'timestamp' => $timestamp,
+            'quantity' => $cs->map(function ($qty) {
+            return (int) $qty->quantity;
+            })->sum()
+            ];
+        });
+        foreach ($cvs as $sxData) {
+            CardsTotalSx::create([
+                'date' => $sxData['timestamp'],
+                'amount' => $sxData['cost'],
+                'quantity' => $sxData['quantity'],
+            ]);
+        }
+        
+        $cardIds = CardSales::distinct('card_id')->pluck('card_id');
+        foreach ($cardIds as $cardId) {
+            $cvs = CardSales::where('card_id', $cardId)->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) {
+                        return Carbon::parse($cs->timestamp)->format('Y-m-d');
+                    })->map(function ($cs, $timestamp) {
+                return [
+                'cost' => round((clone $cs)->avg('cost'), 2),
+                'timestamp' => $timestamp,
+                'quantity' => $cs->map(function ($qty) {
+                return (int) $qty->quantity;
+                })->sum()
+                ];
+            });
+            foreach ($cvs as $sxData) {
+                CardsSx::create([
+                    'card_id' => $cardId,
+                    'date' => $sxData['timestamp'],
+                    'sx' => $sxData['cost'],
+                    'quantity' => $sxData['quantity'],
+                ]);
+            }
+        }
+
+        $cardIds = CardSales::distinct('card_id')->pluck('card_id');
         $slab_total_sx = 0;
         foreach ($cardIds as $cardId) {
             $cvs = CardsSx::where('card_id', $cardId)->orderBy('date', 'DESC')->first();
@@ -92,7 +93,7 @@ class TestController extends Controller {
         }
         AppSettings::first()->update(["total_sx_value" => $slab_total_sx]);
 
-        dd('sucess');
+        dd('success');
     }
 
 }

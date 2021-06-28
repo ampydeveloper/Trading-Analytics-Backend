@@ -910,7 +910,7 @@ class CardController extends Controller {
                 $data['labels'] = $cvs->pluck('timestamp')->toArray();
                 $data['qty'] = $cvs->pluck('quantity')->toArray();
             } else {
-                $data = $this->__getSxAllData($days, $to, $from);
+                $data = $this->__getSxAllData($days, $to, $from, $card_id);
             }
             if ($days == 2) {
                 $labels = [];
@@ -999,15 +999,16 @@ class CardController extends Controller {
         }
     }
     
-    private function __getSxAllData($days, $to, $from) {
+    private function __getSxAllData($days, $to, $from, $card_id) {
         $to = Carbon::create($to)->format('Y-m-d');
         $from = Carbon::create($from)->format('Y-m-d');
-        $cvs = CardsTotalSx::whereBetween('date', [$to, $from])->orderBy('date', 'DESC')->get();
-        $data['values'] = $cvs->pluck('amount')->toArray();
+        $cvs = CardsSx::where('card_id', $card_id)->whereBetween('date', [$to, $from])->orderBy('date', 'DESC')->get();
+        $data['values'] = $cvs->pluck('sx')->toArray();
         $data['labels'] = $cvs->pluck('date')->toArray();
         $data['qty'] = $cvs->pluck('quantity')->toArray();
+//        dd($data);
         if ($days > 2) {
-            $data = $this->__groupGraphDataPerDay($days, $data);
+            $data = $this->__groupGraphDataPerDay($days, $data, $card_id);
         }
         return $data;
     }
@@ -1352,7 +1353,7 @@ class CardController extends Controller {
                 $data['labels'] = $cvs->pluck('timestamp')->toArray();
                 $data['qty'] = $cvs->pluck('quantity')->toArray();
             } else {
-                $data = $this->__getSxAllData($days, $to, $from);
+                $data = $this->__getSxAllData($days, $to, $from, $card_id);
             }
 
             if ($days == 2) {

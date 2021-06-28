@@ -68,11 +68,15 @@ use LogsActivity;
     }
 
     public static function getSxAndLastSx($id) {
+//        $id = 18153;
+        //mayne need to add distinct - if cron gets run twice
+        //only fetch 2 values
+        //add slect for sx
         $salesDate = CardsSx::where('card_id', $id)->orderBy('date', 'DESC')->get();
         $count = $salesDate->count();
         if ($count >= 2) {
             $data['sx'] = $salesDate[0]['sx'];
-            $data['lastSx'] = $salesDate[0]['sx'];
+            $data['lastSx'] = $salesDate[1]['sx'];
         } elseif ($count == 1) {
             $data['sx'] = $salesDate[0]['sx'];
             $data['lastSx'] = 0.00;
