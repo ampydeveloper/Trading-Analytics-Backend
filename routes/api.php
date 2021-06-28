@@ -19,7 +19,7 @@ use Illuminate\Http\Request;
 //Route::post('create-new-item-from-admin1', 'Api\Ebay\EbayController@createEbayItemForAdmin');
 //Route::post('get-cards-list-for-admin', 'Api\CardController@getCardListForAdmin');
 //Route::post('get-ebay-list1/{days?}/{card_id?}', 'Api\CardController@getDashboardGraphData');
-
+Route::get('total-sx', 'Api\TestController@updateSxValueInTable');
 Route::group([
     'namespace' => 'Api\Auth',
         ], function () {
