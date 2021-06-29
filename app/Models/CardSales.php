@@ -72,7 +72,7 @@ use LogsActivity;
         //mayne need to add distinct - if cron gets run twice
         //only fetch 2 values
         //add slect for sx
-        $salesDate = CardsSx::where('card_id', $id)->orderBy('date', 'DESC')->get();
+         $salesDate = CardsSx::where('card_id', $id)->groupBy(DB::raw('DATE(date)'))->orderBy('date', 'DESC')->get();
         $count = $salesDate->count();
         if ($count >= 2) {
             $data['sx'] = $salesDate[0]['sx'];

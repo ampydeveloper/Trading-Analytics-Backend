@@ -19,7 +19,8 @@ class AppSettings extends Model
         'pokemon_image',
         'listing_image',
         'trenders_order',
-        'live_listings_order'
+        'live_listings_order',
+        'total_sx_value'
     ];
 
     protected $hidden = [
