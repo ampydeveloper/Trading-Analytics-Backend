@@ -223,7 +223,7 @@ Route::group([
     Route::post('ending-soon-listing', 'Ebay\EbayController@getEndingSoonList');
 
     Route::post('featured-listing', 'CardController@getFeaturedList');
-    Route::post('slab-listing', 'CardController@getRecentList');
+    Route::post('slab-listing', 'CardController@getRecentListRedis');
     Route::post('get-smart-keyword', 'CardController@getSmartKeyword');
 });
 
