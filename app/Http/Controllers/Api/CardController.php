@@ -415,7 +415,7 @@ class CardController extends Controller {
                     $trender = $value;
                 } else {
                     if (isset($sport)) {
-                        $trender = Cache::remember($name, now()->addMinutes(150), function() use($to, $from, $sport) {
+                        $trender = Cache::remember($name, now()->addMinutes(1440), function() use($to, $from, $sport) {
                                     $cards = [];
                                     $card_sales = CardSales::whereBetween('timestamp', [$to, $from])->groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
                                     if (!empty($card_sales)) {
@@ -426,7 +426,7 @@ class CardController extends Controller {
                                     return $cards;
                                 });
                     } else {
-                        $trender = Cache::remember($name, now()->addMinutes(150), function() use($to, $from) {
+                        $trender = Cache::remember($name, now()->addMinutes(1440), function() use($to, $from) {
                                     $cards = [];
                                     $card_sales = CardSales::whereBetween('timestamp', [$to, $from])->groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
                                     if (!empty($card_sales)) {
