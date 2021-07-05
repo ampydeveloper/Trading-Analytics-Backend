@@ -57,7 +57,8 @@ use LogsActivity;
 
     public function getCardImageAttribute() {
         if ($this->image != null && $this->image != "0") {
-            return Storage::disk('s3')->url($this->sport.'/'.$this->image);
+//            return Storage::disk('s3')->url($this->sport.'/'.$this->image);
+            return Storage::disk('s3')->url($this->image);
         } else {
             $settings = AppSettings::first();
             if ($settings) {

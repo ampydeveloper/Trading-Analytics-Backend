@@ -669,7 +669,7 @@ class CardController extends Controller {
         try {
             $data = Card::where('sport', $request->input('sport'))->orderBy('updated_at', 'desc')->first();
             if ($request->hasFile('image')) {
-                $filename = date("mdYHis") . '.' . $request->image->extension();
+                $filename = $request->sport . '/' .date("mdYHis") . '.' . $request->image->extension();
                 Storage::disk('s3')->put($request->sport . '/' . $filename, file_get_contents($request->image), 'public');
             }
             Card::create([
@@ -718,10 +718,10 @@ class CardController extends Controller {
     public function editCard(Request $request) {
         try {
             if ($request->hasFile('image')) {
-                $filename = date("mdYHis") . '.' . $request->image->extension();
+                $filename = $request->sport . '/' .date("mdYHis") . '.' . $request->image->extension();
                 Storage::disk('s3')->put($request->sport . '/' . $filename, file_get_contents($request->image), 'public');
                 $oldImage = Card::where('id', $request->input('id'))->first('image');
-                Storage::disk('s3')->delete($request->sport . '/' . $oldImage['image']);
+                Storage::disk('s3')->delete($oldImage['image']);
             }
             $update_array = [
                 'sport' => $request->input('sport'),
