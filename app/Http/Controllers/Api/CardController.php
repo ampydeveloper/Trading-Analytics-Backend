@@ -218,8 +218,6 @@ class CardController extends Controller {
     }
 
     public function getRecentList(Request $request) {
-
-
         $page = $request->input('page', 1);
         $take = $request->input('take', 30);
         $search = $request->input('search', null);
@@ -444,6 +442,12 @@ class CardController extends Controller {
                 }
             }
             if ($flag == 0) {
+                if ($top_trend) {
+                    $trender = Collect($trender)->unique('sport');
+                } else {
+                    $trender = Collect($trender)->skip($skip)->take($take);
+                }
+                
                 $cards = $trender->map(function ($card, $key) use($orderby, $to, $from, $daysForSx, $request) {
                     $data = $card;
                     $sx_data = CardSales::getSxAndOldestSx($card->id, $to, $from, $daysForSx);
@@ -477,12 +481,7 @@ class CardController extends Controller {
                 } else if ($request->input('orderby') == 'percentdown') {
                     $cards = $cards->sortBy('sx_percent_signed');
                     $cards = $cards->values()->all();
-                }
-                if ($top_trend) {
-                    $cards = Collect($cards)->unique('sport');
-                } else {
-                    $cards = Collect($cards)->skip($skip)->take($take);
-                }
+                }                
             }
 
             $AppSettings = AppSettings::first();
