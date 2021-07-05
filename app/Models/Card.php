@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use App\Models\AppSettings;
+use Illuminate\Support\Facades\Storage;
 
 class Card extends Model {
 
@@ -56,24 +57,7 @@ use LogsActivity;
 
     public function getCardImageAttribute() {
         if ($this->image != null && $this->image != "0") {
-            return url("storage/" . $this->image);
-//            return url("storage/" . strtolower($this->sport) . '/' . $this->image);
-        } else {
-            $settings = AppSettings::first();
-            if ($settings) {
-                $default_filename = strtolower($this->sport) . '_image';
-                return $settings->$default_filename;
-            } else {
-                return asset('/img/default-image.jpg');
-            }
-        }
-    }
-
-    public function getCardImageAttribute_sukhi() {
-        if ($this->image != null && $this->image != "0") {
-            return "https://s3.ap-south-1.amazonaws.com/" . env('AWS_BUCKET') . '/' . $this->sport . '/' . $this->image;
-//            return url("storage/" . $this->image);
-//            return url("storage/".strtolower($this->sport). '/' . $this->image);
+            return Storage::disk('s3')->url($this->sport.'/'.$this->image);
         } else {
             $settings = AppSettings::first();
             if ($settings) {

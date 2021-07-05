@@ -379,6 +379,7 @@ class StoxtickerController extends Controller {
                 $data['perc_diff'] = 0;
                 $data['change_arrow'] = '';
             }
+            $data['total_sales'] = CardSales::whereBetween('timestamp', [$to, $from])->sum('cost');
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -473,12 +474,21 @@ class StoxtickerController extends Controller {
             $items['pokemon'] = EbayItems::whereHas('card', function($q) use($request) {
                         $q->where('sport', 'pokemon');
                     })->where('sold_price', '>', 0)->with(['card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
-//            $board = Board::where('id', $board)->first();
-//            $all_cards = json_decode($board->cards);
-//            foreach ($all_cards as $card) {
-//                $each_cards[] = Card::where('id', (int) $card)->with('details')->first();
-//            }
-//            $finalData = $this->__cardData();
+            $items['hockey'] = EbayItems::whereHas('card', function($q) use($request) {
+                        $q->where('sport', 'hockey');
+                    })->where('sold_price', '>', 0)->with(['card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+            foreach($items as $sport => $eBayItem) {
+                foreach($eBayItem as $key => $item) {
+                    $sx_data = CardSales::getSx($item->card_id);
+                    if($item->sold_price > $sx_data['sx']) {
+                        $slab_sold_flag = true;
+                    } else {
+                        $slab_sold_flag = false;
+                    }
+                    $items[$sport][$key]['sx'] = $sx_data['sx'];
+                    $items[$sport][$key]['slab_sold_flag'] = $slab_sold_flag;
+                }
+            }
             return response()->json(['status' => 200, 'data' => $items], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -497,12 +507,15 @@ class StoxtickerController extends Controller {
                 if (!empty($request->input('sport'))) {
                     foreach ($boards as $key => $board) {
                         $all_cards = json_decode($board->cards);
+                        dump($all_cards);
                         $card_details = Card::whereIn('id', $all_cards)->whereIn('sport', $request->input('sport'))->count();
+                        dd($card_details);
                         if (empty($card_details) && $card_details == 0) {
                             $boards->forget($key);
                         }
                     }
                 }
+                
                 $days = 2;
                 if ($request->has('days')) {
                     $days = $request->get('days');
@@ -574,6 +587,8 @@ class StoxtickerController extends Controller {
                         $sales_graph['lastSx'] = $sales_graph['values'][0][1];
                         $sales_graph['last_timestamp'] = $individual_sales_graph[0]['last_timestamp'];
                     }
+                    
+                    
                     $boards[$key]['sales_graph'] = $sales_graph;
                     $total_card_value = 0;
                     foreach ($all_cards as $cardId) {
@@ -590,9 +605,9 @@ class StoxtickerController extends Controller {
                     } else {
                         $boards[$key]['pert_diff'] = 0;
                     }
-//                $boards[$key]['sx_value'] = number_format((float) $sx, 2, '.', '');
                     $boards[$key]['sx_icon'] = $sx_icon;
                     $boards[$key]['total_card_value'] = number_format((float) $total_card_value, 2, '.', '');
+                    unset($individual_sales_graph);
                 }
             } else {
                 return response()->json(['status' => 200, 'data' => [], 'boards_count' => 0, 'page' => 0], 200);
@@ -789,6 +804,7 @@ class StoxtickerController extends Controller {
         }
         $finalData['sx'] = $sx_data['sx'];
         $finalData['lastSx'] = $sx_data['lastSx'];
+        $finalData['card_ids'] = $card_ids;
         return $finalData;
     }
 

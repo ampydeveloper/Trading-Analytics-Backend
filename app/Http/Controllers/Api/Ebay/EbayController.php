@@ -509,12 +509,13 @@ class EbayController extends Controller {
                 $items = $items->where("listing_ending_at", ">", $date_one);
             }
             $items = $items->where('status', 0)->orderBy('created_at', 'desc')->take($take)->get();
+
             if ($filterBy == 'price_low_to_high') {
                 $items = $items->sortBy(function($query) {
                     return ($query->sellingStatus ? $query->sellingStatus->currentPrice : null);
                 });
             }
-
+            
             $items = $items->map(function($item, $key) {
                 $galleryURL = $item->galleryURL;
                 if ($item->pictureURLLarge != null) {
@@ -524,7 +525,7 @@ class EbayController extends Controller {
                 } else if ($galleryURL == null) {
                     $galleryURL = $this->defaultListingImage;
                 }
-             
+
                 $listingTypeval = ($item->listingInfo ? $item->listingInfo->listingType : '');
                 date_default_timezone_set("America/Los_Angeles");
                 $datetime1 = new \DateTime($item->listing_ending_at);
@@ -570,7 +571,12 @@ class EbayController extends Controller {
                     'timeleft' => $timeleft,
                 ];
             });
-//            dd($items->toArray());
+
+
+            if ($filterBy == 'sx_high_to_low') {
+                $items = $items->sortByDesc('sx_value');
+            }
+
             return response()->json(['status' => 200, 'items' => $items], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage() . ' - ' . $e->getLine(), 500);
@@ -1560,7 +1566,6 @@ class EbayController extends Controller {
         $skip = $take * $page;
         $skip = $skip - $take;
         try {
-            // $itemsSpecsIds = EbayItemSpecific::where('value', 'like', '%' . $search . '%')->groupBy('itemId')->pluck('itemId');
             $itemsSpecsIds = [];
             $items = EbayItems::with(['sellingStatus', 'card', 'card.value', 'listingInfo'])->where(function ($q) use ($itemsSpecsIds, $search, $request, $filterBy) {
                 if ($request->has('sport') && $request->input('sport') != null && $request->input('sport') != 'random bin') {
@@ -1572,14 +1577,6 @@ class EbayController extends Controller {
                     $q->orWhere('is_random_bin', 1);
                 }
                 if ($search != null) {
-//                    if (count($itemsSpecsIds) > 0) {
-//                        $q->whereIn('itemId', $itemsSpecsIds);
-//                    } else {
-//                        $q->where('title', 'like', '%' . $search . '%');
-//                    }
-//                    $q->orWhereHas('card', function ($qq) use ($request) {
-//                        $qq->where('player', 'like', '%' . $request->input('search') . '%');
-//                    });
                     $q->where('title', 'like', '%' . $search . '%');
                 }
                 if ($filterBy == 'buy_it_now') {
@@ -1593,20 +1590,20 @@ class EbayController extends Controller {
                     $q->where('active', 1);
                 });
             }
+            //Intentionally making all listing ending_soon
 //            if ($filterBy == 'ending_soon') {
             $date_one = Carbon::now();
             $date_one->setTimezone('America/Los_Angeles');
             $items = $items->where("listing_ending_at", ">", $date_one);
 //            }
             $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
+
             if ($filterBy == 'price_low_to_high') {
                 $items = $items->sortBy(function($query) {
                     return ($query->sellingStatus ? $query->sellingStatus->currentPrice : null);
                 });
             }
 
-            // $items = EbayItems::with('sellingStatus','card')->where(function($q) use ($request){
-            // })->orderBy('updated_at', 'desc')->get();
             $items = $items->skip($skip)->take($take)->map(function($item, $key) {
                 $galleryURL = $item->galleryURL;
                 if ($item->pictureURLLarge != null) {
@@ -1638,13 +1635,10 @@ class EbayController extends Controller {
                 } else {
                     $timeleft = '0s';
                 }
-
                 $sx_data = CardSales::getSxAndLastSx($item->card_id);
                 $sx = $sx_data['sx'];
                 $lastSx = $sx_data['lastSx'];
-
                 $price_diff = (float) str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
@@ -1661,6 +1655,11 @@ class EbayController extends Controller {
                     'timeleft' => $timeleft,
                 ];
             });
+
+            if ($filterBy == 'sx_high_to_low') {
+                $items = $items->sortByDesc('sx_value');
+            }
+
             return response()->json(['status' => 200, 'data' => $items, 'next' => ($page + 1)], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -1694,13 +1693,13 @@ class EbayController extends Controller {
                 $items = $items->where("listing_ending_at", ">", $date_one);
             }
             $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
+            
             if ($filterBy == 'price_low_to_high') {
                 $items = $items->sortBy(function($query) {
                     return ($query->sellingStatus ? $query->sellingStatus->currentPrice : null);
                 });
             }
-
-//            $items = $items->where('status', 0)->orderBy('listing_ending_at', 'asc')->get();
+            
             $items = $items->skip($skip)->take($take)->map(function($item, $key) {
                 $galleryURL = $item->galleryURL;
                 if ($item->pictureURLLarge != null) {
@@ -1754,6 +1753,10 @@ class EbayController extends Controller {
                     'timeleft' => $timeleft,
                 ];
             });
+
+            if ($filterBy == 'sx_high_to_low') {
+                $items = $items->sortByDesc('sx_value');
+            }
 
             $AppSettings = AppSettings::first();
             $order = ['basketball', 'soccer', 'baseball', 'football', 'pokemon'];
