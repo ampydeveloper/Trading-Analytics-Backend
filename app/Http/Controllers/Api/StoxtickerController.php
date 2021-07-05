@@ -379,7 +379,7 @@ class StoxtickerController extends Controller {
                 $data['perc_diff'] = 0;
                 $data['change_arrow'] = '';
             }
-            $data['total_sales'] = CardSales::whereBetween('timestamp', [$to, $from])->sum('cost');
+            $data['total_sales'] = number_format((float) CardSales::whereBetween('timestamp', [$to, $from])->sum('cost'), 2, '.', '');
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
