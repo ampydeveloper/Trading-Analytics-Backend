@@ -489,7 +489,10 @@ class EbayController extends Controller {
 
     public function getRecentAuctionList(Request $request) {
         try {
+            $page = $request->input('page', 1);
             $take = $request->input('take', 30);
+            $skip = $take * $page;
+        $skip = $skip - $take;
             $search = $request->input('search', null);
             $filterBy = $request->input('filterBy', null);
             $items = EbayItems::with(['category', 'card', 'card.value', 'details', 'playerDetails', 'condition', 'sellerInfo', 'listingInfo', 'sellingStatus', 'shippingInfo', 'specifications'])
@@ -508,7 +511,7 @@ class EbayController extends Controller {
                 $date_one->setTimezone('America/Los_Angeles');
                 $items = $items->where("listing_ending_at", ">", $date_one);
             }
-            $items = $items->where('status', 0)->orderBy('created_at', 'desc')->take($take)->get();
+            $items = $items->where('status', 0)->orderBy('created_at', 'desc')->skip($skip)->take($take)->get();
 
             if ($filterBy == 'price_low_to_high') {
                 $items = $items->sortBy(function($query) {
@@ -572,12 +575,11 @@ class EbayController extends Controller {
                 ];
             });
 
-
             if ($filterBy == 'sx_high_to_low') {
                 $items = $items->sortByDesc('sx_value');
             }
 
-            return response()->json(['status' => 200, 'items' => $items], 200);
+            return response()->json(['status' => 200, 'next' => ($page + 1), 'items' => $items], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage() . ' - ' . $e->getLine(), 500);
         }
