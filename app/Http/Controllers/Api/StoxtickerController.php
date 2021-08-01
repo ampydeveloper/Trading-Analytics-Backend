@@ -234,6 +234,7 @@ class StoxtickerController extends Controller {
         }
         return $data;
     }
+
     private function __getSlabstoxSxAllData($days, $to, $from) {
         $to = Carbon::create($to)->format('Y-m-d');
         $from = Carbon::create($from)->format('Y-m-d');
@@ -477,15 +478,25 @@ class StoxtickerController extends Controller {
             $items['hockey'] = EbayItems::whereHas('card', function($q) use($request) {
                         $q->where('sport', 'hockey');
                     })->where('sold_price', '>', 0)->with(['card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
-            foreach($items as $sport => $eBayItem) {
-                foreach($eBayItem as $key => $item) {
-                    $sx_data = CardSales::getSx($item->card_id);
-                    if($item->sold_price > $sx_data['sx']) {
+            foreach ($items as $sport => $eBayItem) {
+                foreach ($eBayItem as $key => $item) {
+                    $salesDate = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->take(2)->get();
+                    $count = $salesDate->count();
+                    $slab_sold_flag = false;
+                    if ($count == 1) {
                         $slab_sold_flag = true;
                     } else {
-                        $slab_sold_flag = false;
+                        //is sold_price added the latest value                    }
+                        if ($item->sold_price == $salesDate[0]->cost) {
+                            if ($item->sold_price >= $salesDate[1]->cost) {
+                                $slab_sold_flag = true;
+                            }
+                        } else {
+                            if ($item->sold_price >= $salesDate[0]->cost) {
+                                $slab_sold_flag = true;
+                            }
+                        }
                     }
-                    $items[$sport][$key]['sx'] = $sx_data['sx'];
                     $items[$sport][$key]['slab_sold_flag'] = $slab_sold_flag;
                 }
             }
@@ -504,29 +515,42 @@ class StoxtickerController extends Controller {
             $boards = $boards_query->take($takeout)->get();
             $boards_count = $boards_query->count();
             if ($boards_count > 0) {
-                if (!empty($request->input('sport'))) {
-                    foreach ($boards as $key => $board) {
-                        $all_cards = json_decode($board->cards);
-                        dump($all_cards);
-                        $card_details = Card::whereIn('id', $all_cards)->whereIn('sport', $request->input('sport'))->count();
-                        dd($card_details);
-                        if (empty($card_details) && $card_details == 0) {
-                            $boards->forget($key);
-                        }
-                    }
-                }
-                
+//                if (!empty($request->input('sport'))) {
+//                    foreach ($boards as $key => $board) {
+//                        $all_cards = json_decode($board->cards);
+////                        dump($all_cards);
+//                        $card_details = Card::whereIn('id', $all_cards)->whereIn('sport', $request->input('sport'))->count();
+////                        dd($card_details);
+//                        if (empty($card_details) && $card_details == 0) {
+//                            $boards->forget($key);
+//                        }
+//                    }
+//                }
+
                 $days = 2;
                 if ($request->has('days')) {
                     $days = $request->get('days');
                 }
+                
+                if ($days == 180 || $days == 365 || $days == 1825) {
+                    $boardGraph = 1;
+                } else {
+                    $boardGraph = 0;
+                }
+
+
                 foreach ($boards as $key => $board) {
                     $all_cards = json_decode($board->cards);
-                    if ($days == 180 || $days == 365 || $days == 1825) {
-                        $boardGraph = 1;
-                    } else {
-                        $boardGraph = 0;
+                    $card_details = Card::whereIn('id', $all_cards)->whereIn('sport', $request->input('sport'))->count();
+                    $flag = 1;
+                    if (!empty($request->input('sport'))) {
+                        $card_details = Card::whereIn('id', $all_cards)->whereIn('sport', $request->input('sport'))->count();
+                        if (empty($card_details) && $card_details == 0) {
+                            $boards->forget($key);
+                            $flag = 0;
+                        }
                     }
+                    if($flag == 1) {
                     foreach ($all_cards as $card) {
                         $individual_sales_graph[] = $this->__cardData($card, $days, $boardGraph);
                     }
@@ -543,11 +567,11 @@ class StoxtickerController extends Controller {
                                         $sales_graph['values'][$valueKey] = $value;
                                         $sales_graph['qty'][$valueKey] = $individual_sales_graph[0]['qty'][$valueKey];
                                         for ($i = 1; $i < $individual_sales_graph_count; $i++) {
-                                            $sales_graph['qty'][$valueKey] += $individual_sales_graph[$i]['qty'][$valueKey];
+                                            $sales_graph['qty'][$valueKey] += $individual_sales_graph[0]['qty'][$i];
                                             if (is_array($value)) {
-                                                $sales_graph['values'][$valueKey][1] += $individual_sales_graph[$i]['values'][$valueKey][1];
+                                                $sales_graph['values'][$valueKey][1] += $individual_sales_graph[0]['values'][$i][1];
                                             } else {
-                                                $sales_graph['values'][$valueKey] += $individual_sales_graph[$i]['values'][$valueKey];
+                                                $sales_graph['values'][$valueKey] += $individual_sales_graph[0]['values'][$i];
                                             }
                                         }
                                     }
@@ -587,8 +611,8 @@ class StoxtickerController extends Controller {
                         $sales_graph['lastSx'] = $sales_graph['values'][0][1];
                         $sales_graph['last_timestamp'] = $individual_sales_graph[0]['last_timestamp'];
                     }
-                    
-                    
+
+
                     $boards[$key]['sales_graph'] = $sales_graph;
                     $total_card_value = 0;
                     foreach ($all_cards as $cardId) {
@@ -608,6 +632,7 @@ class StoxtickerController extends Controller {
                     $boards[$key]['sx_icon'] = $sx_icon;
                     $boards[$key]['total_card_value'] = number_format((float) $total_card_value, 2, '.', '');
                     unset($individual_sales_graph);
+                }
                 }
             } else {
                 return response()->json(['status' => 200, 'data' => [], 'boards_count' => 0, 'page' => 0], 200);
@@ -696,7 +721,7 @@ class StoxtickerController extends Controller {
                 $data['labels'] = $cvs->pluck('timestamp')->toArray();
                 $data['qty'] = $cvs->pluck('quantity')->toArray();
             } else {
-                
+
                 $to = Carbon::create($to)->format('Y-m-d');
                 $from = Carbon::create($from)->format('Y-m-d');
                 $cvs = CardsSx::where('card_id', $card_ids)->whereBetween('date', [$to, $from])->orderBy('date', 'DESC')->get();
@@ -705,7 +730,7 @@ class StoxtickerController extends Controller {
                 $data['qty'] = $cvs->pluck('quantity')->toArray();
             }
         }
-        
+
         if ($days > 2) {
             $data = $this->__groupGraphDataPerDay($days, $data, $card_ids, $boardGraph);
         }
@@ -916,8 +941,7 @@ class StoxtickerController extends Controller {
                         $map_val[$dt] = [$ts, $previousValue];
                         $map_qty[$dt] = 0;
                         $flag = 1;
-                    }
-                    elseif ($previousValue == 0 && $flag1 == 0) {
+                    } elseif ($previousValue == 0 && $flag1 == 0) {
                         if (is_array($card_ids)) {
                             $salesDate = CardSales::whereIn('card_id', $card_ids)->where('timestamp', '<', $dt)->orderBy('timestamp', 'DESC')->first(DB::raw('DATE(timestamp)'));
                         } elseif ($card_ids != 0) {

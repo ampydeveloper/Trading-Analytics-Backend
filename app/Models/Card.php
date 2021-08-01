@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use App\Models\AppSettings;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Ebay\EbayItems;
 
 class Card extends Model {
 
@@ -56,8 +57,7 @@ use LogsActivity;
     ];
 
     public function getCardImageAttribute() {
-        if ($this->image != null && $this->image != "0") {
-//            return Storage::disk('s3')->url($this->sport.'/'.$this->image);
+        if ($this->image != null && $this->image != "0" && Storage::disk('s3')->has($this->image)) {
             return Storage::disk('s3')->url($this->image);
         } else {
             $settings = AppSettings::first();
@@ -97,6 +97,13 @@ use LogsActivity;
 
     public function sales() {
         return $this->hasMany(CardSales::class, 'card_id');
+    }
+    
+    public function cardSx() {
+        return $this->hasOne(CardsSx::class, 'card_id');
+    }
+    public function ebayItems() {
+        return $this->hasMany(EbayItems::class, 'card_id');
     }
 
 }

@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 //Route::post('get-cards-list-for-admin', 'Api\CardController@getCardListForAdmin');
 //Route::post('get-ebay-list1/{days?}/{card_id?}', 'Api\CardController@getDashboardGraphData');
 Route::get('total-sx', 'Api\TestController@updateSxValueInTable');
+Route::get('cron-trender', 'Api\CardController@createTrenderCache');
 Route::group([
     'namespace' => 'Api\Auth',
         ], function () {
@@ -157,6 +158,12 @@ Route::group([
     Route::post('change-user-password-by-admin/{user}', 'UserController@changeUSerPasswordForAdmin');
     Route::get('get-users-for-activity-logs', 'UserController@getUsersForActivityLogs');
     Route::get('get-activity-logs-for-admin/{user}', 'UserController@getActivityLogs');
+    
+    
+    Route::get('get-approved-count-for-logged-user/{user}', 'UserController@getApprovedCountForLoggedUser');
+    
+    
+    
 });
 
 Route::group([

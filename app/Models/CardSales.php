@@ -68,11 +68,11 @@ use LogsActivity;
     }
 
     public static function getSxAndLastSx($id) {
-        $salesDate = CardsSx::where('card_id', $id)->orderBy('date', 'DESC')->get();
+        $salesDate = CardsSx::groupBy(DB::raw('DATE(date)'))->where('card_id', $id)->orderBy('date', 'DESC')->get();
         $count = $salesDate->count();
         if ($count >= 2) {
             $data['sx'] = $salesDate[0]['sx'];
-            $data['lastSx'] = $salesDate[0]['sx'];
+            $data['lastSx'] = $salesDate[1]['sx'];
         } elseif ($count == 1) {
             $data['sx'] = $salesDate[0]['sx'];
             $data['lastSx'] = 0.00;
@@ -191,28 +191,37 @@ use LogsActivity;
         return $data;
     }
 
-    public static function getSxAndOldestSx($id, $to, $from, $days = 0) {
+    public static function getSxAndOldestSx($id, $to = 0, $from = 0, $days = 0) {
         if ($days != 0) {
             $newTo = new DateTime($to);
             $newTo = $newTo->format('Y-m-d');
+//            dump($newTo);
             $newFrom = new DateTime($from);
             $newFrom = $newFrom->format('Y-m-d');
+//            dump($newFrom);
             $data['oldestSx'] = CardsSx::where('card_id', $id)->where('date', $newTo)->first('sx');
+//            dump($data['oldestSx']);
             if ($data['oldestSx'] == null) {
                 $saleDateForLastSx = CardsSx::where('card_id', $id)->where('date', '<', $newTo)->orderBy('date', 'DESC')->first('sx');
+//                dump($saleDateForLastSx);
                 if ($saleDateForLastSx !== null) {
                     $data['oldestSx'] = $saleDateForLastSx['sx'];
                 } else {
-                    if ($days == 7 || $days == 30 || $days == 90) {
-                        $data['oldestSx'] = 0.00;
-                    } else {
-                        $saleDateForLastSx = CardsSx::where('card_id', $id)->where('date', '>', $newTo)->first('sx');
+//                    if ($days == 7 || $days == 30 || $days == 90) {
+//                        dd('1');
+//                        $data['oldestSx'] = 0.00;
+//                    } else {
+//                        dd('2');
+                        $saleDateForLastSx = CardsSx::where('card_id', $id)->where('date', '>', $newTo)->orderBy('date', 'ASC')->first();
+//                        dump($id);
+//                        dump($newTo);
+//                        dd($saleDateForLastSx->toArray());
                         if ($saleDateForLastSx !== null) {
                             $data['oldestSx'] = $saleDateForLastSx['sx'];
                         } else {
                             $data['oldestSx'] = 0.00;
                         }
-                    }
+//                    }
                 }
             } else {
                 $data['oldestSx'] = $data['oldestSx']['sx'];
@@ -229,7 +238,11 @@ use LogsActivity;
                 $data['sx'] = $data['sx']['sx'];
             }
         } else {
-            $salesDate = CardSales::where('card_id', $id)->whereBetween('timestamp', [$to, $from])->groupBy(DB::raw('DATE(timestamp)'))->orderBy('timestamp', 'DESC')->pluck('timestamp');
+            if($to == 0 && $from == 0) {
+                $salesDate = CardSales::where('card_id', $id)->groupBy(DB::raw('DATE(timestamp)'))->orderBy('timestamp', 'DESC')->pluck('timestamp');
+            } else {
+                $salesDate = CardSales::where('card_id', $id)->whereBetween('timestamp', [$to, $from])->groupBy(DB::raw('DATE(timestamp)'))->orderBy('timestamp', 'DESC')->pluck('timestamp');
+            }
             $count = $salesDate->count();
             if ($count >= 2) {
                 $check_date0 = date('Y-m-d', strtotime($salesDate[0]));
@@ -273,6 +286,7 @@ use LogsActivity;
                 }
             }
         }
+//        dd($data);
         return $data;
     }
 

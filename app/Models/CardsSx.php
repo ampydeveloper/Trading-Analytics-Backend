@@ -35,4 +35,9 @@ class CardsSx extends Model
         'updated_at',
         'deleted_at',
     ];
+    
+    public function card()
+    {
+        return $this->belongsTo(Card::class,'card_id');
+    }
 }

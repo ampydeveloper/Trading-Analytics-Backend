@@ -42,6 +42,9 @@ use App\Models\Ebay\EbayItemSpecific;
 class TestController extends Controller {
 
     public function updateSxValueInTable(Request $request) {
+        
+        
+//        dd(CardsSx::where('card_id', 9)->where('date', '2020-12-14')->get()->toArray());
 
         $cvs = CardSales::orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) {
                     return Carbon::parse($cs->timestamp)->format('Y-m-d');
@@ -54,7 +57,9 @@ class TestController extends Controller {
             })->sum()
             ];
         });
-        foreach ($cvs as $sxData) {
+//        dump(count($cvs));
+        foreach ($cvs as $key => $sxData) {
+//            dump($key);
             CardsTotalSx::create([
                 'date' => $sxData['timestamp'],
                 'amount' => $sxData['cost'],
@@ -62,9 +67,10 @@ class TestController extends Controller {
             ]);
         }
         
+//        dump('end1');
         $cardIds = CardSales::distinct('card_id')->pluck('card_id');
         foreach ($cardIds as $cardId) {
-            $cvs = CardSales::where('card_id', $cardId)->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) {
+            $cvs1 = CardSales::where('card_id', $cardId)->orderBy('timestamp', 'DESC')->get()->groupBy(function ($cs) {
                         return Carbon::parse($cs->timestamp)->format('Y-m-d');
                     })->map(function ($cs, $timestamp) {
                 return [
@@ -75,7 +81,8 @@ class TestController extends Controller {
                 })->sum()
                 ];
             });
-            foreach ($cvs as $sxData) {
+//            dump(count($cvs1));
+            foreach ($cvs1 as $sxData) {
                 CardsSx::create([
                     'card_id' => $cardId,
                     'date' => $sxData['timestamp'],
@@ -84,7 +91,7 @@ class TestController extends Controller {
                 ]);
             }
         }
-
+//die('sucess 2');
         $cardIds = CardSales::distinct('card_id')->pluck('card_id');
         $slab_total_sx = 0;
         foreach ($cardIds as $cardId) {

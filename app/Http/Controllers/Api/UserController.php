@@ -13,6 +13,7 @@ use Storage;
 use Validator;
 use App\Repositories\Backend\Auth\UserRepository;
 use \Spatie\Activitylog\Models\Activity;
+use Carbon\Carbon;
 
 class UserController extends Controller {
 
@@ -81,7 +82,29 @@ class UserController extends Controller {
             $user_id = auth()->user()->id;
             $google = SocialAccount::where('user_id', $user_id)->where('provider', 'google')->select('id')->first();
             $facebook = SocialAccount::where('user_id', $user_id)->where('provider', 'facebook')->select('id')->first();
-            return response()->json(['status' => 200, 'google' => $google, 'facebook' => $facebook], 200);
+
+            $slabSubjectIds = Activity::where('causer_id', $user_id)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'created')->pluck('subject_id');
+            if (count($slabSubjectIds) > 0) {
+                $slabCountApproved = Activity::whereIn('subject_id', $slabSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', 1)->count();
+                $slabCountRejected = Activity::whereIn('subject_id', $slabSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', '-1')->count();
+            } else {
+                $slabCountApproved = 0;
+                $slabCountRejected = 0;
+            }
+            $listingSubjectIds = Activity::where('causer_id', $user_id)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'created')->pluck('subject_id');
+            if (count($listingSubjectIds)) {
+                $listingCountApproved = Activity::whereIn('subject_id', $listingSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', 1)->count();
+                $listingCountRejected = Activity::whereIn('subject_id', $listingSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', '-1')->count();
+            } else {
+                $listingCountApproved = 0;
+                $listingCountRejected = 0;
+            }
+            $request_count['slabCountApproved'] = $slabCountApproved;
+            $request_count['slabCountRejected'] = $slabCountRejected;
+            $request_count['listingCountApproved'] = $listingCountApproved;
+            $request_count['listingCountRejected'] = $listingCountRejected;
+
+            return response()->json(['status' => 200, 'google' => $google, 'facebook' => $facebook, 'request_count'=>$request_count], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -212,10 +235,10 @@ class UserController extends Controller {
         }
         try {
             $page = $request->input('page', 1);
-//            $take = $request->input('take', 30);
+            $take = $request->input('take', 30);
             $search = $request->input('search', null);
-//            $skip = $take * $page;
-//            $skip = $skip - $take;
+            $skip = $take * $page;
+            $skip = $skip - $take;
 
             $users = User::where(function ($q) use ($request) {
                         if ($request->has('search') && $request->get('search') != '' && $request->get('search') != null) {
@@ -223,13 +246,40 @@ class UserController extends Controller {
                             $q->orWhere('first_name', 'like', '%' . $searchTerm . '%');
                             $q->orWhere('last_name', 'like', '%' . $searchTerm . '%');
                             $q->orWhere('email', 'like', '%' . $searchTerm . '%');
-                            $q->orWhere('id', 'like', '%' . $searchTerm . '%');
+                            $q->orWhere('mobile', 'like', '%' . $searchTerm . '%');
                         }
-                    })->with('roles', 'permissions', 'providers')->withTrashed()->get();
-//                            ->skip($skip)->take($take)->get();
+                    })->with('roles', 'permissions', 'providers')->withTrashed();
 
-//            $users = User::with('roles', 'permissions', 'providers')->withTrashed()->skip($skip)->take($take)->get();
-            return response()->json(['status' => 200, 'data' => $users, 'next' => ($page)], 200);
+            $users_count = $users->count();
+            $all_pages = ceil($users_count / $take);
+            $users = $users->skip($skip)->take($take)->get();
+
+            foreach ($users as $key => $user) {
+                if ($user->roles[0]->name == 'user' || $user->roles[0]->name == 'data entry') {
+                    $slabSubjectIds = Activity::where('causer_id', $user->id)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'created')->pluck('subject_id');
+                    if (count($slabSubjectIds) > 0) {
+
+                        $slabCountApproved = Activity::whereIn('subject_id', $slabSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', 1)->count();
+                        $slabCountRejected = Activity::whereIn('subject_id', $slabSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', '-1')->count();
+                    } else {
+                        $slabCountApproved = 0;
+                        $slabCountRejected = 0;
+                    }
+                    $listingSubjectIds = Activity::where('causer_id', $user->id)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'created')->pluck('subject_id');
+                    if (count($listingSubjectIds)) {
+                        $listingCountApproved = Activity::whereIn('subject_id', $listingSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', 1)->count();
+                        $listingCountRejected = Activity::whereIn('subject_id', $listingSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', '-1')->count();
+                    } else {
+                        $listingCountApproved = 0;
+                        $listingCountRejected = 0;
+                    }
+                    $users[$key]['slabCountApproved'] = $slabCountApproved;
+                    $users[$key]['slabCountRejected'] = $slabCountRejected;
+                    $users[$key]['listingCountApproved'] = $listingCountApproved;
+                    $users[$key]['listingCountRejected'] = $listingCountRejected;
+                }
+            }
+            return response()->json(['status' => 200, 'data' => $users, 'all_pages' => $all_pages, 'next' => ($page + 1)], 200);
         } catch (\Exception $e) {
             return response()->json(['status' => 500, 'error' => $e->getMessage()], 500);
         }
@@ -461,8 +511,8 @@ class UserController extends Controller {
                     ->reject(function ($value) {
                 return $value === false;
             });
-           $models = $models->toArray();
-           $models = array_values($models);
+            $models = $models->toArray();
+            $models = array_values($models);
 //           array_multisort($models, SORT_ASC);
             return response()->json(['status' => 200, 'data' => ['users' => $users, 'models' => $models]], 200);
         } catch (\Exception $e) {
@@ -475,27 +525,42 @@ class UserController extends Controller {
             if (!auth()->user()->isAdmin()) {
                 return response()->json(['error' => 'Unauthorised'], 301);
             }
-
-            $logs = Activity::where('causer_id', $user->id);
+            $startDate = Carbon::create($request['start_date'])->format('Y-m-d H:i:s');
+            $endDate = Carbon::create($request['end_date'])->format('Y-m-d 23:59:59');
+            $logs = Activity::where('causer_id', $user->id)->whereBetween('updated_at',[$startDate, $endDate]);
             if ($request->has('model') && strlen(trim($request->query('model'))) > 0 && $request->query('model') != 'null') {
                 $logs = $logs->where('subject_type', $request->query('model'));
             }
-            if ($request->has('sts') && strlen(trim($request->query('sts'))) > 0 && $request->query('sts') != 'null' && strpos($request->query('model'), 'RequestListing') !== false) {
-                $logs = $logs->where('properties->attributes->approved', $request->query('sts'));
+            if ($request->has('sts') && $request->query('sts') != 'null' && strpos($request->query('model'), 'RequestListing') !== false) {
+                $data = $logs->where('description', 'created')->pluck('subject_id');
+                $logs = Activity::whereIn('subject_id', $data)->where('subject_type', $request->query('model'))->where('properties->attributes->approved', $request->query('sts'))->whereBetween('updated_at',[$startDate, $endDate]);
             }
             $logs = $logs->paginate(30);
-//            dd($logs);
 //            $logs = $logs->get();
-            $items = Collect($logs->items())->map(function($log) {
-                $model = explode('\\', $log->subject_type);
-                $log->subject_type = $model[count($model) - 1];
-                if (strtolower($log->subject_type) == 'ebayitems') {
-                    $log->subject_type = 'Listings';
-                }
-                return $log;
-            });
+//            $items = Collect($logs->items())->map(function($log) {
+//                $model = explode('\\', $log->subject_type);
+//                dd($model);
+//                $log->subject_type = $model[count($model) - 1];
+//                if (strtolower($log->subject_type) == 'ebayitems') {
+//                    $log->subject_type = 'Listings';
+//                }
+//                return $log;
+//            });
+//            dd($items->toArray());
 
             return response()->json(['status' => 200, 'data' => $logs], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+
+    public function getApprovedCountForLoggedUser(Request $request) {
+        try {
+            if (!auth()->user()->isAdmin() && !auth()->user()->ismoderator()) {
+                return response()->json(['error' => 'Unauthorised'], 301);
+            }
+            $count = Activity::where('causer_id', $request->user()->id)->where('subject_type', 'App\Models\RequestListing')->where('properties->attributes->approved', 1)->count();
+            return response()->json(['status' => 200, 'count' => $count], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }

@@ -56,7 +56,7 @@ class StoreZipImages implements ShouldQueue
      */
     
     public function handle()
-    {
+    { //test this
         try {
              $eu_ids = ExcelUploads::create([
                         'file_name' => $this->filename,
@@ -71,7 +71,7 @@ class StoreZipImages implements ShouldQueue
                 $newFile = $explode[0] . '/' . $explode[2];
                 Storage::disk('s3')->put($newFile, file_get_contents($path), 'public');
             }
-//            Storage::disk('public')->deleteDirectory('storage/'.$this->dir);
+//            Storage::disk('public')->deleteDirectory('storage/'.$this->dir);//need this also
             
             ExcelUploads::whereId($eu_ids->id)->update(['status' => 1]);
             

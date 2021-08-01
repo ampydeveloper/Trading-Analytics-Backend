@@ -14,6 +14,9 @@ use App\Models\Ebay\EbayItemSellingStatus;
 use App\Models\Ebay\EbayItemListingInfo;
 use Carbon\Carbon;
 use App\Models\ExcelUploads;
+use App\Models\CardsSx;
+use App\Models\CardsTotalSx;
+use Illuminate\Support\Facades\Cache;
 
 class ListingsImport implements ToCollection, WithStartRow {
 
@@ -44,6 +47,7 @@ public function collection(Collection $rows) {
                 'file_type' => 1,
     ]);
 
+    $cardsId = [];
     foreach ($rows as $row) {
         if ($row[8] != 'EBAY') {
             if (!empty($row[1])) {
@@ -57,6 +61,7 @@ public function collection(Collection $rows) {
                     'cost' => str_replace('$', '', $row[3]),
                     'source' => $row[8],
                 ]);
+                $cardsId[$row[1]][] = $timestamp;
             }
         } else if ($row[8] == 'EBAY') {
             if ($row[0] != null || !empty($row[0])) {
@@ -190,6 +195,104 @@ public function collection(Collection $rows) {
     }
 
     ExcelUploads::whereId($eu_ids->id)->update(['status' => 1]);
+
+    foreach ($cardsId as $key => $cardId) {
+        $cardsId[$key] = array_unique($cardId);
+    }
+
+    foreach ($cardsId as $key => $cardId) {
+        foreach ($cardId as $cardDate) {
+            $sale = CardSales::where("card_id", $key)->where('timestamp', 'like', '%' . Carbon::create($cardDate)->format('Y-m-d') . '%')->get();
+            if (count($sale) > 0) {
+                if (CardsSx::where("card_id", $key)
+                                ->where('date', 'like', '%' . Carbon::create($cardDate)->format('Y-m-d') . '%')
+                                ->exists()) {
+                    CardsSx::where("card_id", $key)
+                            ->where('date', 'like', '%' . Carbon::create($cardDate)->format('Y-m-d') . '%')
+                            ->update(["sx" => $sale->avg('cost'), "quantity" => $sale->sum('quantity')]);
+                } else {
+                    $red = CardsSx::create([
+                                "card_id" => $key,
+                                "date" => Carbon::create($cardDate)->format('Y-m-d'),
+                                "sx" => $sale->avg('cost'),
+                                "quantity" => $sale->sum('quantity'),
+                    ]);
+                }
+            }
+            $saleTotal = CardSales::where('timestamp', 'like', '%' . Carbon::create($cardDate)->format('Y-m-d') . '%')->get();
+            if (count($saleTotal) > 0) {
+                if (CardsTotalSx::where('date', Carbon::create($cardDate)->format('Y-m-d'))->exists()) {
+                    CardsTotalSx::where('date', Carbon::create($cardDate)->format('Y-m-d'))
+                            ->update(["amount" => $saleTotal->avg('cost'), "quantity" => $saleTotal->sum('quantity')]);
+                } else {
+                    CardsTotalSx::create([
+                        "date" => Carbon::create($cardDate)->format('Y-m-d'),
+                        "quantity" => $saleTotal->sum('quantity'),
+                        "amount" => $saleTotal->avg('cost'),
+                    ]);
+                }
+            }
+        }
+    }
+
+    foreach ($cardsId as $CardKey => $cardId) {
+        $days = config('constant.days');
+        $sports = config('constant.sports');
+        foreach ($days as $daykey => $day) {
+            foreach ($sports as $sport) {
+                $name = 'trenders_' . $daykey . '_' . $sport;
+                $value = Cache::get($name);
+                if ($value != null && !empty($value)) {
+                    $flag = 0;
+                    foreach ($value as $key => $val) {
+
+                        if ($CardKey == $val['id']) {
+                            $sx_data = CardSales::getSxAndOldestSx($CardKey, $day['to'], $day['from'], $day['daysForSx']);
+                            $sx = $sx_data['sx'];
+                            $lastSx = $sx_data['oldestSx'];
+                            $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+
+                            $value[$key]['price'] = number_format((float) $sx, 2, '.', '');
+                            $value[$key]['sx_value_signed'] = (float) $sx - $lastSx;
+                            $value[$key]['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                            $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
+                            $value[$key]['sx_percent_signed'] = $sx_percent;
+                            $value[$key]['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
+                            $value[$key]['sx_icon'] = $sx_icon;
+                            $flag = 1;
+                            break;
+                        }
+                    }
+                    if ($flag == 1) {
+                        Cache::put($name, $value);
+                    }
+                }
+            }
+        }
+
+        $value = Cache::get('trenders_all_cards');
+        if ($value != null && !empty($value)) {
+            foreach ($value as $key => $val) {
+
+                if ($CardKey == $val['id']) {
+                    $sx_data = CardSales::getSxAndOldestSx($CardKey, $day['to'], $day['from'], $day['daysForSx']);
+                    $sx = $sx_data['sx'];
+                    $lastSx = $sx_data['oldestSx'];
+                    $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+
+                    $value[$key]['price'] = number_format((float) $sx, 2, '.', '');
+                    $value[$key]['sx_value_signed'] = (float) $sx - $lastSx;
+                    $value[$key]['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                    $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
+                    $value[$key]['sx_percent_signed'] = $sx_percent;
+                    $value[$key]['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
+                    $value[$key]['sx_icon'] = $sx_icon;
+                    break;
+                }
+            }
+            Cache::put('trenders_all_cards', $value);
+        }
+    }
 }
 
 }

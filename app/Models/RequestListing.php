@@ -30,11 +30,13 @@ class RequestListing extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+//        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id')->select(['id']);
     }
 
     public function card()
     {
-        return $this->belongsTo(Card::class, 'card_id');
+//        return $this->belongsTo(Card::class, 'card_id');
+        return $this->belongsTo(Card::class, 'card_id')->select(['title', 'id']);
     }
 }
