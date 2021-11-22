@@ -12,6 +12,7 @@ use App\Models\CardsTotalSx;
 use App\Models\CardsSx;
 use App\Models\Board;
 use App\Models\BoardFollow;
+use App\Models\AppSettings;
 use App\Models\Ebay\EbayItems;
 use Carbon\Carbon;
 use Validator;
@@ -23,6 +24,24 @@ use DateInterval;
 
 class StoxtickerController extends Controller {
 
+    public function addFeature(Request $request) {
+        try {
+            // dd($request->board_id);
+            $board = Board::where("id",$request->board_id)->first();
+            if($board){
+                if($board->featured == 1){
+                    Board::where("id",$request->board_id)->update(["featured"=>0]);
+                    return response()->json(['status' => 200,"board"=>false, 'message' => "Board featured successfully."], 200);  
+                } else {
+                    Board::where("id",$request->board_id)->update(["featured"=>1]);
+                    return response()->json(['status' => 200,"board"=>true, 'message' => "Board featured successfully."], 200);  
+                }
+                return response()->json(['status' => false, 'message' => "Board has not featured, please try later."], 500);
+            }
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
     public function slabSearch(Request $request) {
         try {
             $search = $request->input('keyword', null);
@@ -460,24 +479,44 @@ class StoxtickerController extends Controller {
 
     public function getSoldListings(Request $request) {
         try {
-            $items['basketball'] = EbayItems::whereHas('card', function($q) use($request) {
-                        $q->where('sport', 'basketball');
-                    })->where('sold_price', '>', 0)->with(['card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
-            $items['football'] = EbayItems::whereHas('card', function($q) use($request) {
-                        $q->where('sport', 'football');
-                    })->where('sold_price', '>', 0)->with(['card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
-            $items['baseball'] = EbayItems::whereHas('card', function($q) use($request) {
-                        $q->where('sport', 'baseball');
-                    })->where('sold_price', '>', 0)->with(['card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
-            $items['soccer'] = EbayItems::whereHas('card', function($q) use($request) {
-                        $q->where('sport', 'soccer');
-                    })->where('sold_price', '>', 0)->with(['card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
-            $items['pokemon'] = EbayItems::whereHas('card', function($q) use($request) {
-                        $q->where('sport', 'pokemon');
-                    })->where('sold_price', '>', 0)->with(['card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
-            $items['hockey'] = EbayItems::whereHas('card', function($q) use($request) {
-                        $q->where('sport', 'hockey');
-                    })->where('sold_price', '>', 0)->with(['card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+            $sportsList = AppSettings::select('sports')->first();
+            json_decode($sportsList);
+
+            foreach ($sportsList->sports as $sp) {
+
+                $items[$sp] = EbayItems::whereHas('card', function($q) use($sp) {
+                            $q->where('sport', $sp);
+                        })
+                        ->where('sold_price', '>', 0)
+                        ->with(['card', 'listingInfo'])
+                        ->orderBy('updated_at', 'desc')->take(6)
+                        ->get();
+            }
+
+
+
+            // $items['basketball'] = EbayItems::whereHas('card', function($q) use($request) {
+            //             $q->where('sport', 'basketball');
+            //         })
+            //         ->where('sold_price', '>', 0)
+            //         ->with(['card', 'listingInfo'])
+            //         ->orderBy('updated_at', 'desc')->take(6)
+            //         ->get();
+            // $items['football'] = EbayItems::whereHas('card', function($q) use($request) {
+            //             $q->where('sport', 'football');
+            //         })->where('sold_price', '>', 0)->with(['card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+            // $items['baseball'] = EbayItems::whereHas('card', function($q) use($request) {
+            //             $q->where('sport', 'baseball');
+            //         })->where('sold_price', '>', 0)->with(['card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+            // $items['soccer'] = EbayItems::whereHas('card', function($q) use($request) {
+            //             $q->where('sport', 'soccer');
+            //         })->where('sold_price', '>', 0)->with(['card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+            // $items['pokemon'] = EbayItems::whereHas('card', function($q) use($request) {
+            //             $q->where('sport', 'pokemon');
+            //         })->where('sold_price', '>', 0)->with(['card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
+            // $items['hockey'] = EbayItems::whereHas('card', function($q) use($request) {
+            //             $q->where('sport', 'hockey');
+            //         })->where('sold_price', '>', 0)->with(['card', 'listingInfo'])->orderBy('updated_at', 'desc')->take(6)->get();
             foreach ($items as $sport => $eBayItem) {
                 foreach ($eBayItem as $key => $item) {
                     $salesDate = CardSales::where('card_id', $item->card_id)->orderBy('timestamp', 'DESC')->take(2)->get();
@@ -531,7 +570,7 @@ class StoxtickerController extends Controller {
                 if ($request->has('days')) {
                     $days = $request->get('days');
                 }
-                
+//dd($days);
                 if ($days == 180 || $days == 365 || $days == 1825) {
                     $boardGraph = 1;
                 } else {
@@ -550,89 +589,106 @@ class StoxtickerController extends Controller {
                             $flag = 0;
                         }
                     }
-                    if($flag == 1) {
-                    foreach ($all_cards as $card) {
-                        $individual_sales_graph[] = $this->__cardData($card, $days, $boardGraph);
-                    }
-                    if ($boardGraph == 0) {
-                        $sales_graph['labels'] = $individual_sales_graph[0]['labels'];
-                        $sales_graph['sx'] = $individual_sales_graph[0]['sx'];
-                        $sales_graph['lastSx'] = $individual_sales_graph[0]['lastSx'];
-                        $individual_sales_graph_count = count($individual_sales_graph);
-                        foreach ($individual_sales_graph as $graphKey => $graph) {
-                            if ($graphKey == 0) {
-                                foreach ($individual_sales_graph[0]['values'] as $valueKey => $value) {
-                                    $count = count($individual_sales_graph[0]['values']);
-                                    if ($valueKey < ($count - 1)) {
-                                        $sales_graph['values'][$valueKey] = $value;
-                                        $sales_graph['qty'][$valueKey] = $individual_sales_graph[0]['qty'][$valueKey];
-                                        for ($i = 1; $i < $individual_sales_graph_count; $i++) {
-                                            $sales_graph['qty'][$valueKey] += $individual_sales_graph[0]['qty'][$i];
-                                            if (is_array($value)) {
-                                                $sales_graph['values'][$valueKey][1] += $individual_sales_graph[0]['values'][$i][1];
-                                            } else {
-                                                $sales_graph['values'][$valueKey] += $individual_sales_graph[0]['values'][$i];
+                    if ($flag == 1) {
+                        $individual_sales_graph = [];
+                        foreach ($all_cards as $card) {
+                            $individual_sales_graph[] = $this->__cardData($card, $days, $boardGraph);
+                        }
+                        if ($boardGraph == 0) {
+                            $sales_graph['labels'] = $individual_sales_graph[0]['labels'];
+                            $sales_graph['sx'] = $individual_sales_graph[0]['sx'];
+                            $sales_graph['lastSx'] = $individual_sales_graph[0]['lastSx'];
+                            $individual_sales_graph_count = count($individual_sales_graph);
+                            foreach ($individual_sales_graph as $graphKey => $graph) {
+                                if ($graphKey == 0) {
+//                                    $valueKey = 0;
+                                    foreach ($individual_sales_graph[0]['values'] as $valueKey => $value) {
+//                                        $count1 = count($individual_sales_graph[0]['values']);
+                                        $count = count($individual_sales_graph[0]['labels']);
+//                                        dump($count1);
+//                                        dump($count);
+                                        if ($valueKey < ($count - 1)) {
+                                            $sales_graph['values'][$valueKey] = $value;
+                                            $sales_graph['qty'][$valueKey] = $individual_sales_graph[0]['qty'][$valueKey];
+                                            for ($i = 1; $i < $individual_sales_graph_count; $i++) {
+//                                            $sales_graph['qty'][$valueKey] += $individual_sales_graph[0]['qty'][$i];
+//                                            if (is_array($value)) {
+//                                                $sales_graph['values'][$valueKey][1] += $individual_sales_graph[0]['values'][$i][1];
+//                                            } else {
+//                                                $sales_graph['values'][$valueKey] += $individual_sales_graph[0]['values'][$i];
+//                                            }
+                                                if (isset($individual_sales_graph[$i]['qty'][$valueKey])) {
+                                                    $sales_graph['qty'][$valueKey] += $individual_sales_graph[$i]['qty'][$valueKey];
+                                                    if (is_array($value)) {
+                                                        $sales_graph['values'][$valueKey][1] += $individual_sales_graph[$i]['values'][$valueKey][1];
+                                                    } else {
+                                                        $sales_graph['values'][$valueKey] += $individual_sales_graph[$i]['values'][$valueKey];
+                                                    }
+                                                }
                                             }
                                         }
                                     }
+                                } else {
+                                    $sales_graph['sx'] += $individual_sales_graph[$graphKey]['sx'];
+                                    $sales_graph['lastSx'] += $individual_sales_graph[$graphKey]['lastSx'];
                                 }
-                            } else {
-                                $sales_graph['sx'] += $individual_sales_graph[$graphKey]['sx'];
-                                $sales_graph['lastSx'] += $individual_sales_graph[$graphKey]['lastSx'];
                             }
-                        }
-                        $sales_graph['last_timestamp'] = $individual_sales_graph[0]['last_timestamp'];
-                    } else {
-                        $individual_sales_graph_count = count($individual_sales_graph);
-                        $flag = 0;
-                        foreach ($individual_sales_graph[0]['qty'] as $qtyKey => $qty) {
-                            $sales_graph_value = $individual_sales_graph[0]['values'][$qtyKey];
-                            $sales_graph_qty = $individual_sales_graph[0]['qty'][$qtyKey];
-                            if ($qty != 0) {
-                                $flag = 1;
-                            }
-                            for ($i = 1; $i < $individual_sales_graph_count; $i++) {
-                                if ($individual_sales_graph[$i]['qty'][$qtyKey] != 0) {
+                            //removing extra values //use better way to empty interate array
+                            $offsetKey = count($individual_sales_graph[0]['values']) - 1;
+                            $sales_graph['values'] = array_slice($sales_graph['values'], 0, $offsetKey, true);
+                            $sales_graph['qty'] = array_slice($sales_graph['qty'], 0, $offsetKey, true);
+                            $sales_graph['last_timestamp'] = $individual_sales_graph[0]['last_timestamp'];
+                        } else {
+                            $individual_sales_graph_count = count($individual_sales_graph);
+                            $flag = 0;
+                            foreach ($individual_sales_graph[0]['qty'] as $qtyKey => $qty) {
+                                $sales_graph_value = $individual_sales_graph[0]['values'][$qtyKey];
+                                $sales_graph_qty = $individual_sales_graph[0]['qty'][$qtyKey];
+                                if ($qty != 0) {
                                     $flag = 1;
                                 }
-                                $sales_graph_value[1] += $individual_sales_graph[$i]['values'][$qtyKey][1];
-                                $sales_graph_qty += $individual_sales_graph[$i]['qty'][$qtyKey];
+                                for ($i = 1; $i < $individual_sales_graph_count; $i++) {
+                                    if ($individual_sales_graph[$i]['qty'][$qtyKey] != 0) {
+                                        $flag = 1;
+                                    }
+                                    $sales_graph_value[1] += $individual_sales_graph[$i]['values'][$qtyKey][1];
+                                    $sales_graph_qty += $individual_sales_graph[$i]['qty'][$qtyKey];
+                                }
+                                if ($flag == 1) {
+                                    $sales_graph['labels'][$qtyKey] = $individual_sales_graph[0]['labels'][$qtyKey];
+                                    $sales_graph['values'][$qtyKey] = $sales_graph_value;
+                                    $sales_graph['qty'][$qtyKey] = $sales_graph_qty;
+                                }
                             }
-                            if ($flag == 1) {
-                                $sales_graph['labels'][$qtyKey] = $individual_sales_graph[0]['labels'][$qtyKey];
-                                $sales_graph['values'][$qtyKey] = $sales_graph_value;
-                                $sales_graph['qty'][$qtyKey] = $sales_graph_qty;
-                            }
+                            $sales_graph['labels'] = array_values($sales_graph['labels']);
+                            $sales_graph['values'] = array_values($sales_graph['values']);
+                            $sales_graph['qty'] = array_values($sales_graph['qty']);
+                            $sales_graph['sx'] = $sales_graph['values'][count($sales_graph['values']) - 1][1];
+                            $sales_graph['lastSx'] = $sales_graph['values'][0][1];
+                            $sales_graph['last_timestamp'] = $individual_sales_graph[0]['last_timestamp'];
                         }
-                        $sales_graph['labels'] = array_values($sales_graph['labels']);
-                        $sales_graph['values'] = array_values($sales_graph['values']);
-                        $sales_graph['qty'] = array_values($sales_graph['qty']);
-                        $sales_graph['sx'] = $sales_graph['values'][count($sales_graph['values']) - 1][1];
-                        $sales_graph['lastSx'] = $sales_graph['values'][0][1];
-                        $sales_graph['last_timestamp'] = $individual_sales_graph[0]['last_timestamp'];
-                    }
 
 
-                    $boards[$key]['sales_graph'] = $sales_graph;
-                    $total_card_value = 0;
-                    foreach ($all_cards as $cardId) {
-                        $sale = CardSales::getSx($cardId);
-                        $total_card_value += $sale['sx'];
+                        $boards[$key]['sales_graph'] = $sales_graph;
+                        $total_card_value = 0;
+                        foreach ($all_cards as $cardId) {
+                            $sale = CardSales::getSx($cardId);
+                            $total_card_value += $sale['sx'];
+                        }
+                        $sx = $boards[$key]['sales_graph']['sx'];
+                        $lastSx = $boards[$key]['sales_graph']['lastSx'];
+                        $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                        $boards[$key]['doller_diff'] = str_replace('-', '', number_format((float) ($sx - $lastSx), 2, '.', ''));
+                        if ($sx != 0) {
+                            $pert_diff = ($lastSx > 0 ? ((($sx - $lastSx) / $lastSx) * 100) : 0);
+                            $boards[$key]['pert_diff'] = number_format((float) $pert_diff, 2, '.', '');
+                        } else {
+                            $boards[$key]['pert_diff'] = 0;
+                        }
+                        $boards[$key]['sx_icon'] = $sx_icon;
+                        $boards[$key]['total_card_value'] = number_format((float) $total_card_value, 2, '.', '');
+                        unset($individual_sales_graph);
                     }
-                    $sx = $boards[$key]['sales_graph']['sx'];
-                    $lastSx = $boards[$key]['sales_graph']['lastSx'];
-                    $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-                    $boards[$key]['doller_diff'] = str_replace('-', '', number_format((float) ($sx - $lastSx), 2, '.', ''));
-                    if ($sx != 0) {
-                        $pert_diff = ($lastSx > 0 ? ((($sx - $lastSx) / $lastSx) * 100) : 0);
-                        $boards[$key]['pert_diff'] = number_format((float) $pert_diff, 2, '.', '');
-                    } else {
-                        $boards[$key]['pert_diff'] = 0;
-                    }
-                    $boards[$key]['sx_icon'] = $sx_icon;
-                    $boards[$key]['total_card_value'] = number_format((float) $total_card_value, 2, '.', '');
-                    unset($individual_sales_graph);
-                }
                 }
             } else {
                 return response()->json(['status' => 200, 'data' => [], 'boards_count' => 0, 'page' => 0], 200);
@@ -747,6 +803,8 @@ class StoxtickerController extends Controller {
             $previousSx = 0;
             $flag = 0;
             while ($startTime <= $endTime) {
+//                   $labels = [];
+//            $values = [];
                 $hi = $startTime->format('H:i');
                 if (count($data['labels']) > 0) {
                     $ind = array_search($hi, $data['labels']);
@@ -813,15 +871,15 @@ class StoxtickerController extends Controller {
         $finalData['values'] = $data['values'];
         $finalData['labels'] = $data['labels'];
         $finalData['qty'] = $data['qty'];
+        $finalData['last_timestamp'] = 'N/A';
         if (is_array($card_ids)) {
             $last_timestamp = CardSales::whereIn('card_id', $card_ids)->select('timestamp')->orderBy('timestamp', 'DESC')->first();
+            $finalData['last_timestamp'] = Carbon::create($last_timestamp->timestamp)->format('F d Y \- h:i:s A');
         } else {
             $last_timestamp = CardsSx::where('card_id', $card_ids)->select('date')->orderBy('date', 'DESC')->first();
+            $finalData['last_timestamp'] = Carbon::create($last_timestamp->date)->format('F d Y \- h:i:s A');
         }
-        $finalData['last_timestamp'] = 'N/A';
-        if (!empty($last_timestamp)) {
-            $finalData['last_timestamp'] = Carbon::create($last_timestamp->timestamp)->format('F d Y \- h:i:s A');
-        }
+       
         if (is_array($card_ids)) {
             $sx_data = CardSales::getGraphSxWithIds($days, $data, $card_ids);
         } else {
@@ -1021,11 +1079,13 @@ class StoxtickerController extends Controller {
                                 $sales_graph['values'][$valueKey] = $value;
                                 $sales_graph['qty'][$valueKey] = $individual_sales_graph[0]['qty'][$valueKey];
                                 for ($i = 1; $i < $individual_sales_graph_count; $i++) {
-                                    $sales_graph['qty'][$valueKey] += $individual_sales_graph[$i]['qty'][$valueKey];
-                                    if (is_array($value)) {
-                                        $sales_graph['values'][$valueKey][1] += $individual_sales_graph[$i]['values'][$valueKey][1];
-                                    } else {
-                                        $sales_graph['values'][$valueKey] += $individual_sales_graph[$i]['values'][$valueKey];
+                                    if (isset($individual_sales_graph[$i]['qty'][$valueKey])) {
+                                        $sales_graph['qty'][$valueKey] += $individual_sales_graph[$i]['qty'][$valueKey];
+                                        if (is_array($value)) {
+                                            $sales_graph['values'][$valueKey][1] += $individual_sales_graph[$i]['values'][$valueKey][1];
+                                        } else {
+                                            $sales_graph['values'][$valueKey] += $individual_sales_graph[$i]['values'][$valueKey];
+                                        }
                                     }
                                 }
                             }
@@ -1088,7 +1148,10 @@ class StoxtickerController extends Controller {
     public function allBoards($days) {
         try {
             $user_id = auth()->user()->id;
-            $boards = Board::where('user_id', $user_id)->get();
+            //get boards record by user and but not featured.
+//            $boards = Board::orWhere('user_id', $user_id)->orWhere('featured', 1)->take(8)->get();
+            $boards = Board::where('user_id', $user_id)->take(8)->get();
+
             $b_ids = BoardFollow::where('user_id', $user_id)->pluck('board_id');
             if (count($b_ids) > 0) {
                 $board_follow = Board::whereIn('id', $b_ids)->get();
@@ -1113,15 +1176,126 @@ class StoxtickerController extends Controller {
                         if ($graphKey == 0) {
                             foreach ($individual_sales_graph[0]['values'] as $valueKey => $value) {
                                 $count = count($individual_sales_graph[0]['values']);
+//                                dd($count);
                                 if ($valueKey < ($count - 1)) {
                                     $sales_graph['values'][$valueKey] = $value;
                                     $sales_graph['qty'][$valueKey] = $individual_sales_graph[0]['qty'][$valueKey];
                                     for ($i = 1; $i < $individual_sales_graph_count; $i++) {
-                                        $sales_graph['qty'][$valueKey] += $individual_sales_graph[$i]['qty'][$valueKey];
-                                        if (is_array($value)) {
-                                            $sales_graph['values'][$valueKey][1] += $individual_sales_graph[$i]['values'][$valueKey][1];
-                                        } else {
-                                            $sales_graph['values'][$valueKey] += $individual_sales_graph[$i]['values'][$valueKey];
+
+                                        if (isset($individual_sales_graph[$i]['qty'][$valueKey])) {
+                                            $sales_graph['qty'][$valueKey] += $individual_sales_graph[$i]['qty'][$valueKey];
+                                            if (is_array($value)) {
+                                                $sales_graph['values'][$valueKey][1] += $individual_sales_graph[$i]['values'][$valueKey][1];
+                                            } else {
+                                                $sales_graph['values'][$valueKey] += $individual_sales_graph[$i]['values'][$valueKey];
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            $sales_graph['sx'] += $individual_sales_graph[$graphKey]['sx'];
+                            $sales_graph['lastSx'] += $individual_sales_graph[$graphKey]['lastSx'];
+                        }
+                    }
+                    $sales_graph['last_timestamp'] = $individual_sales_graph[0]['last_timestamp'];
+                } else {
+                    $individual_sales_graph_count = count($individual_sales_graph);
+                    $flag = 0;
+                    foreach ($individual_sales_graph[0]['qty'] as $qtyKey => $qty) {
+                        $sales_graph_value = $individual_sales_graph[0]['values'][$qtyKey];
+                        $sales_graph_qty = $individual_sales_graph[0]['qty'][$qtyKey];
+                        if ($qty != 0) {
+                            $flag = 1;
+                        }
+                        for ($i = 1; $i < $individual_sales_graph_count; $i++) {
+                            if ($individual_sales_graph[$i]['qty'][$qtyKey] != 0) {
+                                $flag = 1;
+                            }
+                            $sales_graph_value[1] += $individual_sales_graph[$i]['values'][$qtyKey][1];
+                            $sales_graph_qty += $individual_sales_graph[$i]['qty'][$qtyKey];
+                        }
+                        if ($flag == 1) {
+                            $sales_graph['labels'][$qtyKey] = $individual_sales_graph[0]['labels'][$qtyKey];
+                            $sales_graph['values'][$qtyKey] = $sales_graph_value;
+                            $sales_graph['qty'][$qtyKey] = $sales_graph_qty;
+                        }
+                    }
+                    $sales_graph['labels'] = array_values($sales_graph['labels']);
+                    $sales_graph['values'] = array_values($sales_graph['values']);
+                    $sales_graph['qty'] = array_values($sales_graph['qty']);
+                    $sales_graph['sx'] = $sales_graph['values'][count($sales_graph['values']) - 1][1];
+                    $sales_graph['lastSx'] = $sales_graph['values'][0][1];
+                    $sales_graph['last_timestamp'] = $individual_sales_graph[0]['last_timestamp'];
+                }
+                $boards[$key]['sales_graph'] = $sales_graph;
+
+                $total_card_value = 0;
+                foreach ($all_cards as $cardId) {
+                    $sale = CardSales::getSx($cardId);
+                    $total_card_value += $sale['sx'];
+                }
+                $boards[$key]['total_card_value'] = number_format((float) $total_card_value, 2, '.', '');
+                $sx = $boards[$key]['sales_graph']['sx'];
+                $lastSx = $boards[$key]['sales_graph']['lastSx'];
+                $boards[$key]['sx_icon'] = $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                $boards[$key]['doller_diff'] = str_replace('-', '', number_format((float) ($sx - $lastSx), 2, '.', ''));
+                if ($sx != 0) {
+                    $pert_diff = ($lastSx > 0 ? ((($sx - $lastSx) / $lastSx) * 100) : 0);
+                    $boards[$key]['pert_diff'] = number_format((float) $pert_diff, 2, '.', '');
+                } else {
+                    $boards[$key]['pert_diff'] = 0;
+                }
+            }
+            return response()->json(['status' => 200, 'data' => $boards], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+    
+    public function featuredBoards($days) {
+        try {
+            $user_id = auth()->user()->id;
+            //get boards featured.
+            $boards = Board::where('featured', 1)->take(8)->get();
+
+            $b_ids = BoardFollow::where('user_id', $user_id)->pluck('board_id');
+            if (count($b_ids) > 0) {
+                $board_follow = Board::whereIn('id', $b_ids)->get();
+                $boards = $boards->merge($board_follow);
+            }
+            foreach ($boards as $key => $board) {
+                $all_cards = json_decode($board->cards);
+                if ($days == 180 || $days == 365 || $days == 1825) {
+                    $boardGraph = 1;
+                } else {
+                    $boardGraph = 0;
+                }
+                foreach ($all_cards as $card) {
+                    $individual_sales_graph[] = $this->__cardData($card, $days, $boardGraph);
+                }
+                if ($boardGraph == 0) {
+                    $sales_graph['labels'] = $individual_sales_graph[0]['labels'];
+                    $sales_graph['sx'] = $individual_sales_graph[0]['sx'];
+                    $sales_graph['lastSx'] = $individual_sales_graph[0]['lastSx'];
+                    $individual_sales_graph_count = count($individual_sales_graph);
+                    foreach ($individual_sales_graph as $graphKey => $graph) {
+                        if ($graphKey == 0) {
+                            foreach ($individual_sales_graph[0]['values'] as $valueKey => $value) {
+                                $count = count($individual_sales_graph[0]['values']);
+//                                dd($count);
+                                if ($valueKey < ($count - 1)) {
+                                    $sales_graph['values'][$valueKey] = $value;
+                                    $sales_graph['qty'][$valueKey] = $individual_sales_graph[0]['qty'][$valueKey];
+                                    for ($i = 1; $i < $individual_sales_graph_count; $i++) {
+
+                                        if (isset($individual_sales_graph[$i]['qty'][$valueKey])) {
+                                            $sales_graph['qty'][$valueKey] += $individual_sales_graph[$i]['qty'][$valueKey];
+                                            if (is_array($value)) {
+                                                $sales_graph['values'][$valueKey][1] += $individual_sales_graph[$i]['values'][$valueKey][1];
+                                            } else {
+                                                $sales_graph['values'][$valueKey] += $individual_sales_graph[$i]['values'][$valueKey];
+                                            }
                                         }
                                     }
                                 }

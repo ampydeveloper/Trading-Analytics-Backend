@@ -19,8 +19,19 @@ use Illuminate\Http\Request;
 //Route::post('create-new-item-from-admin1', 'Api\Ebay\EbayController@createEbayItemForAdmin');
 //Route::post('get-cards-list-for-admin', 'Api\CardController@getCardListForAdmin');
 //Route::post('get-ebay-list1/{days?}/{card_id?}', 'Api\CardController@getDashboardGraphData');
+// Route::get('cronTest', 'Api\CardController@cronTest');
+Route::get('cronTestt', 'Api\TestController@cronTestt');
 Route::get('total-sx', 'Api\TestController@updateSxValueInTable');
+Route::get('addRequestListingForAll', 'Api\TestController@addRequestListingForAll');
 Route::get('cron-trender', 'Api\CardController@createTrenderCache');
+Route::get('autoShiftUsers', 'Api\Auth\AuthController@autoShiftUsers');
+Route::get('autoShiftUsersFromWordpress', 'Api\Auth\AuthController@autoShiftUsersFromWordpress');
+
+Route::get('get-items-for-status', 'Api\Ebay\EbayController@getItemsForStatus');
+
+Route::get('compareImages', 'Api\TestController@compareImages');
+Route::get('compare-image-data', 'Api\CardController@compareImages');
+
 Route::group([
     'namespace' => 'Api\Auth',
         ], function () {
@@ -87,13 +98,16 @@ Route::group([
     Route::post('card-create', 'CardController@create');
     Route::post('inactive-slab', 'CardController@inactiveSlab');
     Route::post('get-ebay-list', 'Ebay\EbayController@getItemsListForAdmin');
+    Route::post('get-ebay-other-list', 'Ebay\EbayController@getItemsOtherListForAdmin');
     Route::post('get-ebay-list-for-sport', 'Ebay\EbayController@getItemsListForAdminForSport');
     Route::post('get-ebay-list-sold', 'Ebay\EbayController@getItemsListSoldAdmin');
     Route::post('get-ebay-specific-list', 'Ebay\EbayController@getSpecificListForAdmin');
     Route::post('change-ebay-status', 'Ebay\EbayController@changeEbayStatusAdmin');
     Route::post('change-card-status', 'Ebay\EbayController@changeCardStatusAdmin');
-     Route::post('change-sales-status', 'Ebay\EbayController@changeSalesStatusAdmin');
-    Route::post('save-sold-price', 'Ebay\EbayController@saveSoldPriceAdmin');
+    Route::post('change-sales-status', 'Ebay\EbayController@changeSalesStatusAdmin');
+
+    Route::post('get-ebay-list-sold-sorting', 'Ebay\EbayController@getEbayListSoldSorting');
+   
     Route::post('generate-image', 'UserController@generateImageUsingBase');
     Route::post('generate-graph-image', 'UserController@generateImageUsingBase');
 //    Route::post('add-see-problem', 'Ebay\EbayController@addSeeProblem');
@@ -119,6 +133,7 @@ Route::group([
     Route::get('see-problem-reject/{id}', 'Ebay\EbayController@seeProblemReject');
     Route::get('settings', 'UserController@settings');
     Route::post('settings', 'UserController@settings');
+     Route::post('save-sold-price', 'Ebay\EbayController@saveSoldPriceAdmin');
 });
 
 Route::group([
@@ -157,13 +172,9 @@ Route::group([
     Route::post('update-user-by-admin/{user}/{type}', 'UserController@updateUserAttributeForAdmin');
     Route::post('change-user-password-by-admin/{user}', 'UserController@changeUSerPasswordForAdmin');
     Route::get('get-users-for-activity-logs', 'UserController@getUsersForActivityLogs');
-    Route::get('get-activity-logs-for-admin/{user}', 'UserController@getActivityLogs');
-    
-    
+    Route::get('get-activity-logs-for-admin', 'UserController@getActivityLogs');
+    Route::get('get-activity-logs-csv-for-admin/{user}', 'UserController@exportActivityLogs');
     Route::get('get-approved-count-for-logged-user/{user}', 'UserController@getApprovedCountForLoggedUser');
-    
-    
-    
 });
 
 Route::group([
@@ -190,11 +201,10 @@ Route::group([
     // Prefixed with /auth
     'namespace' => 'Api',
     'prefix' => 'search',
-         'middleware' => 'jwt.verify'
+    'middleware' => 'jwt.verify'
         ], function () {
     Route::post('get-card-list-user', 'Ebay\EbayController@getItemsListForUser');
-    
-        });
+});
 Route::group([
     // Prefixed with /auth
     'namespace' => 'Api',
@@ -271,7 +281,6 @@ Route::group([
     Route::post('slab-search', 'StoxtickerController@slabSearch');
     Route::post('search-board', 'StoxtickerController@searchBoard');
     Route::get('single-graph-board/{days}/{board}', 'StoxtickerController@singleBoards');
-//    Route::get('all-boards/{days}', 'StoxtickerController@allBoards');
     Route::get('sold-listings', 'StoxtickerController@getSoldListings');
 });
 Route::group([
@@ -280,8 +289,10 @@ Route::group([
     'middleware' => 'jwt.verify'
         ], function () {
     Route::get('all-boards/{days}', 'StoxtickerController@allBoards');
+    Route::get('featured-boards/{days}', 'StoxtickerController@featuredBoards');
     Route::post('create-board', 'StoxtickerController@createBoard');
     Route::get('board-details/{board}/{days}', 'StoxtickerController@boardDetails');
     Route::post('follow-board', 'StoxtickerController@followBoard');
     Route::post('delete-board', 'StoxtickerController@deleteBoard');
+    Route::post('add-feature', 'StoxtickerController@addFeature');
 });

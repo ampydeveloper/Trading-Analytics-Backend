@@ -28,6 +28,7 @@ use LogsActivity;
         'timestamp',
         'excel_uploads_id',
         'ebay_items_id',
+        'user_id',
         'quantity',
         'cost',
         'source',
@@ -45,6 +46,11 @@ use LogsActivity;
 //        'value',
 //    ];
 
+     public function saleUser()
+    { 
+           return $this->hasOne(\App\Models\Auth\User::class,'id','user_id');
+    }
+    
     public static function getSx($id) {
         $salesDate = CardsSx::where('card_id', $id)->orderBy('date', 'DESC')->first();
         if ($salesDate) {

@@ -45,14 +45,14 @@ Baseball: <?php echo $items['baseball'][0]->card->title; ?> <?php echo env('VUE_
 Pokemon: <?php echo $items['pokemon'][0]->card->title; ?> <?php echo env('VUE_URL').'card-data/?id='. $items['pokemon'][0]->card->id; ?>
 <?php } ?>">
 
-<!--<meta  data-hid="card-article-published_time" property="article:published_time" content="<?php // echo \Carbon\Carbon::createFromTimeStamp($data['last_updated'])->format('F d Y \- h:i:s A'); ?>">-->
+<meta  data-hid="card-article-published_time" property="article:published_time" content="<?php echo \Carbon\Carbon::parse($data['last_updated'])->timestamp; ?>">
 <meta  data-hid="card-article-author" property="article:author" content="Slabstox">
 
 <meta property="twitter:card" content="summary_large_image">
-<meta  data-hid="card-twitter-url" property="twitter:url" content="<?php echo env('VUE_URL'); ?>stoxticker">
-<meta  data-hid="card-twitter-title" property="twitter:title" content="SX Stoxticker">
-<meta  data-hid="card-twitter-image" property="twitter:image" content="<?php echo url('img/stoxticker-graph-share.png'); ?>">
-<meta  data-hid="card-twitter-description" property="twitter:description" content="
+<meta property="twitter:url" content="<?php echo env('VUE_URL'); ?>stoxticker">
+<meta property="twitter:title" content="SX Stoxticker">
+<meta property="twitter:image" content="<?php echo url('img/stoxticker-graph-share.png'); ?>">
+<meta property="twitter:description" content="
 <?php if(isset($items['basketball'][0])){ ?>
 Basketball: <?php echo $items['basketball'][0]->card->title; ?> <?php echo env('VUE_URL').'card-data/?id='. $items['basketball'][0]->card->id; ?> 
 <?php } ?>
@@ -68,7 +68,8 @@ Baseball: <?php echo $items['baseball'][0]->card->title; ?> <?php echo env('VUE_
 <?php if(isset($items['pokemon'][0])){ ?>
 Pokemon: <?php echo $items['pokemon'][0]->card->title; ?> <?php echo env('VUE_URL').'card-data/?id='. $items['pokemon'][0]->card->id; ?>
 <?php } ?>">
-
+<meta name="twitter:site" content="@Slabstox">
+<meta name="twitter:image:alt" content="SX Stoxticker">
 @endsection
 
 @section('content')

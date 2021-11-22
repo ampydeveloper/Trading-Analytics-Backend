@@ -14,6 +14,8 @@ use Validator;
 use App\Repositories\Backend\Auth\UserRepository;
 use \Spatie\Activitylog\Models\Activity;
 use Carbon\Carbon;
+use Exporter;
+use App\Serialisers\ActivityLogSerialiser;
 
 class UserController extends Controller {
 
@@ -85,16 +87,16 @@ class UserController extends Controller {
 
             $slabSubjectIds = Activity::where('causer_id', $user_id)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'created')->pluck('subject_id');
             if (count($slabSubjectIds) > 0) {
-                $slabCountApproved = Activity::whereIn('subject_id', $slabSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', 1)->count();
-                $slabCountRejected = Activity::whereIn('subject_id', $slabSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', '-1')->count();
+                $slabCountApproved = Activity::whereIn('subject_id', $slabSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->status', 1)->count();
+                $slabCountRejected = Activity::whereIn('subject_id', $slabSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->status', '-1')->count();
             } else {
                 $slabCountApproved = 0;
                 $slabCountRejected = 0;
             }
-            $listingSubjectIds = Activity::where('causer_id', $user_id)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'created')->pluck('subject_id');
+            $listingSubjectIds = Activity::where('causer_id', $user_id)->where('subject_type', 'App\Models\RequestListing')->where('description', 'created')->pluck('subject_id');
             if (count($listingSubjectIds)) {
-                $listingCountApproved = Activity::whereIn('subject_id', $listingSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', 1)->count();
-                $listingCountRejected = Activity::whereIn('subject_id', $listingSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', '-1')->count();
+                $listingCountApproved = Activity::whereIn('subject_id', $listingSubjectIds)->where('subject_type', 'App\Models\RequestListing')->where('description', 'updated')->where('properties->attributes->approved', 1)->count();
+                $listingCountRejected = Activity::whereIn('subject_id', $listingSubjectIds)->where('subject_type', 'App\Models\RequestListing')->where('description', 'updated')->where('properties->attributes->approved', '-1')->count();
             } else {
                 $listingCountApproved = 0;
                 $listingCountRejected = 0;
@@ -200,7 +202,6 @@ class UserController extends Controller {
     }
 
     public function generateImageUsingBase(Request $request) {
-//        dump($request->all());
         $validator = Validator::make($request->all(), [
                     'image' => 'required',
                     'prefix' => 'required',
@@ -214,14 +215,11 @@ class UserController extends Controller {
 
                 $data = base64_decode($data);
                 $user_id = rand(4, 7);
-//                dump($user_id);
                 $name = 'dash/' . $request->prefix . $user_id . '.png';
-//                dd($name);
                 $a = Storage::disk('local')->put('public/' . $name, $data);
                 if (!$a) {
                     throw new Exception('Unable to upload image');
                 }
-//                dd(url('storage/' . $name));
                 return response()->json(['status' => 200, 'url' => url('storage/' . $name)], 200);
             }
         } catch (\Exception $e) {
@@ -247,6 +245,7 @@ class UserController extends Controller {
                             $q->orWhere('last_name', 'like', '%' . $searchTerm . '%');
                             $q->orWhere('email', 'like', '%' . $searchTerm . '%');
                             $q->orWhere('mobile', 'like', '%' . $searchTerm . '%');
+                            $q->orWhere('id', '=',$searchTerm);
                         }
                     })->with('roles', 'permissions', 'providers')->withTrashed();
 
@@ -259,16 +258,16 @@ class UserController extends Controller {
                     $slabSubjectIds = Activity::where('causer_id', $user->id)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'created')->pluck('subject_id');
                     if (count($slabSubjectIds) > 0) {
 
-                        $slabCountApproved = Activity::whereIn('subject_id', $slabSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', 1)->count();
-                        $slabCountRejected = Activity::whereIn('subject_id', $slabSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', '-1')->count();
+                        $slabCountApproved = Activity::whereIn('subject_id', $slabSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->status', 1)->count();
+                        $slabCountRejected = Activity::whereIn('subject_id', $slabSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->status', '-1')->count();
                     } else {
                         $slabCountApproved = 0;
                         $slabCountRejected = 0;
                     }
-                    $listingSubjectIds = Activity::where('causer_id', $user->id)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'created')->pluck('subject_id');
+                    $listingSubjectIds = Activity::where('causer_id', $user->id)->where('subject_type', 'App\Models\RequestListing')->where('description', 'created')->pluck('subject_id');
                     if (count($listingSubjectIds)) {
-                        $listingCountApproved = Activity::whereIn('subject_id', $listingSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', 1)->count();
-                        $listingCountRejected = Activity::whereIn('subject_id', $listingSubjectIds)->where('subject_type', 'App\Models\RequestSlab')->where('description', 'updated')->where('properties->attributes->approved', '-1')->count();
+                        $listingCountApproved = Activity::whereIn('subject_id', $listingSubjectIds)->where('subject_type', 'App\Models\RequestListing')->where('description', 'updated')->where('properties->attributes->approved', 1)->count();
+                        $listingCountRejected = Activity::whereIn('subject_id', $listingSubjectIds)->where('subject_type', 'App\Models\RequestListing')->where('description', 'updated')->where('properties->attributes->approved', '-1')->count();
                     } else {
                         $listingCountApproved = 0;
                         $listingCountRejected = 0;
@@ -414,46 +413,94 @@ class UserController extends Controller {
 
     public function settings(Request $request) {
         try {
+            $data = $request->all();
+            
             if (!auth()->user()->isAdmin()) {
                 return response()->json(['error' => 'Unauthorised'], 301);
             }
             if ($request->method() == 'GET') {
                 $settings = AppSettings::first();
+
+                foreach($settings->sports_images as $key=>$value){
+                    if (!strpos($value, "storage") !== false) {
+                        $value = "storage/" . $value;
+                    }
+                    $settings->$key = url($value);
+                }
+
+                unset($settings->sports_images);
+
                 return response()->json(['status' => 200, 'data' => $settings], 200);
             }
-            $data = $request->all();
-            if ($request->file('basketball_image')) {
-                $filename = 'Default-basketball-' . $request->basketball_image->getClientOriginalName();
-                Storage::disk('public')->put($filename, file_get_contents($request->basketball_image->getRealPath()));
-                $data['basketball_image'] = $filename;
+
+            $arrayForTrenders = [];
+            $arrayForOtherTrenders = [];
+            $arrayForLiveListings = [];
+            $arrayForOtherLiveListings = [];
+            $allImages = [];
+
+            $sports = json_decode($data['sports']);
+            $trenders_order = json_decode($data['trenders_order']);
+            $startOneTrendersOrder = array_combine(range(1, count($trenders_order)), array_values($trenders_order));
+            $live_listings_order = json_decode($data['live_listings_order']);
+            $startOneLiveListingsOrder = array_combine(range(1, count($live_listings_order)), array_values($live_listings_order));
+
+            foreach($sports as $sport){
+                $existed = array_search($sport,$startOneTrendersOrder, true);
+                if($existed){
+                    $arrayForTrenders[$existed] = $sport;
+                } else {
+                    $arrayForOtherTrenders[$existed] = $sport;
+                }
+                $existed1 = array_search($sport,$startOneLiveListingsOrder, true);
+                if($existed1){
+                    $arrayForLiveListings[$existed1] = $sport;
+                } else {
+                    $arrayForOtherLiveListings[$existed1] = $sport;
+                }
+                $name = $sport.'_image';
+               
+                if(!empty($data[$name])){
+                    $allImages[$name] = $data[$name];
+                }
             }
-            if ($request->file('baseball_image')) {
-                $filename = 'Default-baseball-' . $request->baseball_image->getClientOriginalName();
-                Storage::disk('public')->put($filename, file_get_contents($request->baseball_image->getRealPath()));
-                $data['baseball_image'] = $filename;
+           
+            ksort($arrayForTrenders);
+            ksort($arrayForLiveListings);
+            
+            $arrayForTrenders = array_merge($arrayForTrenders,$arrayForOtherTrenders);
+            $arrayForLiveListings = array_merge($arrayForLiveListings,$arrayForOtherLiveListings);
+            
+            foreach($sports as $sport) {
+                if(!empty($sport)){
+
+                    $name = $sport.'_image';
+                    if ($request->file($name)) {
+                        $filename = "Default-$sport-" . $request->$name->getClientOriginalName();
+                        Storage::disk('public')->put($filename, file_get_contents($request->$name->getRealPath()));
+                        
+                        $data[$name] = $filename;
+                        
+                        $allImages[$name] = $filename;
+                  
+                    }
+
+                }
             }
-            if ($request->file('football_image')) {
-                $filename = 'Default-football-' . $request->football_image->getClientOriginalName();
-                Storage::disk('public')->put($filename, file_get_contents($request->football_image->getRealPath()));
-                $data['football_image'] = $filename;
-            }
-            if ($request->file('soccer_image')) {
-                $filename = 'Default-soccer-' . $request->soccer_image->getClientOriginalName();
-                Storage::disk('public')->put($filename, file_get_contents($request->soccer_image->getRealPath()));
-                $data['soccer_image'] = $filename;
-            }
-            if ($request->file('pokemon_image')) {
-                $filename = 'Default-pokemon-' . $request->pokemon_image->getClientOriginalName();
-                Storage::disk('public')->put($filename, file_get_contents($request->pokemon_image->getRealPath()));
-                $data['pokemon_image'] = $filename;
-            }
+            
             if ($request->file('listing_image')) {
                 $filename = 'Default-Listing-' . $request->listing_image->getClientOriginalName();
                 Storage::disk('public')->put($filename, file_get_contents($request->listing_image->getRealPath()));
                 $data['listing_image'] = $filename;
             }
-//            dd($data);
+            
+            $allImagesjson = json_encode($allImages);
+            $data["sports_images"] = $allImagesjson;
+            $data["trenders_order"] = json_encode($arrayForTrenders);
+            $data["live_listings_order"] = json_encode($arrayForLiveListings);
+
             AppSettings::updateOrCreate(['id' => 1], $data);
+
             return response()->json(['status' => 200, 'message' => 'Settings saved successfully.'], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -465,9 +512,27 @@ class UserController extends Controller {
             if (!auth()->user()->isAdmin()) {
                 return response()->json(['error' => 'Unauthorised'], 301);
             }
-            $users = User::role([config('access.users.moderator_role'), config('access.users.data_entry_role')])->get()->map(function($us) {
+
+            $firstData = config('constant.user_custom_options.all_of_them');
+            $collection = collect();
+            $collection->push($firstData);
+            
+            $firstDataP = config('constant.user_custom_options.all_of_them_p');
+            $collectionP = collect();
+            $collectionP->push($firstDataP);
+            
+            $users = User::role([config('access.users.moderator_role'), config('access.users.data_entry_role'), config('access.users.admin_role')])->get()->map(function($us) {
                 return ['id' => $us->id, 'name' => $us->full_name];
             });
+            
+            $platform_user = User::role([config('access.users.default_role')])->get()->map(function($us) {
+                return ['id' => $us->id, 'name' => $us->full_name];
+            });
+
+            $merged = $collection->merge($users);
+            $merged->all();
+            $mergedP = $collectionP->merge($users);
+            $mergedP->all();
             $models = Activity::select('subject_type')->distinct()->pluck('subject_type')->map(function($model) {
                         $orig = $model;
                         $model = explode('\\', $model);
@@ -514,13 +579,69 @@ class UserController extends Controller {
             $models = $models->toArray();
             $models = array_values($models);
 //           array_multisort($models, SORT_ASC);
-            return response()->json(['status' => 200, 'data' => ['users' => $users, 'models' => $models]], 200);
+            return response()->json(['status' => 200, 'data' => ['users' => $merged,'platform_user'=>$mergedP, 'models' => $models]], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
     }
 
-    public function getActivityLogs(User $user, Request $request) {
+    public function getActivityLogs(Request $request) {
+        try {
+            // dd($request->all());
+            if (!auth()->user()->isAdmin()) {
+                return response()->json(['error' => 'Unauthorised'], 301);
+            }
+            $startDate = Carbon::create($request['start_date'])->format('Y-m-d H:i:s');
+            $endDate = Carbon::create($request['end_date'])->format('Y-m-d 23:59:59');
+            $logs = Activity::whereBetween('updated_at',[$startDate, $endDate]);
+
+            if ($request->has('user') && $request->user == config("constant.user_custom_options.all_of_them.id")) {
+                $users = User::role([config('access.users.moderator_role'), config('access.users.data_entry_role'), config('access.users.admin_role')])->pluck("id");
+                $logs = $logs->whereIn('causer_id', $users);
+            }
+
+            if ($request->has('user') && $request->user == config("constant.user_custom_options.all_of_them_p.id")) {
+                $users = User::role([config('access.users.default_role')])->pluck("id");
+                $logs = $logs->whereIn('causer_id', $users);
+            }
+            if ($request->has('user') && $request->user != config("constant.user_custom_options.all_of_them_p.id") && $request->user != config("constant.user_custom_options.all_of_them.id")) {
+                $user = User::whereId($request->user)->first();
+                $logs = $logs->where('causer_id', $user->id);
+            }
+
+            if ($request->has('model') && strlen(trim($request->query('model'))) > 0 && $request->query('model') != 'null') {
+                $logs = $logs->where('subject_type', $request->query('model'));
+            }
+            if ($request->has('sts') && $request->query('sts') != 'null' && strpos($request->query('model'), 'RequestListing') !== false) {
+                $data = $logs->where('description', 'created')->pluck('subject_id');
+                $logs = Activity::whereIn('subject_id', $data)->where('subject_type', $request->query('model'))->where('properties->attributes->approved', $request->query('sts'))->whereBetween('updated_at',[$startDate, $endDate]);
+            }
+
+            $logs = $logs->paginate(30);
+
+//            $logs = $logs->get();
+            $items = Collect($logs->items())->map(function($log) {
+                // $model = explode('\\', $log->subject_type);
+                // dd($model);
+                // $log->subject_type = $model[count($model) - 1];
+                // if (strtolower($log->subject_type) == 'ebayitems') {
+                //     $log->subject_type = 'Listings';
+                // }
+                $log->subject_name = User::where('id',$log->subject_id)->select("first_name","last_name")->first();
+                // dd($subject->fullName);
+                // $log->subject_name = $subject->fullName;
+                
+                return $log;
+            });
+//            dd($items->toArray());
+
+            return response()->json(['status' => 200, 'data' => $logs], 200);
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
+
+    public function exportActivityLogs(User $user, Request $request) {
         try {
             if (!auth()->user()->isAdmin()) {
                 return response()->json(['error' => 'Unauthorised'], 301);
@@ -535,20 +656,16 @@ class UserController extends Controller {
                 $data = $logs->where('description', 'created')->pluck('subject_id');
                 $logs = Activity::whereIn('subject_id', $data)->where('subject_type', $request->query('model'))->where('properties->attributes->approved', $request->query('sts'))->whereBetween('updated_at',[$startDate, $endDate]);
             }
-            $logs = $logs->paginate(30);
-//            $logs = $logs->get();
-//            $items = Collect($logs->items())->map(function($log) {
-//                $model = explode('\\', $log->subject_type);
-//                dd($model);
-//                $log->subject_type = $model[count($model) - 1];
-//                if (strtolower($log->subject_type) == 'ebayitems') {
-//                    $log->subject_type = 'Listings';
-//                }
-//                return $log;
-//            });
-//            dd($items->toArray());
 
-            return response()->json(['status' => 200, 'data' => $logs], 200);
+            $serialiser = new ActivityLogSerialiser;
+            $excel = Exporter::make('Csv');
+            $excel->load($logs->get());
+            $excel->setSerialiser($serialiser);
+            $save = storage_path('app/public/latest-activity-logs.csv');
+            $path = env('APP_URL').Storage::url("latest-activity-logs.csv");
+            $excel->save($save);
+
+            return response()->json(['status' => 200,'csv_link'=>$path], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }

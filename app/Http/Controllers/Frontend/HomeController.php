@@ -16,6 +16,9 @@ use App\Models\Ebay\EbayItems;
 use Carbon\Carbon;
 use App\Models\Board;
 use DB;
+use App\Models\AppSettings;
+//use App\Models\CardsSx;
+use App\Models\CardsTotalSx;
 
 /**
  * Class HomeController.
@@ -59,19 +62,10 @@ class HomeController extends Controller {
 
     public function stoxtickerData(Request $request) {
         $data = ['total' => 0, 'sale' => 0, 'avg_sale' => 0, 'change' => 0, 'change_arrow' => 'up', 'last_updated' => ''];
-        $data['total'] = Card::count();
+        $data['total'] = Card::where('active', 1)->count();
 
-//        $data['sale'] = number_format(CardSales::leftJoin('cards', 'cards.id', '=', 'card_sales.card_id')->where('cards.deleted_at', null)->orderBy('timestamp', 'DESC')->select('card_sales.card_id', 'card_sales.cost')->get()->groupBy('card_id')->map(function ($cs) {
-//                    return ['avg' => $cs->splice(0, 3)->avg('cost')];
-//                })->sum('avg'), 2, '.', '');
-
-        $cards = Card::whereHas('sales')->pluck('id');
-        $data['sale'] = 0;
-        foreach ($cards as $cardId) {
-            $sale = CardSales::getSx($cardId);
-            $data['sale'] += $sale['sx'];
-        }
-        $data['sale'] = number_format($data['sale'], 2, '.', '');
+$total = AppSettings::first();
+            $data['sale'] = $total['total_sx_value'];
 
 
         $data['last_updated'] = 'N/A';
@@ -80,22 +74,34 @@ class HomeController extends Controller {
             $data['last_updated'] = Carbon::create($last_updated->timestamp)->format('F d Y \- h:i:s A');
         }
 
-//        $sx = CardSales::orderBy('timestamp', 'DESC')->limit(3)->pluck('cost');
-//        $sx_count = count($sx);
-//        $sx = ($sx_count > 0) ? array_sum($sx->toArray()) / $sx_count : 0;
-//        $lastSx = CardSales::orderBy('timestamp', 'DESC')->skip(1)->limit(3)->pluck('cost');
-//        $count = count($lastSx);
-//        $lastSx = ($count > 0) ? array_sum($lastSx->toArray()) / $count : 0;
+         $salesDate = CardsTotalSx::groupBy(DB::raw('DATE(date)'))->orderBy('date', 'DESC')->take(2)->get();
+            $count = $salesDate->count();
+            if ($count >= 2) {
+                $sx_data['sx'] = $salesDate[0]->amount;
+                $sx_data['lastSx'] = $salesDate[1]->amount;
+            } elseif ($count == 1) {
+                $sx_data['sx'] = $salesDate[0]->amount;
+                $sx_data['lastSx'] = 0;
+            } else {
+                $sx_data['sx'] = 0;
+                $sx_data['lastSx'] = 0;
+            }
 
-        $sx_data = CardSales::getSlabstoxSx();
-        $sx = $sx_data['sx'];
-        $lastSx = $sx_data['lastSx'];
-
-//            $sx_icon = (($lastSx - $sx) >= 0) ? 'up' : 'down';
-//            $data['change_arrow'] = $sx_icon;         
-        $data['change'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-        $perc_diff = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
-        $data['change_pert'] = str_replace('-', '', number_format($perc_diff, 2, '.', ''));
+            $sx = $sx_data['sx'];
+            $lastSx = $sx_data['lastSx'];
+            $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+            $diff = abs($sx - $lastSx);
+            $percent_diff = ($lastSx > 0 ? (($diff / $lastSx) * 100) : 0 );
+            $data['change'] = number_format(abs($percent_diff), 2, '.', '');
+            $data['change_pert'] = str_replace('-', '', number_format($percent_diff, 2, '.', ''));
+            
+//        $sx_data = CardSales::getSlabstoxSx();
+//        $sx = $sx_data['sx'];
+//        $lastSx = $sx_data['lastSx'];
+//        $data['change'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+//        $perc_diff = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
+//        $data['change_pert'] = str_replace('-', '', number_format($perc_diff, 2, '.', ''));
+//        dd($data);
         return view('frontend.stoxticker-data', compact('data'));
     }
 

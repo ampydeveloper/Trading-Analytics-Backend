@@ -46,4 +46,16 @@ return [
         4 => 'hockey',
         5 => 'pokemon',
     ],
+    "user_custom_options" => [
+        //admin,data entry, modrator
+        "all_of_them" => [
+            "id" => "all-them",
+            "name" => "All of them",
+        ],
+        //all users
+        "all_of_them_p" => [
+            "id" => "all-them-p",
+            "name" => "All of them",
+        ],
+    ],
 ];

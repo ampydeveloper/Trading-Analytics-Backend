@@ -10,6 +10,7 @@ use App\Models\CardDetails;
 use App\Models\MyPortfolio;
 use App\Models\CardValues;
 use App\Models\CardSales;
+use App\Models\AppSettings;
 use App\Models\PortfolioUserValues;
 use Exception;
 use Illuminate\Http\Request;
@@ -235,13 +236,18 @@ class MyPortfolioController extends Controller {
     public function getFiltersData(Request $request) {
         try {
             $data = [
-                'sport' => Card::select('sport')->groupby('sport')->pluck('sport'),
                 'year' => Card::select('year')->groupby('year')->pluck('year'),
                 'brand' => Card::select('brand')->groupby('brand')->pluck('brand'),
                 'card' => Card::select('card')->groupby('card')->orderby('card', 'asc')->pluck('card'),
                 'variation' => Card::select('variation')->groupby('variation')->pluck('variation'),
                 'grade' => Card::select('grade')->groupby('grade')->pluck('grade'),
             ];
+
+            $sportsList = AppSettings::select('sports')->first();
+            json_decode($sportsList);
+            
+            $data["sport"] = $sportsList->sports;
+
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -328,7 +334,7 @@ class MyPortfolioController extends Controller {
             $diff = number_format(abs($diff), 2, '.', '');
 
             $percent_diff = ($total_purchases > 0 ? (($diff / $total_purchases) * 100) : 0 );
-            $percent_diff_icon = (($percent_diff >= 0) ? 'up' : 'down');
+//            $percent_diff_icon = (($percent_diff >= 0) ? 'up' : 'down');
             $percent_diff = number_format(abs($percent_diff), 2, '.', '');
 
             return response()->json([
@@ -340,7 +346,7 @@ class MyPortfolioController extends Controller {
 //                        'updated' => $updated,
                         'total_purchases' => number_format($total_purchases, 2, '.', ''),
                         'percent_differ' => $percent_diff,
-                        'percent_diff_icon' => $percent_diff_icon
+                        'percent_diff_icon' => $diff_icon
                             ], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);

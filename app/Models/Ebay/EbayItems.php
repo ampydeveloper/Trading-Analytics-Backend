@@ -87,6 +87,10 @@ class EbayItems extends Model
     {
         return $this->belongsTo(EbayItemSellingStatus::class,'selling_status_id');
     }
+    public function cardSale()
+    { 
+           return $this->hasOne(\App\Models\CardSales::class,'ebay_items_id','id');
+    }
 
     public function shippingInfo()
     {

@@ -1780,7 +1780,7 @@ class EbayController extends Controller {
             }
 
             $AppSettings = AppSettings::first();
-            $order = ['basketball', 'soccer', 'baseball', 'football', 'pokemon'];
+            // $order = ['basketball', 'soccer', 'baseball', 'football', 'pokemon'];
             if ($AppSettings) {
                 $order = $AppSettings->live_listings_order;
             }

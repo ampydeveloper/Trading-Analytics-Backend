@@ -61,9 +61,9 @@ use LogsActivity;
             return Storage::disk('s3')->url($this->image);
         } else {
             $settings = AppSettings::first();
-            if ($settings) {
+            if (!empty($settings) && $this->sport != null) {
                 $default_filename = strtolower($this->sport) . '_image';
-                return $settings->$default_filename;
+                return $settings->sports_images[$default_filename];
             } else {
                 return asset('/img/default-image.jpg');
             }

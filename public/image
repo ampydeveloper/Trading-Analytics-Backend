@@ -1,0 +1,10 @@
+Matplotlib created a temporary config/cache directory at /tmp/matplotlib-94elcgkl because the default path (/var/www/.config/matplotlib) is not a writable directory; it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+CUDA not available - defaulting to CPU. Note: This module is much faster with a GPU.
+Traceback (most recent call last):
+  File "/home/ubuntu/ebay_image_compare/textextract.py", line 13, in <module>
+    results = reader.readtext(image,detail = 0)
+  File "/home/ubuntu/ebay_image_compare/ebayFetch/lib/python3.8/site-packages/easyocr/easyocr.py", line 383, in readtext
+    img, img_cv_grey = reformat_input(image)
+  File "/home/ubuntu/ebay_image_compare/ebayFetch/lib/python3.8/site-packages/easyocr/utils.py", line 725, in reformat_input
+    raise ValueError('Invalid input type. Supporting format = string(file path or url), bytes, numpy array')
+ValueError: Invalid input type. Supporting format = string(file path or url), bytes, numpy array

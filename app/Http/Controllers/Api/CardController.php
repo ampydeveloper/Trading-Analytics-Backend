@@ -22,6 +22,7 @@ use App\Jobs\StoreZipImages;
 //use App\Jobs\StoreImage;
 //use App\Jobs\StoreImagesZip;
 use App\Models\Ebay\EbayItems;
+use App\Models\Ebay\EbayShortItem;
 use App\Models\RequestSlab;
 use App\Models\RequestListing;
 use App\Models\ExcelUploads;
@@ -43,6 +44,9 @@ use DateTime;
 use Illuminate\Support\Facades\Cache;
 use App\Jobs\JobForTrender;
 use Log;
+use Illuminate\Support\Str;
+
+//use DB;
 
 class CardController extends Controller {
 
@@ -68,17 +72,10 @@ class CardController extends Controller {
         $itemId = $request->input('itemid', null);
         if ($itemId != null) {
             try {
-//                $response = EbayService::getSingleItemDetails($itemId);
-//                $script_link = '/home/ubuntu/ebay/ebayFetch/bin/python3 /home/ubuntu/ebay/core.py """' . $itemId . '"""';
                 $script_link = '/home/' . env('SCRAP_USER') . '/ebay/ebayFetch/bin/python3 /home/' . env('SCRAP_USER') . '/ebay/core.py """' . $itemId . '"""';
                 $scrap_response = shell_exec($script_link . " 2>&1");
                 $response = json_decode($scrap_response);
                 return response()->json(['status' => 200, 'data' => $response], 200);
-//                if (isset($response['data'])) {
-//                    return response()->json(['status' => 200, 'data' => $response['data']], 200);
-//                } else {
-//                    return response()->json('No record found.', 500);
-//                }
             } catch (\Exception $e) {
                 return response()->json($e->getMessage(), 500);
             }
@@ -125,10 +122,17 @@ class CardController extends Controller {
                     'is_featured' => $card->is_featured,
                     'active' => $card->active,
                     'is_sx' => $card->is_sx,
+                    'image' => $card->cardImage,
                 ];
             }
-            $sportsList = Card::select('sport')->distinct()->pluck('sport');
-            return response()->json(['status' => 200, 'data' => $data, 'all_pages' => $all_pages, 'next' => ($page + 1), 'sportsList' => $sportsList], 200);
+            // $sportsList = Card::select('sport')->distinct()->pluck('sport');
+            $sportsList = AppSettings::select('sports')->first();
+            json_decode($sportsList);
+            return response()->json(['status' => 200,
+                        'data' => $data,
+                        'all_pages' => $all_pages,
+                        'next' => ($page + 1),
+                        'sportsList' => $sportsList->sports], 200);
         } catch (\Exception $e) {
             return response()->json(['status' => 500, 'error' => $e->getMessage()], 500);
         }
@@ -200,18 +204,18 @@ class CardController extends Controller {
 
     public function getCardDetails(int $id, Request $request) {
         try {
-            $rank = 'N/A';
-            $card_sales = CardSales::where('card_id', $id)->pluck('id')->toArray();
-            if (!empty($card_sales)) {
-                $cs = CardSales::groupBy('card_id')->select('id', 'card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->get()->map(function($item, $key) use($id, &$rank) {
-                    if ($item['card_id'] == $id) {
-                        $rank = ++$key;
-                        return;
-                    }
-                });
-            }
+//            $rank = 'N/A';
+//            $card_sales = CardSales::where('card_id', $id)->pluck('id')->toArray();
+//            if (!empty($card_sales)) {
+//                $cs = CardSales::groupBy('card_id')->select('id', 'card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->get()->map(function($item, $key) use($id, &$rank) {
+//                    if ($item['card_id'] == $id) {
+//                        $rank = ++$key;
+//                        return;
+//                    }
+//                });
+//            }
             $cards = Card::where('id', $id)->with('details')->firstOrFail()->toArray();
-            $cards['rank'] = $rank;
+//            $cards['rank'] = $rank;
 
             return response()->json(['status' => 200, 'data' => $cards], 200);
         } catch (\Exception $e) {
@@ -327,7 +331,7 @@ class CardController extends Controller {
                 }
             }
             $AppSettings = AppSettings::first();
-            $order = ['basketball', 'soccer', 'baseball', 'football', 'pokemon'];
+            // $order = ['basketball', 'soccer', 'baseball', 'football', 'pokemon'];
             if ($AppSettings) {
                 $order = $AppSettings->trenders_order;
             }
@@ -335,11 +339,90 @@ class CardController extends Controller {
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
-//        }
     }
 
+    // public function test() {
+    //     Log::info('CRON START');
+    //       $days = [
+    //         1 => [
+    //             'from' => date('Y-m-d H:i:s'),
+    //             'to' => date('Y-m-d H:i:s', strtotime('-1 day')),
+    //             'daysForSx' => 0
+    //         ],
+    //         2 => [
+    //             'from' => date('Y-m-d H:i:s'),
+    //             'to' => date('Y-m-d H:i:s', strtotime('-8 day')),
+    //             'daysForSx' => 7
+    //         ],
+    //         3 => [
+    //             'from' => date('Y-m-d H:i:s'),
+    //             'to' => date('Y-m-d H:i:s', strtotime('-30 day')),
+    //             'daysForSx' => 30
+    //         ],
+    //         4 => [
+    //             'from' => date('Y-m-d H:i:s'),
+    //             'to' => date('Y-m-d H:i:s', strtotime('-90 day')),
+    //             'daysForSx' => 90
+    //         ],
+    //         5 => [
+    //             'from' => date('Y-m-d H:i:s'),
+    //             'to' => date('Y-m-d H:i:s', strtotime('-180 day')),
+    //             'daysForSx' => 180
+    //         ],
+    //         6 => [
+    //             'from' => date('Y-m-d H:i:s'),
+    //             'to' => date('Y-m-d H:i:s', strtotime('-365 day')),
+    //             'daysForSx' => 365
+    //         ],
+    //         7 => [
+    //             'from' => date('Y-m-d H:i:s'),
+    //             'to' => date('Y-m-d H:i:s', strtotime('-1825 day')),
+    //             'daysForSx' => 1825
+    //         ],
+    //     ];
+    //     $sports = [
+    //         0 => 'basketball',
+    //         1 => 'soccer',
+    //         2 => 'baseball',
+    //         3 => 'football',
+    //         4 => 'hockey',
+    //         5 => 'pokemon',
+    //     ];
+    //     foreach ($days as $daykey => $day) {
+    //         foreach ($sports as $sport) {
+    //             $name = 'trenders_' . $daykey . '_' . $sport;
+    //             Cache::forget($name);
+    //             $trender = Cache::rememberForever($name, function() use($day, $sport) {
+    //                         $cards = [];
+    //                         $card_sales = CardSales::whereBetween('timestamp', [$day['to'], $day['from']])->groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
+    //                         if (!empty($card_sales)) {
+    //                             $cards = Card::whereHas('sales', function($q) use($day, $sport) {
+    //                                         $q->whereBetween('timestamp', [$day['to'], $day['from']]);
+    //                                     }, '>=', 2)->whereIn('id', $card_sales)->where('sport', $sport)->where('active', 1)->with('details')->get();
+    //                             $cards = $cards->map(function ($card, $key) use($day) {
+    //                                 $data = $card;
+    //                                 $sx_data = CardSales::getSxAndOldestSx($card->id, $day['to'], $day['from'], $day['daysForSx']);
+    //                                 $sx = $sx_data['sx'];
+    //                                 $lastSx = $sx_data['oldestSx'];
+    //                                 $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+    //                                 $data['price'] = number_format((float) $sx, 2, '.', '');
+    //                                 $data['sx_value_signed'] = (float) $sx - $lastSx;
+    //                                 $data['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+    //                                 $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
+    //                                 $data['sx_percent_signed'] = $sx_percent;
+    //                                 $data['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
+    //                                 $data['sx_icon'] = $sx_icon;
+    //                                 $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
+    //                                 return $data;
+    //                             });
+    //                         }
+    //                         return $cards;
+    //                     });
+    //         }
+    //     }
+    // }
     public function cronForTrender() {
-          Log::info('CRON START');
+        Log::info('CRON START');
         $days = [
             1 => [
                 'from' => date('Y-m-d H:i:s'),
@@ -377,14 +460,10 @@ class CardController extends Controller {
                 'daysForSx' => 1825
             ],
         ];
-        $sports = [
-            0 => 'basketball',
-            1 => 'soccer',
-            2 => 'baseball',
-            3 => 'football',
-            4 => 'hockey',
-            5 => 'pokemon',
-        ];
+
+        $sportsList = AppSettings::select('sports')->first();
+        json_decode($sportsList);
+        $sports = $sportsList->sports;
 
         foreach ($days as $daykey => $day) {
             foreach ($sports as $sport) {
@@ -419,7 +498,150 @@ class CardController extends Controller {
                         });
             }
         }
-       Log::info('CRON END');
+        
+        $data = CardsSx::orderBy('date', 'DESC')->get()->groupBy('card_id')->map(function ($item, $key) {
+            if(isset($item[1])) {
+                return [
+                    'cardId' => $item[0]->card_id,
+                    'sxDifference' => $item[0]->sx - $item[1]->sx,
+                    '%SxDifference' => (($item[0]->sx - $item[1]->sx)/$item[1]->sx)*100,
+                    ];
+            } else {
+                return [
+                    'cardId' => $item[0]->card_id,
+                    'sxDifference' => '-99999999999999999999',
+                    '%SxDifference' => '-9999999999999999999',
+                    'remark' => 'rank N/A'
+                    ];
+            }
+        });
+        
+        $myNewArray = array_values($data->toArray());
+        $keys = array_column($myNewArray, 'sxDifference');
+        array_multisort($keys, SORT_DESC, $myNewArray);
+        $rankBasedOnSxDifference = $myNewArray;
+        $keys = array_column($myNewArray, '%SxDifference');
+        array_multisort($keys, SORT_DESC, $myNewArray);
+        $rankBasedOnSxDifferencePercentage = $myNewArray;
+        
+        $name = 'card_rank_based_on_sx_difference';
+        Cache::forget($name);
+        $trender = Cache::rememberForever($name, function() use($rankBasedOnSxDifference) {
+                            $ranks = [];
+                            foreach($rankBasedOnSxDifference as $key => $rankSxDifference) {
+                                if(!isset($rank['remark'])) {
+                                    $ranks[$rankSxDifference['cardId']] = $key+1;
+                                } else {
+                                    $ranks[$rankSxDifference['cardId']] = 'N/A';
+                                }
+                            }
+                            return $ranks;
+                        });
+        $name = 'card_rank_based_on_sx_difference_percentage';
+        Cache::forget($name);
+        $trender = Cache::rememberForever($name, function() use($rankBasedOnSxDifferencePercentage){
+                            $ranks = [];
+                            foreach($rankBasedOnSxDifferencePercentage as $key => $rankSxDifferencePercentage) {
+                                if(!isset($rank['remark'])) {
+                                    $ranks[$rankSxDifferencePercentage['cardId']] = $key+1;
+                                } else {
+                                    $ranks[$rankSxDifferencePercentage['cardId']] = 'N/A';
+                                }
+                            }
+                            return $ranks;
+                        });
+        
+        Log::info('CRON END');
+    }
+
+    public function cronTest() {
+        dd('sadf');
+        $this->cronForTrenderSpecificSport('Hockey');
+    }
+
+    public function cronForTrenderSpecificSport($singleSport) {
+        Log::info('CRON START');
+        $days = [
+            1 => [
+                'from' => date('Y-m-d H:i:s'),
+                'to' => date('Y-m-d H:i:s', strtotime('-1 day')),
+                'daysForSx' => 0
+            ],
+            2 => [
+                'from' => date('Y-m-d H:i:s'),
+                'to' => date('Y-m-d H:i:s', strtotime('-8 day')),
+                'daysForSx' => 7
+            ],
+            3 => [
+                'from' => date('Y-m-d H:i:s'),
+                'to' => date('Y-m-d H:i:s', strtotime('-30 day')),
+                'daysForSx' => 30
+            ],
+            4 => [
+                'from' => date('Y-m-d H:i:s'),
+                'to' => date('Y-m-d H:i:s', strtotime('-90 day')),
+                'daysForSx' => 90
+            ],
+            5 => [
+                'from' => date('Y-m-d H:i:s'),
+                'to' => date('Y-m-d H:i:s', strtotime('-180 day')),
+                'daysForSx' => 180
+            ],
+            6 => [
+                'from' => date('Y-m-d H:i:s'),
+                'to' => date('Y-m-d H:i:s', strtotime('-365 day')),
+                'daysForSx' => 365
+            ],
+            7 => [
+                'from' => date('Y-m-d H:i:s'),
+                'to' => date('Y-m-d H:i:s', strtotime('-1825 day')),
+                'daysForSx' => 1825
+            ],
+        ];
+
+        $sportsList = AppSettings::select('sports')->first();
+        json_decode($sportsList);
+        $sports = $sportsList->sports;
+
+        foreach ($days as $daykey => $day) {
+            foreach ($sports as $sport) {
+
+                if (strtolower($singleSport) == strtolower($sport)) {
+//                    dump($singleSport . '==' . $sport);
+                }
+//                dd('sdf');
+                $name = 'trenders_' . $daykey . '_' . $sport;
+                Cache::forget($name);
+                $trender = Cache::rememberForever($name, function() use($day, $sport) {
+                            $cards = [];
+                            $card_sales = CardSales::whereBetween('timestamp', [$day['to'], $day['from']])->groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
+                            if (!empty($card_sales)) {
+                                $cards = Card::whereHas('sales', function($q) use($day, $sport) {
+                                            $q->whereBetween('timestamp', [$day['to'], $day['from']]);
+                                        }, '>=', 2)->whereIn('id', $card_sales)->where('sport', $sport)->where('active', 1)->with('details')->get();
+
+                                $cards = $cards->map(function ($card, $key) use($day) {
+                                    $data = $card;
+                                    $sx_data = CardSales::getSxAndOldestSx($card->id, $day['to'], $day['from'], $day['daysForSx']);
+                                    $sx = $sx_data['sx'];
+                                    $lastSx = $sx_data['oldestSx'];
+                                    $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                                    $data['price'] = number_format((float) $sx, 2, '.', '');
+                                    $data['sx_value_signed'] = (float) $sx - $lastSx;
+                                    $data['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                                    $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
+                                    $data['sx_percent_signed'] = $sx_percent;
+                                    $data['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
+                                    $data['sx_icon'] = $sx_icon;
+                                    $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
+                                    return $data;
+                                });
+                            }
+                            return $cards;
+                        });
+            }
+        }
+        Log::info('CRON END');
     }
 
     //create trender cache from scratch
@@ -470,49 +692,49 @@ class CardController extends Controller {
 //            4 => 'hockey',
 //            5 => 'pokemon',
         ];
+//        foreach ($days as $daykey => $day) {
+//            foreach ($sports as $sport) {
+//                $name = 'trenders_' . $daykey . '_' . $sport;
+//                Cache::forget($name);
+//                $trender = Cache::rememberForever($name, function() use($day, $sport) {
+//                            $cards = [];
+//                            $card_sales = CardSales::whereBetween('timestamp', [$day['to'], $day['from']])->groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
+//                            if (!empty($card_sales)) {
+//                                $cards = Card::whereHas('sales', function($q) use($day, $sport) {
+//                                            $q->whereBetween('timestamp', [$day['to'], $day['from']]);
+//                                        }, '>=', 2)->whereIn('id', $card_sales)->where('sport', $sport)->where('active', 1)->with('details')->limit(5)->get();
+//
+//                                $cards = $cards->map(function ($card, $key) use($day) {
+//                                    $data = $card;
+//                                    $sx_data = CardSales::getSxAndOldestSx($card->id, $day['to'], $day['from'], $day['daysForSx']);
+//                                    $sx = $sx_data['sx'];
+//                                    $lastSx = $sx_data['oldestSx'];
+//                                    $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+//                                    $data['price'] = number_format((float) $sx, 2, '.', '');
+//                                    $data['sx_value_signed'] = (float) $sx - $lastSx;
+//                                    $data['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+//                                    $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
+//                                    $data['sx_percent_signed'] = $sx_percent;
+//                                    $data['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
+//                                    $data['sx_icon'] = $sx_icon;
+//                                    $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
+//                                    return $data;
+//                                });
+//                            }
+//                            return $cards;
+//                        });
+//            }
+//        }
+//        die('success 1');
 
-        foreach ($days as $daykey => $day) {
-            foreach ($sports as $sport) {
-                $name = 'trenders_' . $daykey . '_' . $sport;
-                Cache::forget($name);
-                $trender = Cache::rememberForever($name, function() use($day, $sport) {
-                            $cards = [];
-                            $card_sales = CardSales::whereBetween('timestamp', [$day['to'], $day['from']])->groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
-                            if (!empty($card_sales)) {
-                                $cards = Card::whereHas('sales', function($q) use($day, $sport) {
-                                            $q->whereBetween('timestamp', [$day['to'], $day['from']]);
-                                     }, '>=', 2)->whereIn('id', $card_sales)->where('sport', $sport)->where('active', 1)->with('details')->get();
-
-                                $cards = $cards->map(function ($card, $key) use($day) {
-                                    $data = $card;
-                                    $sx_data = CardSales::getSxAndOldestSx($card->id, $day['to'], $day['from'], $day['daysForSx']);
-                                    $sx = $sx_data['sx'];
-                                    $lastSx = $sx_data['oldestSx'];
-                                    $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-                                    $data['price'] = number_format((float) $sx, 2, '.', '');
-                                    $data['sx_value_signed'] = (float) $sx - $lastSx;
-                                    $data['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-                                    $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
-                                    $data['sx_percent_signed'] = $sx_percent;
-                                    $data['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
-                                    $data['sx_icon'] = $sx_icon;
-                                    $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
-                                    return $data;
-                                });
-                            }
-                            return $cards;
-                        });
-            }
-        }
-        die('success 1');
         Cache::forget('trenders_all_cards');
         $trender = Cache::rememberForever('trenders_all_cards', function() {
                     $cards = [];
                     $card_sales = CardSales::groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
                     if (!empty($card_sales)) {
-                        $cards = Card::whereHas('sales', function($q) use($day, $sport) {
-                                            $q->whereBetween('timestamp', [$day['to'], $day['from']]);
-                                     }, '>=', 2)->whereIn('id', $card_sales)->where('sport', $sport)->where('active', 1)->with('details')->get();
+                        $cards = Card::whereHas('sales', function($q) {
+                                    $q->where('timestamp', '!=', null);
+                                }, '>=', 2)->whereIn('id', $card_sales)->where('active', 1)->with('details')->get();
 
                         $cards = $cards->map(function ($card, $key) {
                             $data = $card;
@@ -588,16 +810,19 @@ class CardController extends Controller {
                 $cards = [];
                 $card_sales = CardSales::whereBetween('timestamp', [$to, $from])->groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
                 if (!empty($card_sales)) {
-                    $trender = Card::where(function ($q) use ($request, $search) {
-                                if ($request->has('sport') && $request->input('sport') != null) {
-                                    $q->where('sport', $request->input('sport'));
-                                }
-                                if ($search != null) {
-                                    $q->where('player', 'like', '%' . $search . '%');
-                                }
-                            })->whereHas('sales', function($q) use($to, $from) {
-                                $q->whereBetween('timestamp', [$to, $from]);
-                            }, '>=', 2)->whereIn('id', $card_sales)->where('active', 1)->with('details')->get();
+                    $trender = Card::whereHas('sales', function($q) use($to, $from) {
+                                        $q->whereBetween('timestamp', [$to, $from]);
+                                    }, '>=', 2)
+                                    ->whereIn('id', $card_sales)->where('active', 1)
+                                    ->with('details')
+                                    ->where(function ($q) use ($request, $search) {
+                                        if ($request->has('sport') && $request->input('sport') != null) {
+                                            $q->where('sport', $request->input('sport'));
+                                        }
+                                        if ($search != null) {
+                                            $q->where('player', 'like', '%' . $search . '%');
+                                        }
+                                    })->get();
 
                     $trender = $trender->map(function ($card, $key) use($orderby, $to, $from, $daysForSx, $request) {
                         $data = $card;
@@ -662,6 +887,16 @@ class CardController extends Controller {
                 }
                 $trender = Cache::get($name);
             }
+
+//            foreach($trender as $key => $val) {
+////                dd($val->id);
+//                if($val->id == 19043) {
+//                    dump($key);
+//                    dd($val->toArray());
+//                }
+//            }
+
+
             if (!$trender instanceof Illuminate\Database\Eloquent\Collection) {
                 $trender = Collect($trender);
             }
@@ -734,7 +969,6 @@ class CardController extends Controller {
                     'title' => $res->title
                 ];
             });
-//            dd($list);
             //                    whereIn('title', 'like', '%' . $keyword_list . '%')
             //                    ->orWhere('variation', 'like', '%' . $request->input('keyword') . '%')
             //                    ->orWhere('grade', 'like', '%' . $request->input('keyword') . '%')
@@ -769,16 +1003,8 @@ class CardController extends Controller {
     }
 
     public function getCardRank($id) {
-//        $rank = 0;
-////        $rank =CardSales::groupBy('quantity')->orderBy('quantity', 'DESC');
-//        CardDetails::orderBy('currentPrice', 'DESC')->get('card_id')->map(function($item, $key) use($id, &$rank) {
-//            if ($item['card_id'] == $id) {
-//                $rank = $key;
-//            }
-//        });
         $rank = 'N/A';
         $cs = CardSales::groupBy('card_id')->select('id', 'card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->get()->map(function($item, $key) use($id, &$rank) {
-            // dump($item['card_id'], $id);
             if ($item['card_id'] == $id) {
                 $rank = ++$key;
                 return;
@@ -831,7 +1057,6 @@ class CardController extends Controller {
             $status = (bool) $request->input('status');
             $data = Card::where('id', $request->input('id'))->first();
             if (isset($data->id)) {
-                //echo $cardSport.' : '.$status;
                 /** update is featured start * */
                 (Card::where('id', $request->input('id'))->first())->update(array('active' => $status));
                 /** update is featured end * */
@@ -872,7 +1097,7 @@ class CardController extends Controller {
                 $image_path = $request->input('image');
                 $image_name = str_replace("stoxRequests/", "", $image_path);
                 $filename = $request->input('sport') . '/' . $image_name;
-                Storage::disk('s3')->put($filename, file_get_contents(storage_path('app/public/'.$image_path)), 'public');
+                Storage::disk('s3')->put($filename, file_get_contents(storage_path('app/public/' . $image_path)), 'public');
             }
 
             Card::create([
@@ -976,12 +1201,12 @@ class CardController extends Controller {
 
 
     public function createSales(Request $request) {
+        \DB::beginTransaction();
         try {
             $data = $request->all();
             $carbonNow = Carbon::create($data['timestamp']);
-            $cardSXExisting = CardsSx::where('card_id', $data['card_id'])->orderBy('date', 'DESC')->first();
-            $cardSport = Card::where('id', $cardSXExisting->card_id)->pluck('sport');
-            
+            $cardSport = Card::where('id', $data['card_id'])->pluck('sport');
+
             CardSales::create([
                 'card_id' => $data['card_id'],
                 'timestamp' => $carbonNow->format('Y-m-d H:i:s'),
@@ -990,10 +1215,24 @@ class CardController extends Controller {
                 'source' => $data['source'],
                 'type' => $data['type'],
             ]);
+
             $saleDateYmd = $carbonNow->format('Y-m-d');
+            Log::info('CREATE SALE - CARD ' . $data['card_id'] . ' DATE ' . $saleDateYmd . ' ++++++++++++');
+//            $cardAllTimestamps = CardSales::where('card_id', $data['card_id'])->groupBy(DB::raw('DATE(timestamp)'))->orderBy('timestamp', 'DESC')->pluck('timestamp');
+//            $latestTimestamp = Carbon::create($cardAllTimestamps[0])->format('Y-m-d');
+//            if($saleDateYmd >= $latestTimestamp) {
+            $cardSXExistingvalue = 0;
+            if (CardsSx::where('card_id', $data['card_id'])->exists()) {
+                $cardSXExisting = CardsSx::where('card_id', $data['card_id'])->orderBy('date', 'DESC')->first();
+                $cardExistingLatestSaleDate = $cardSXExisting->date;
+                $cardSXExistingvalue = $cardSXExisting->sx;
+            }
+//            }
+
             $cardsSxValue = CardSales::where('card_id', $data['card_id'])->where('timestamp', 'like', '%' . $saleDateYmd . '%')->get();
             if (CardsSx::where('card_id', $data['card_id'])->where('date', $saleDateYmd)->exists()) {
                 CardsSx::where('card_id', $data['card_id'])->where('date', $saleDateYmd)->update(['sx' => $cardsSxValue->avg('cost'), 'quantity' => $cardsSxValue->sum('quantity')]);
+                Log::info('CardsSx ID ' . $data['card_id'] . ' SX ' . $cardsSxValue->avg('cost') . ' quantity ' . $cardsSxValue->sum('quantity'));
             } else {
                 CardsSx::create([
                     'card_id' => $data['card_id'],
@@ -1001,39 +1240,44 @@ class CardController extends Controller {
                     'sx' => $data['cost'],
                     'quantity' => $data['quantity'],
                 ]);
+                Log::info('CardsSx ID ' . $data['card_id'] . ' SX ' . $data['cost'] . ' quantity ' . $data['quantity']);
             }
+
             if (CardsTotalSx::where('date', $saleDateYmd)->exists()) {
                 $sxValue = CardSales::where('timestamp', 'like', '%' . $saleDateYmd . '%')->get();
                 CardsTotalSx::where('date', $saleDateYmd)->update(['amount' => $sxValue->avg('cost'), 'quantity' => $sxValue->sum('quantity')]);
+                Log::info('CardsTotalSx amount ' . $sxValue->avg('cost') . ' quantity ' . $sxValue->sum('quantity'));
             } else {
                 CardsTotalSx::create([
                     'date' => $saleDateYmd,
                     'amount' => $data['cost'],
                     'quantity' => $data['quantity'],
                 ]);
+                Log::info('CardsTotalSx amount ' . $data['cost'] . ' quantity ' . $data['quantity']);
             }
 
-            $cardAllTimestamps = CardSales::where('card_id', $data['card_id'])->groupBy(DB::raw('DATE(timestamp)'))->orderBy('timestamp', 'DESC')->pluck('timestamp');
-            $latestTimestamp = Carbon::create($cardAllTimestamps[0])->format('Y-m-d');
-            if ($latestTimestamp == $saleDateYmd) {
+if(isset($cardExistingLatestSaleDate)){
+            if ($saleDateYmd >= $cardExistingLatestSaleDate) {
                 $old_total_sx_value = AppSettings::select('total_sx_value')->first();
-                $changed_total_sx_value = ($old_total_sx_value->total_sx_value - $cardSXExisting->sx) + $cardsSxValue->avg('cost');
+                $changed_total_sx_value = ($old_total_sx_value->total_sx_value - $cardSXExistingvalue) + $cardsSxValue->avg('cost');
 
                 AppSettings::first()->update(["total_sx_value" => $changed_total_sx_value]);
+                Log::info('AppSettings total_sx_value ' . $changed_total_sx_value);
             }
-            
+}
+            $current_card_id = $data['card_id'];
             $days = config('constant.days');
-            $checkSales = CardSales::where('card_id', $data['card_id'])->where('timestamp', 'like', '%' . $carbonNow . '%')->count();
-            if($checkSales >= 3) {
-                foreach($days as $daykey => $day) {
+            foreach ($days as $daykey => $day) {
+                if (($carbonNow >= $day['to']) && ($carbonNow <= $day['from'])) {
+                    $checkSalesCount = CardSales::where('card_id', $current_card_id)->whereBetween('timestamp', [$day['to'], $day['from']])->count();
                     $name = 'trenders_' . $daykey . '_' . strtolower($cardSport[0]);
-                    if (($carbonNow >= $day['to']) && ($carbonNow <= $day['from'])) {
-                        $value = Cache::get($name);
-                        if ($value != null && !empty($value) && count($value) > 0) {
+                    $value = Cache::get($name);
+                    if ($value != null && !empty($value) && count($value) > 0) {
+                        if ($checkSalesCount >= 3) {
                             $flag = 0;
                             foreach ($value as $key => $val) {
-                                if (isset($val['id']) && $data['card_id'] == $val['id']) {
-                                    $sx_data = CardSales::getSxAndOldestSx($data['card_id'], $day['to'], $day['from'], $day['daysForSx']);
+                                if (isset($val['id']) && $current_card_id == $val['id']) {
+                                    $sx_data = CardSales::getSxAndOldestSx($current_card_id, $day['to'], $day['from'], $day['daysForSx']);
                                     $sx = $sx_data['sx'];
                                     $lastSx = $sx_data['oldestSx'];
                                     $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
@@ -1045,56 +1289,19 @@ class CardController extends Controller {
                                     $value[$key]['sx_percent_signed'] = $sx_percent;
                                     $value[$key]['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
                                     $value[$key]['sx_icon'] = $sx_icon;
-                                    $value[$key]['sale_qty'] = CardSales::where('card_id', $data['card_id'])->sum('quantity');
+                                    $value[$key]['sale_qty'] = CardSales::where('card_id', $current_card_id)->sum('quantity');
                                     $flag = 1;
+                                    Log::info('Cache >= 3 ID ' . $current_card_id . ' SX ' . $sx . ' LASTSX ' . $lastSx);
                                     break;
                                 }
                             }
                             if ($flag == 1) {
                                 Cache::put($name, $value);
+                                Log::info('Cache >= 3 added');
                             }
-                        } else {
-                            Cache::forget($name);
-                            $trender = Cache::rememberForever($name, function() use($day, $cardSport) {
-                                        $cards = [];
-                                        $card_sales = CardSales::whereBetween('timestamp', [$day['to'], $day['from']])->groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
-                                        if (!empty($card_sales)) {
-                                            $cards = Card::whereHas('sales', function($q) use($day) {
-                                                        $q->whereBetween('timestamp', [$day['to'], $day['from']]);
-                                                    }, '>=', 2)->whereIn('id', $card_sales)->where('sport', strtolower($cardSport[0]))->where('active', 1)->with('details')->get();
-
-                                            $cards = $cards->map(function ($card, $key) use($day) {
-                                                $data = $card;
-                                                $sx_data = CardSales::getSxAndOldestSx($card->id, $day['to'], $day['from'], $day['daysForSx']);
-                                                $sx = $sx_data['sx'];
-                                                $lastSx = $sx_data['oldestSx'];
-                                                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-                                                $data['price'] = number_format((float) $sx, 2, '.', '');
-                                                $data['sx_value_signed'] = (float) $sx - $lastSx;
-                                                $data['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-                                                $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
-                                                $data['sx_percent_signed'] = $sx_percent;
-                                                $data['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
-                                                $data['sx_icon'] = $sx_icon;
-                                                $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
-                                                return $data;
-                                            });
-                                        }
-                                        return $cards;
-                                    });
-                        }
-                    }
-                }
-            } else {
-                foreach ($days as $daykey => $day) {
-                    $name = 'trenders_' . $daykey . '_' . strtolower($cardSport[0]);
-                    if (($carbonNow >= $day['to']) && ($carbonNow <= $day['from'])) {
-                        $value = Cache::get($name);
-                        if ($value != null && !empty($value) && count($value) > 0) {
+                        } elseif ($checkSalesCount == 2) {
                             $flag = 0;
-                            $cards = Card::whereHas('sales', function($q) use($carbonNow) {
-                                        $q->where('timestamp', 'like', '%' . $carbonNow . '%');
-                                    }, '>=', 2)->where('id', $data['card_id'])->where('sport', strtolower($cardSport[0]))->where('active', 1)->with('details')->first();
+                            $cards = Card::where('id', $current_card_id)->with('details')->first();
                             if (!empty($cards)) {
                                 $sx_data = CardSales::getSxAndOldestSx($cards->id, $day['to'], $day['from'], $day['daysForSx']);
                                 $sx = $sx_data['sx'];
@@ -1108,78 +1315,69 @@ class CardController extends Controller {
                                 $cards['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
                                 $cards['sx_icon'] = $sx_icon;
                                 $cards['sale_qty'] = CardSales::where('card_id', $cards->id)->sum('quantity');
-                                $value[] = $cards;
+                                Log::info('Cache == 2 ID ' . $current_card_id . ' SX ' . $sx . ' LASTSX ' . $lastSx);
                                 $flag = 1;
                             }
                             if ($flag == 1) {
-
+                                $value[] = $cards;
                                 Cache::put($name, $value);
+                                Log::info('Cache == 2 added');
                             }
-                        } else {
-                            Cache::forget($name);
-                            $trender = Cache::rememberForever($name, function() use($day, $cardSport) {
-                                        $cards = [];
-                                        $card_sales = CardSales::whereBetween('timestamp', [$day['to'], $day['from']])->groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
-                                        if (!empty($card_sales)) {
-                                            $cards = Card::whereHas('sales', function($q) use($day) {
-                                                        $q->whereBetween('timestamp', [$day['to'], $day['from']]);
-                                                    }, '>=', 2)->whereIn('id', $card_sales)->where('sport', strtolower($cardSport[0]))->where('active', 1)->with('details')->get();
-
-                                            $cards = $cards->map(function ($card, $key) use($day) {
-                                                $data = $card;
-                                                $sx_data = CardSales::getSxAndOldestSx($card->id, $day['to'], $day['from'], $day['daysForSx']);
-                                                $sx = $sx_data['sx'];
-                                                $lastSx = $sx_data['oldestSx'];
-                                                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-                                                $data['price'] = number_format((float) $sx, 2, '.', '');
-                                                $data['sx_value_signed'] = (float) $sx - $lastSx;
-                                                $data['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-                                                $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
-                                                $data['sx_percent_signed'] = $sx_percent;
-                                                $data['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
-                                                $data['sx_icon'] = $sx_icon;
-                                                $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
-                                                return $data;
-                                            });
-                                        }
-                                        return $cards;
-                                    });
+                        }
+                    } else if ($checkSalesCount >= 2) {
+                        $cards = Card::where('id', $current_card_id)->with('details')->first();
+                        if (!empty($cards)) {
+                            $sx_data = CardSales::getSxAndOldestSx($cards->id, $day['to'], $day['from'], $day['daysForSx']);
+                            $sx = $sx_data['sx'];
+                            $lastSx = $sx_data['oldestSx'];
+                            $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                            $cards['price'] = number_format((float) $sx, 2, '.', '');
+                            $cards['sx_value_signed'] = (float) $sx - $lastSx;
+                            $cards['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                            $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
+                            $cards['sx_percent_signed'] = $sx_percent;
+                            $cards['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
+                            $cards['sx_icon'] = $sx_icon;
+                            $cards['sale_qty'] = CardSales::where('card_id', $cards->id)->sum('quantity');
+                            $value[] = $cards;
+                            Cache::put($name, $value);
+                            Log::info('Cache also added >= 2 ID ' . $current_card_id . ' SX ' . $sx . ' LASTSX ' . $lastSx);
                         }
                     }
                 }
             }
-            
+
             $value = Cache::get('trenders_all_cards');
-            if ($value != null && !empty($value)  && count($value) > 0) {
+            if ($value != null && !empty($value) && count($value) > 0) {
                 foreach ($value as $key => $val) {
+                    if ($current_card_id == $val['id']) {
+                        $checkSalesCount = CardSales::where('card_id', $current_card_id)->count();
+                        if ($checkSalesCount >= 2) {
+                            $sx_data = CardSales::getSxAndOldestSx($current_card_id);
+                            $sx = $sx_data['sx'];
+                            $lastSx = $sx_data['oldestSx'];
+                            $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
 
-                    if (isset($val['id']) && $data['card_id'] == $val['id']) {
-                        $sx_data = CardSales::getSxAndOldestSx($data['card_id'], $day['to'], $day['from'], $day['daysForSx']);
-                        $sx = $sx_data['sx'];
-                        $lastSx = $sx_data['oldestSx'];
-                        $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-
-                        $value[$key]['price'] = number_format((float) $sx, 2, '.', '');
-                        $value[$key]['sx_value_signed'] = (float) $sx - $lastSx;
-                        $value[$key]['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-                        $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
-                        $value[$key]['sx_percent_signed'] = $sx_percent;
-                        $value[$key]['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
-                        $value[$key]['sx_icon'] = $sx_icon;
-                        $value[$key]['sale_qty'] = CardSales::where('card_id', $data['card_id'])->sum('quantity');
-                        break;
+                            $value[$key]['price'] = number_format((float) $sx, 2, '.', '');
+                            $value[$key]['sx_value_signed'] = (float) $sx - $lastSx;
+                            $value[$key]['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                            $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
+                            $value[$key]['sx_percent_signed'] = $sx_percent;
+                            $value[$key]['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
+                            $value[$key]['sx_icon'] = $sx_icon;
+                            $value[$key]['sale_qty'] = CardSales::where('card_id', $current_card_id)->sum('quantity');
+                            Log::info('T Cache ID ' . $current_card_id . ' SX ' . $sx . ' lastSX ' . $lastSx);
+                            break;
+                        }
                     }
                 }
                 Cache::put('trenders_all_cards', $value);
             }
-
-
-
-            //refresh trender cache
-//            JobForTrender::dispatch();
-
+            Log::info('+++++++++++++');
+            \DB::commit();
             return response()->json(['status' => 200, 'message' => 'Sales added successfully.'], 200);
         } catch (\Exception $e) {
+            \DB::rollback();
             return response()->json($e->getMessage(), 500);
         }
     }
@@ -1203,14 +1401,25 @@ class CardController extends Controller {
     }
 
     public function editSalesData(Request $request) {
+        \DB::beginTransaction();
         try {
             $data = $request->all();
-            $requestedDate = Carbon::create($data['timestamp'])->format('Y-m-d');
             $cardId = $data['card_id'];
+            $requestedDate = Carbon::create($data['timestamp'])->format('Y-m-d');
             $existedCardSale = CardSales::where('id', $data['id'])->first();
             $existingSaleDate = Carbon::create($existedCardSale->timestamp)->format('Y-m-d');
-            $cardSXExisting = CardsSx::where('card_id', $cardId)->select('sx')->orderBy('date', 'DESC')->first();
+            $cardSXExistingDetails = CardsSx::where('card_id', $cardId)->orderBy('date', 'DESC')->first();
+            $latestSaleDate = $cardSXExistingDetails->date;
+            $cardSXExisting = $cardSXExistingDetails->sx;
             $cardSport = Card::where('id', $existedCardSale->card_id)->pluck('sport');
+
+            $runCode = 0;
+            if ($existingSaleDate != $requestedDate || $existedCardSale->cost != $data['cost']) {
+                $runCode = 1;
+            } else if ($existingSaleDate == $requestedDate && $existedCardSale->cost == $data['cost'] && $existedCardSale->quantity != $data['quantity']) {
+                $runCode = 2;
+            }
+
             CardSales::where('id', $data['id'])->update([
                 'timestamp' => Carbon::create($data['timestamp'])->format('Y-m-d H:i:s'),
                 'quantity' => $data['quantity'],
@@ -1218,187 +1427,193 @@ class CardController extends Controller {
                 'source' => $data['source'],
                 'type' => $data['type'],
             ]);
-            $updatedCardsSx = CardSales::where('card_id', $cardId)->where('timestamp', 'like', '%' . $requestedDate . '%')->get();
-            CardsSx::where('card_id', $cardId)->where('date', $requestedDate)->update(['sx' => $updatedCardsSx->avg('cost'), 'quantity' => $updatedCardsSx->sum('quantity')]);
-            $updatedSx = CardSales::where('timestamp', 'like', '%' . $requestedDate . '%')->get();
-            CardsTotalSx::where('date', $requestedDate)->update(['amount' => $updatedSx->avg('cost'), 'quantity' => $updatedSx->sum('quantity')]);
-            if ($requestedDate !== $existingSaleDate) {
-               if (CardSales::where('card_id', $cardId)->where('timestamp', 'like', '%' . $existingSaleDate . '%')->exists()) {
-                    $updatedExistingSx = CardSales::where('card_id', $cardId)->where('timestamp', 'like', '%' . $existingSaleDate . '%')->get();
-                    CardsSx::where('card_id', $cardId)->where('date', $existingSaleDate)->update(['sx' => $updatedExistingSx->avg('cost'), 'quantity' => $updatedExistingSx->sum('quantity')]);
-                    $updatedExistingTotalSx = CardSales::where('timestamp', 'like', '%' . $existingSaleDate . '%')->get();
-                    CardsTotalSx::where('date', $existingSaleDate)->update(['amount' => $updatedExistingTotalSx->avg('cost'), 'quantity' => $updatedExistingTotalSx->sum('quantity')]);
-                } else {
-                    CardsSx::where('card_id', $cardId)->where('date', $existingSaleDate)->forceDelete();
-                    CardsTotalSx::where('date', $existingSaleDate)->forceDelete();
+            Log::info('SALE EDIT - CARD ' . $cardId . 'DATE ' . $data['timestamp'] . ' ++++++++++++');
+            if ($runCode == 2) {
+                $updatedCardsQty = CardSales::where('card_id', $cardId)->where('timestamp', 'like', '%' . $requestedDate . '%')->sum('quantity');
+                CardsSx::where('card_id', $cardId)->where('date', $requestedDate)->update(['quantity' => $updatedCardsQty]);
+                $updatedTotalCardQty = CardSales::where('timestamp', 'like', '%' . $requestedDate . '%')->sum('quantity');
+                CardsTotalSx::where('date', $requestedDate)->update(['quantity' => $updatedTotalCardQty]);
+
+                if ($requestedDate != $existingSaleDate) {
+                    if (CardSales::where('card_id', $cardId)->where('timestamp', 'like', '%' . $existingSaleDate . '%')->exists()) {
+                        $updatedExistingCardQty = CardSales::where('card_id', $cardId)->where('timestamp', 'like', '%' . $existingSaleDate . '%')->sum('quantity');
+                        CardsSx::where('card_id', $cardId)->where('date', $existingSaleDate)->update(['quantity' => $updatedExistingCardQty]);
+                    } else {
+                        CardsSx::where('card_id', $cardId)->where('date', $existingSaleDate)->forceDelete();
+                    }
+                    if (CardSales::where('timestamp', 'like', '%' . $existingSaleDate . '%')->exists()) {
+                        $updatedExistingTotalCardQty = CardSales::where('timestamp', 'like', '%' . $existingSaleDate . '%')->sum('quantity');
+                        CardsTotalSx::where('date', $existingSaleDate)->update(['quantity' => $updatedExistingTotalCardQty]);
+                    } else {
+                        CardsTotalSx::where('date', $existingSaleDate)->forceDelete();
+                    }
+                    Log::info('runCode 2 CardsSx CardsTotalSx F DELETE');
                 }
-            }
-            $cardAllTimestamps = CardSales::where('card_id', $cardId)->groupBy(DB::raw('DATE(timestamp)'))->orderBy('timestamp', 'DESC')->pluck('timestamp');
-            $latestTimestamp = Carbon::create($cardAllTimestamps[0])->format('Y-m-d');
-            if ($latestTimestamp == $requestedDate) {
-                $old_total_sx_value = AppSettings::select('total_sx_value')->first();
-                $changed_total_sx_value = ($old_total_sx_value->total_sx_value - $cardSXExisting->sx) + $updatedCardsSx->avg('cost');
-                AppSettings::first()->update(["total_sx_value" => $changed_total_sx_value]);
-            }
-            $days = config('constant.days');
-            foreach($days as $daykey => $day) {
-                $name = 'trenders_' . $daykey . '_' . strtolower($cardSport[0]);
+            } else if ($runCode == 1) {
+                $updatedCardsSx = CardSales::where('card_id', $cardId)->where('timestamp', 'like', '%' . $requestedDate . '%')->get();
+                CardsSx::where('card_id', $cardId)->where('date', $requestedDate)->update(['sx' => $updatedCardsSx->avg('cost'), 'quantity' => $updatedCardsSx->sum('quantity')]);
+                $updatedSx = CardSales::where('timestamp', 'like', '%' . $requestedDate . '%')->get();
+                CardsTotalSx::where('date', $requestedDate)->update(['amount' => $updatedSx->avg('cost'), 'quantity' => $updatedSx->sum('quantity')]);
+
+                if ($requestedDate != $existingSaleDate) {
+                    if (CardSales::where('card_id', $cardId)->where('timestamp', 'like', '%' . $existingSaleDate . '%')->exists()) {
+                        $updatedExistingSx = CardSales::where('card_id', $cardId)->where('timestamp', 'like', '%' . $existingSaleDate . '%')->get();
+                        CardsSx::where('card_id', $cardId)->where('date', $existingSaleDate)->update(['sx' => $updatedExistingSx->avg('cost'), 'quantity' => $updatedExistingSx->sum('quantity')]);
+                    } else {
+                        CardsSx::where('card_id', $cardId)->where('date', $existingSaleDate)->forceDelete();
+                    }
+                    if (CardSales::where('timestamp', 'like', '%' . $existingSaleDate . '%')->exists()) {
+                        $updatedExistingTotalSx = CardSales::where('timestamp', 'like', '%' . $existingSaleDate . '%')->get();
+                        CardsTotalSx::where('date', $existingSaleDate)->update(['amount' => $updatedExistingTotalSx->avg('cost'), 'quantity' => $updatedExistingTotalSx->sum('quantity')]);
+                    } else {
+                        CardsTotalSx::where('date', $existingSaleDate)->forceDelete();
+                    }
+                }
+                Log::info('runCode 1 CardsSx CardsTotalSx F DELETE');
+
+                if ($requestedDate >= $latestSaleDate) {
+                    $old_total_sx_value = AppSettings::select('total_sx_value')->first();
+                    $changed_total_sx_value = ($old_total_sx_value->total_sx_value - $cardSXExisting) + $updatedCardsSx->avg('cost');
+                    AppSettings::first()->update(["total_sx_value" => $changed_total_sx_value]);
+                    Log::info('AppSettings total_sx_value ' . $changed_total_sx_value);
+                }
+                $current_card_id = $cardId;
+                $days = config('constant.days');
                 if ($requestedDate == $existingSaleDate) {
-                    if (($requestedDate >= $day['to']) && ($requestedDate <= $day['from'])) {
-                        $value = Cache::get($name);
-                        if ($value != null && !empty($value) && count($value) > 0) {
-                            $flag = 0;
-                            foreach ($value as $key => $val) {
-                                if (isset($val['id']) && $cardId == $val['id']) {
-                                    $sx_data = CardSales::getSxAndOldestSx($cardId, $day['to'], $day['from'], $day['daysForSx']);
-                                    $sx = $sx_data['sx'];
-                                    $lastSx = $sx_data['oldestSx'];
-                                    $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                    foreach ($days as $daykey => $day) {
+                        $name = 'trenders_' . $daykey . '_' . strtolower($cardSport[0]);
+                        if (($requestedDate >= $day['to']) && ($requestedDate <= $day['from'])) {
+                            $value = Cache::get($name);
+                            if ($value != null && !empty($value) && count($value) > 0) {
+                                $flag = 0;
+                                foreach ($value as $key => $val) {
+                                    if (isset($val['id']) && $cardId == $val['id']) {
+                                        $sx_data = CardSales::getSxAndOldestSx($cardId, $day['to'], $day['from'], $day['daysForSx']);
+                                        $sx = $sx_data['sx'];
+                                        $lastSx = $sx_data['oldestSx'];
+                                        $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
 
-                                    $value[$key]['price'] = number_format((float) $sx, 2, '.', '');
-                                    $value[$key]['sx_value_signed'] = (float) $sx - $lastSx;
-                                    $value[$key]['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-                                    $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
-                                    $value[$key]['sx_percent_signed'] = $sx_percent;
-                                    $value[$key]['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
-                                    $value[$key]['sx_icon'] = $sx_icon;
-                                    $value[$key]['sale_qty'] = CardSales::where('card_id', $cardId)->sum('quantity');
-                                    $flag = 1;
-                                    break;
+                                        $value[$key]['price'] = number_format((float) $sx, 2, '.', '');
+                                        $value[$key]['sx_value_signed'] = (float) $sx - $lastSx;
+                                        $value[$key]['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                                        $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
+                                        $value[$key]['sx_percent_signed'] = $sx_percent;
+                                        $value[$key]['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
+                                        $value[$key]['sx_icon'] = $sx_icon;
+                                        $value[$key]['sale_qty'] = CardSales::where('card_id', $cardId)->sum('quantity');
+                                        $flag = 1;
+                                        Log::info('Cache == dates ID ' . $cardId . ' SX ' . $sx . ' LASTSX ' . $lastSx);
+                                        break;
+                                    }
+                                }
+                                if ($flag == 1) {
+                                    Cache::put($name, $value);
                                 }
                             }
-                            if ($flag == 1) {
-                                Cache::put($name, $value);
-                            }
-                            $value = Cache::get($name);
                         }
                     }
                 } else {
-                    if (($existingSaleDate >= $day['to']) && ($existingSaleDate <= $day['from'])) {
-                        $value = Cache::get($name);
-                        if ($value != null && !empty($value) && count($value) > 0) {
-                            $flag = 0;
-                            foreach ($value as $key => $val) {
-                                if (isset($val['id']) && $cardId == $val['id']) {
-                                    $cards = Card::whereHas('sales', function($q) use($day, $cardSport, $existingSaleDate) {
-                                            $q->where('timestamp', 'like', '%' . $existingSaleDate . '%');
-                                        }, '>=', 2)->where('id', $cardId)->where('sport', strtolower($cardSport[0]))->where('active', 1)->with('details')->first();
-                                    if(!empty($cards)) {
-                                        $sx_data = CardSales::getSxAndOldestSx($cards->id, $day['to'], $day['from'], $day['daysForSx']);
-                                        $sx = $sx_data['sx'];
-                                        $lastSx = $sx_data['oldestSx'];
-                                        $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-                                        $cards['price'] = number_format((float) $sx, 2, '.', '');
-                                        $cards['sx_value_signed'] = (float) $sx - $lastSx;
-                                        $cards['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-                                        $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
-                                        $cards['sx_percent_signed'] = $sx_percent;
-                                        $cards['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
-                                        $cards['sx_icon'] = $sx_icon;
-                                        $cards['sale_qty'] = CardSales::where('card_id', $cards->id)->sum('quantity');
-                                        $value[$key] = $cards;
-                                    } else {
-                                        unset($value[$key]);
-                                    }
-                                    unset($card_sales);
-                                    $flag = 1;
-                                    break;
-                                }
-                            }
-                            if ($flag == 1) {
-                                Cache::put($name, $value);
-                            }
-                        }
-                    } elseif(($requestedDate >= $day['to']) && ($requestedDate <= $day['from'])) {
-                        $value = Cache::get($name);
-                         if ($value != null && !empty($value) && count($value) > 0) {
-                             $flag = 0;
-                            foreach ($value as $key => $val) {
-                                if (isset($val['id']) && $cardId == $val['id']) {
-                                    $cards = Card::whereHas('sales', function($q) use($day, $cardSport, $requestedDate) {
-                                            $q->where('timestamp', 'like', '%' . $requestedDate . '%');
-                                        }, '>=', 2)->where('id', $cardId)->where('sport', strtolower($cardSport[0]))->where('active', 1)->with('details')->first();
-                                    if(!empty($cards)) {
-                                        $sx_data = CardSales::getSxAndOldestSx($cards->id, $day['to'], $day['from'], $day['daysForSx']);
-                                        $sx = $sx_data['sx'];
-                                        $lastSx = $sx_data['oldestSx'];
-                                        $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-                                        $cards['price'] = number_format((float) $sx, 2, '.', '');
-                                        $cards['sx_value_signed'] = (float) $sx - $lastSx;
-                                        $cards['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-                                        $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
-                                        $cards['sx_percent_signed'] = $sx_percent;
-                                        $cards['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
-                                        $cards['sx_icon'] = $sx_icon;
-                                        $cards['sale_qty'] = CardSales::where('card_id', $cards->id)->sum('quantity');
-                                        $value[$key] = $cards;
-                                    } else {
-                                        unset($value[$key]);
-                                    }
-                                    unset($card_sales);
-                                    $flag = 1;
-                                    break;
-                                }
-                            }
-                            if ($flag == 1) {
-                                Cache::put($name, $value);
-                            }
-                         } else {
-                            Cache::forget($name);
-                            $trender = Cache::rememberForever($name, function() use($day, $sport) {
-                                        $cards = [];
-                                        $card_sales = CardSales::whereBetween('timestamp', [$day['to'], $day['from']])->groupBy('card_id')->select('card_id', DB::raw('SUM(quantity) as qty'))->orderBy('qty', 'DESC')->pluck('card_id')->toArray();
-                                        if (!empty($card_sales)) {
-                                            $cards = Card::whereHas('sales', function($q) use($day, $sport) {
-                                                        $q->whereBetween('timestamp', [$day['to'], $day['from']]);
-                                                    }, '>=', 2)->whereIn('id', $card_sales)->where('sport', $sport)->where('active', 1)->with('details')->get();
+                    foreach ($days as $daykey => $day) {
+                        $name = 'trenders_' . $daykey . '_' . strtolower($cardSport[0]);
+                        if (($existingSaleDate >= $day['to']) && ($existingSaleDate <= $day['from'])) {
+                            $value = Cache::get($name);
+                            if ($value != null && !empty($value) && count($value) > 0) {
+                                $flag = 0;
+                                foreach ($value as $key => $val) {
+                                    if (isset($val['id']) && $cardId == $val['id']) {
+                                        $checkSalesCount = CardSales::where('card_id', $current_card_id)->whereBetween('timestamp', [$day['to'], $day['from']])->count();
+                                        if ($checkSalesCount >= 2) {
+                                            $sx_data = CardSales::getSxAndOldestSx($current_card_id, $day['to'], $day['from'], $day['daysForSx']);
+                                            $sx = $sx_data['sx'];
+                                            $lastSx = $sx_data['oldestSx'];
+                                            $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
 
-                                            $cards = $cards->map(function ($card, $key) use($day) {
-                                                $data = $card;
-                                                $sx_data = CardSales::getSxAndOldestSx($card->id, $day['to'], $day['from'], $day['daysForSx']);
-                                                $sx = $sx_data['sx'];
-                                                $lastSx = $sx_data['oldestSx'];
-                                                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-                                                $data['price'] = number_format((float) $sx, 2, '.', '');
-                                                $data['sx_value_signed'] = (float) $sx - $lastSx;
-                                                $data['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-                                                $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
-                                                $data['sx_percent_signed'] = $sx_percent;
-                                                $data['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
-                                                $data['sx_icon'] = $sx_icon;
-                                                $data['sale_qty'] = CardSales::where('card_id', $card->id)->sum('quantity');
-                                                return $data;
-                                            });
+                                            $value[$key]['price'] = number_format((float) $sx, 2, '.', '');
+                                            $value[$key]['sx_value_signed'] = (float) $sx - $lastSx;
+                                            $value[$key]['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                                            $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
+                                            $value[$key]['sx_percent_signed'] = $sx_percent;
+                                            $value[$key]['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
+                                            $value[$key]['sx_icon'] = $sx_icon;
+                                            $value[$key]['sale_qty'] = CardSales::where('card_id', $current_card_id)->sum('quantity');
+                                            $flag = 1;
+                                            $cardKey = $key;
+                                            Log::info('Cache >= 2 ID ' . $cardId . ' SX ' . $sx . ' LASTSX ' . $lastSx);
+                                            break;
+                                        } else {
+                                            unset($value[$key]);
+                                            Log::info('CACHE unset >= 2');
+                                            $flag = 1;
+                                            break;
                                         }
-                                        return $cards;
-                                    });
+                                    }
+                                }
+                                if ($flag == 1) {
+                                    Cache::put($name, $value);
+                                }
+                            }
+                        }
+                        if (($requestedDate >= $day['to']) && ($requestedDate <= $day['from'])) {
+                            $value = Cache::get($name);
+                            $cards = Card::whereHas('sales', function($q) use($day, $cardSport, $requestedDate) {
+                                        $q->whereBetween('timestamp', [$day['to'], $day['from']]);
+                                    }, '>=', 2)->where('id', $cardId)->where('sport', strtolower($cardSport[0]))->where('active', 1)->with('details')->first();
+
+                            if (!empty($cards)) {
+                                $sx_data = CardSales::getSxAndOldestSx($cards->id, $day['to'], $day['from'], $day['daysForSx']);
+                                $sx = $sx_data['sx'];
+                                $lastSx = $sx_data['oldestSx'];
+                                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                                $cards['price'] = number_format((float) $sx, 2, '.', '');
+                                $cards['sx_value_signed'] = (float) $sx - $lastSx;
+                                $cards['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                                $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
+                                $cards['sx_percent_signed'] = $sx_percent;
+                                $cards['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
+                                $cards['sx_icon'] = $sx_icon;
+                                $cards['sale_qty'] = CardSales::where('card_id', $cards->id)->sum('quantity');
+                                if (isset($cardKey) && $flag = 1) {
+                                    $value[$cardKey] = $cards;
+                                } else {
+                                    $value[] = $cards;
+                                }
+                                Cache::put($name, $value);
+                                Log::info('Cache dayToFrom ID ' . $cards->id . ' SX ' . $sx . ' LASTSX ' . $lastSx);
+                            }
                         }
                     }
                 }
-            }
 
-            $value = Cache::get('trenders_all_cards');
-            if ($value != null && !empty($value) && count($value) > 0) {
-                foreach ($value as $key => $val) {
-                    if (isset($val['id']) && $cardId == $val['id']) {
-                        $sx_data = CardSales::getSxAndOldestSx($cardId, $day['to'], $day['from'], $day['daysForSx']);
-                        $sx = $sx_data['sx'];
-                        $lastSx = $sx_data['oldestSx'];
-                        $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
-                        $value[$key]['price'] = number_format((float) $sx, 2, '.', '');
-                        $value[$key]['sx_value_signed'] = (float) $sx - $lastSx;
-                        $value[$key]['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-                        $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
-                        $value[$key]['sx_percent_signed'] = $sx_percent;
-                        $value[$key]['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
-                        $value[$key]['sx_icon'] = $sx_icon;
-                        break;
+                $value = Cache::get('trenders_all_cards');
+                if ($value != null && !empty($value) && count($value) > 0) {
+                    foreach ($value as $key => $val) {
+                        if (isset($val['id']) && $cardId == $val['id']) {
+                            $checkSalesCount = CardSales::where('card_id', $current_card_id)->count();
+                            if ($checkSalesCount >= 2) {
+                                $sx_data = CardSales::getSxAndOldestSx($cardId);
+                                $sx = $sx_data['sx'];
+                                $lastSx = $sx_data['oldestSx'];
+                                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                                $value[$key]['price'] = number_format((float) $sx, 2, '.', '');
+                                $value[$key]['sx_value_signed'] = (float) $sx - $lastSx;
+                                $value[$key]['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                                $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
+                                $value[$key]['sx_percent_signed'] = $sx_percent;
+                                $value[$key]['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
+                                $value[$key]['sx_icon'] = $sx_icon;
+                                Log::info('T Cache ID ' . $cardId . ' SX ' . $sx . ' lastSX ' . $lastSx);
+                                break;
+                            }
+                        }
                     }
+                    Cache::put('trenders_all_cards', $value);
                 }
-                Cache::put('trenders_all_cards', $value);
             }
+            Log::info('+++++++++++++');
+            \DB::commit();
             return response()->json(['status' => 200, 'message' => 'Sales edited successfully.'], 200);
         } catch (\Exception $e) {
+            \DB::rollback();
             return response()->json($e->getMessage(), 500);
         }
     }
@@ -1426,7 +1641,8 @@ class CardController extends Controller {
     public function getStoxtickerData() {
         try {
             $data = ['total' => 0, 'sale' => 0, 'avg_sale' => 0, 'change' => 0, 'change_arrow' => 'up', 'last_updated' => ''];
-            $data['total'] = Card::count();
+//            $data['total'] = Card::count();
+            $data['total'] = Card::where('active', 1)->count();
             $total = AppSettings::first();
             $data['sale'] = $total['total_sx_value'];
             $data['last_updated'] = 'N/A';
@@ -1435,7 +1651,6 @@ class CardController extends Controller {
                 $data['last_updated'] = Carbon::create($last_updated->timestamp)->format('F d Y \- h:i:s A');
             }
             $salesDate = CardsTotalSx::groupBy(DB::raw('DATE(date)'))->orderBy('date', 'DESC')->take(2)->get();
-//            dd($salesDate->toArray());
             $count = $salesDate->count();
             if ($count >= 2) {
                 $sx_data['sx'] = $salesDate[0]->amount;
@@ -1906,6 +2121,41 @@ class CardController extends Controller {
     }
 
     public function getSingleCardGraphData($card_id, $days = 2) {
+        
+//        dd(EbayItems::whereIn('id', [50828,58957,58959])->get()->toArray());
+        
+        
+        
+//        $data = CardsSx::whereIn('card_id', [4,5,1,7])->orderBy('date', 'DESC')->get()->groupBy('card_id')->map(function ($item, $key) {
+//            if(isset($item[1])) {
+//                return [
+//                    'cardId' => $item[0]->card_id,
+//                    'sxDifference' => $item[0]->sx - $item[1]->sx,
+//                    '%SxDifference' => (($item[0]->sx - $item[1]->sx)/$item[1]->sx)*100,
+//                    ];
+//            } else {
+//                return [
+//                    'cardId' => $item[0]->card_id,
+//                    'sxDifference' => '-99999999999999999999',
+//                    '%SxDifference' => '-9999999999999999999',
+//                    'remark' => 'rank N/A'
+//                    ];
+//            }
+//        });
+//        
+//        $myNewArray = array_values($data->toArray());
+//        $keys = array_column($myNewArray, 'sxDifference');
+//        array_multisort($keys, SORT_DESC, $myNewArray);
+//        $rankBasedOnSxDifference = $myNewArray;
+//        dump($rankBasedOnSxDifference);
+//        $keys = array_column($myNewArray, '%SxDifference');
+//        array_multisort($keys, SORT_DESC, $myNewArray);
+//        $rankBasedOnSxDifferencePercentage = $myNewArray;
+//        dd($rankBasedOnSxDifferencePercentage);
+//        dd($myNewArray);
+        
+        
+        
         try {
             if ($days == 2) {
                 $grpFormat = 'H:i';
@@ -2036,6 +2286,8 @@ class CardController extends Controller {
             $finalData['sx_value'] = number_format($sx, 2, '.', '');
             if ($days == 90) {
                 $finalData['rank'] = $this->getCardRank($card_id);
+                $finalData['price_rank'] = rand(1,99);
+                $finalData['percentage_rank'] = rand(1,99);
                 $sx_data = CardSales::getSx($card_id);
                 $finalData['slabstoxValue'] = (isset($sx_data['sx']) ? number_format($sx_data['sx'], 2, '.', '') : 0);
                 $lastSaleData = CardSales::where('card_id', $card_id)->orderBy('timestamp', 'DESC')->first();
@@ -2044,6 +2296,14 @@ class CardController extends Controller {
                 $finalData['highestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'DESC')->first();
                 $finalData['lowestSale'] = CardSales::where('card_id', $card_id)->orderBy('cost', 'ASC')->first();
             }
+            $name = 'card_rank_based_on_sx_difference';
+            $trender = Cache::get($name);
+            $finalData['card_rank_based_on_sx_difference'] = $trender[$card_id];
+            
+            $name = 'card_rank_based_on_sx_difference_percentage';
+            $trender = Cache::get($name);
+            $finalData['card_rank_based_on_sx_difference_percentage'] = $trender[$card_id];
+            
             return response()->json(['status' => 200, 'data' => $finalData], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -2192,6 +2452,8 @@ class CardController extends Controller {
     public function addRequestListing(Request $request) {
         try {
             $user_id = auth()->user()->id;
+            $link = $request->input('link');
+
             $validator = Validator::make($request->all(), [
                         'link' => 'required|url',
                         'card_id' => 'required|exists:cards,id'
@@ -2202,11 +2464,32 @@ class CardController extends Controller {
             }
             $check_request_listing = RequestListing::where('link', $request->input('link'))->where('card_id', $request->input('card_id'))->count();
             if ($check_request_listing == 0) {
-                RequestListing::create([
-                    'user_id' => $user_id,
-                    'link' => $request->input('link'),
-                    'card_id' => $request->input('card_id')
+                $requestListing = RequestListing::create([
+                            'user_id' => $user_id,
+                            'link' => $link,
+                            'card_id' => $request->input('card_id')
                 ]);
+
+                if ($requestListing) {
+
+                    $script_link = '/home/' . env('SCRAP_USER') . '/ebay_short/ebayFetch/bin/python3 /home/' . env('SCRAP_USER') . '/ebay_short/core.py """' . $link . '"""';
+                    $scrap_response = shell_exec($script_link . " 2>&1");
+                    $response = json_decode($scrap_response);
+                    if (!empty($response->timeLeft)) {
+                        date_default_timezone_set("America/Los_Angeles");
+                        $auction_end_str = $response->timeLeft / 1000;
+                        $auction_end = date('Y-m-d H:i:s', $auction_end_str);
+                    }
+                    EbayShortItem::create([
+                        'request_listing_id' => $requestListing->id,
+                        'title' => $response->name,
+                        'ebay_id' => $response->ebay_id,
+                        'price' => $response->price,
+                        'image' => $response->image,
+                        'time_left' => isset($auction_end) ? $auction_end : "",
+                        'specifics' => json_encode($response->specifics),
+                    ]);
+                }
                 return response()->json(['status' => 200, 'data' => ['message' => 'Listing request has been submitted successfully.']], 200);
             } else {
                 return response()->json(['status' => 200, 'data' => ['message' => 'This listing is already present in our system. Try another one.']], 200);
@@ -2222,7 +2505,7 @@ class CardController extends Controller {
 //        $skip = $take * $page;
 //        $skip = $skip - $take;
         try {
-            $items = RequestSlab::with(['user'])->where('status', 1)->orderBy('updated_at', 'desc')->get();
+            $items = RequestSlab::with(['user'])->where('status', 0)->orderBy('updated_at', 'desc')->get();
 //            $items = $items->skip($skip)->take($take);
             return response()->json(['status' => 200, 'data' => $items], 200);
         } catch (\Exception $e) {
@@ -2236,7 +2519,16 @@ class CardController extends Controller {
 //        $skip = $take * $page;
 //        $skip = $skip - $take;
         try {
-            $items = RequestListing::where('approved', 0)->with(['user', 'card'])->select('id','approved','card_id', 'link', 'new_card_id', 'user_id')->orderBy('updated_at', 'desc')->get();
+//            $items = RequestListing::where('approved', 0)
+//                    ->with(['user', 'card', 'ebayShortItem'])
+//                    ->select('id', 'approved', 'card_id', 'link', 'new_card_id', 'user_id')
+//                    ->orderBy('updated_at', 'desc')
+//                    ->get();
+            $items = RequestListing::with(['user', 'card', 'ebayShortItem'])
+                            ->select('id', 'approved', 'card_id', 'link', 'new_card_id', 'user_id', 'comparison')
+                            ->orderBy('created_at', 'desc')
+                            ->take(100)->get();
+
 //            $items = $items->skip($skip)->take($take);
             return response()->json(['status' => 200, 'data' => $items], 200);
         } catch (\Exception $e) {
@@ -2264,7 +2556,6 @@ class CardController extends Controller {
                 $card_id = $req->card_id;
                 $req->update(['approved' => $request->get('sts')]);
             }
-//            dd('red');
             if ($request->get('sts') == -1) {
                 return response()->json(['status' => 200, 'data' => 'Request successfully rejected!'], 200);
             }
@@ -2523,19 +2814,22 @@ class CardController extends Controller {
                     foreach ($value as $key => $val) {
 
                         if ($value->card_id == $val['id']) {
-                            $sx_data = CardSales::getSxAndOldestSx($value->card_id, $day['to'], $day['from'], $day['daysForSx']);
-                            $sx = $sx_data['sx'];
-                            $lastSx = $sx_data['oldestSx'];
-                            $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
+                            $checkSalesCount = CardSales::where('card_id', $current_card_id)->count();
+                            if ($checkSalesCount >= 2) {
+                                $sx_data = CardSales::getSxAndOldestSx($value->card_id, $day['to'], $day['from'], $day['daysForSx']);
+                                $sx = $sx_data['sx'];
+                                $lastSx = $sx_data['oldestSx'];
+                                $sx_icon = (($sx - $lastSx) >= 0) ? 'up' : 'down';
 
-                            $value[$key]['price'] = number_format((float) $sx, 2, '.', '');
-                            $value[$key]['sx_value_signed'] = (float) $sx - $lastSx;
-                            $value[$key]['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
-                            $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
-                            $value[$key]['sx_percent_signed'] = $sx_percent;
-                            $value[$key]['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
-                            $value[$key]['sx_icon'] = $sx_icon;
-                            break;
+                                $value[$key]['price'] = number_format((float) $sx, 2, '.', '');
+                                $value[$key]['sx_value_signed'] = (float) $sx - $lastSx;
+                                $value[$key]['sx_value'] = str_replace('-', '', number_format((float) $sx - $lastSx, 2, '.', ''));
+                                $sx_percent = ($lastSx > 0 ? (($sx - $lastSx) / $lastSx) * 100 : 0);
+                                $value[$key]['sx_percent_signed'] = $sx_percent;
+                                $value[$key]['sx_percent'] = str_replace('-', '', number_format($sx_percent, 2, '.', ''));
+                                $value[$key]['sx_icon'] = $sx_icon;
+                                break;
+                            }
                         }
                     }
                     Cache::put('trenders_all_cards', $value);
@@ -2800,6 +3094,210 @@ class CardController extends Controller {
         $data['qty'] = array_values($map_qty);
 
         return $data;
+    }
+
+    //add Request Listing for all if not exists
+    public function addRequestListingForAll() {
+        try {
+            Log::info('Short listing request START');
+            $allListing = RequestListing::where('approved', 0)->where('listing_sync', 0)->orderBy('updated_at', 'desc')->get();
+
+            foreach ($allListing as $list) {
+                \DB::beginTransaction();
+                Log::info($list->id);
+                RequestListing::where('id', $list->id)->update(['listing_sync' => 1]);
+                // if(!EbayShortItem::where("request_listing_id",$list->id)->exists()){
+                $script_link = '/home/' . env('SCRAP_USER') . '/ebay_short/ebayFetch/bin/python3 /home/' . env('SCRAP_USER') . '/ebay_short/core.py """' . $list->link . '"""';
+                $scrap_response = shell_exec($script_link . " 2>&1");
+                $response = json_decode($scrap_response);
+                if (!empty($response->timeLeft)) {
+                    date_default_timezone_set("America/Los_Angeles");
+                    $auction_end_str = $response->timeLeft / 1000;
+                    $auction_end = date('Y-m-d H:i:s', $auction_end_str);
+                }
+                EbayShortItem::create([
+                    'request_listing_id' => $list->id,
+                    'title' => $response->name,
+                    'ebay_id' => $response->ebay_id,
+                    'price' => $response->price,
+                    'image' => $response->image,
+                    'timeLeft' => isset($auction_end) ? $auction_end : "",
+                    'specifics' => json_encode($response->specifics),
+                ]);
+                // }
+                \DB::commit();
+            }
+        } catch (\Exception $e) {
+            \DB::rollback();
+            \Log::info($e->getMessage());
+        }
+    }
+
+    protected function matchAndCountDbMatching($fullName, $title) {
+        $count = 0;
+        $fullName = str_replace("/", " ", $fullName);
+        $names = explode(' ', $fullName);
+        foreach ($names as $name) {
+            if (Str::contains(strToLower($title), strToLower($name))) {
+                $count = $count + 1;
+                break;
+            }
+        }
+
+        return $count;
+    }
+
+    protected function compareByDB($listing) {
+        $total = 5;
+        $percentage = 0;
+        $count = 0;
+        $title = strToLower($listing->ebayShortItem->title);
+
+        if (!empty($title)) {
+            if (!empty($listing->cardForMatch->player)) {
+                $count = $count + $this->matchAndCountDbMatching($listing->cardForMatch->player, $title);
+            }
+
+            if (!empty($listing->cardForMatch->year) && Str::contains(strToLower($title), $listing->cardForMatch->year)) {
+                $count = $count + 1;
+            }
+
+            if (isset($listing->cardForMatch->brand) && !empty($listing->cardForMatch->brand)) {
+                $count = $count + $this->matchAndCountDbMatching($listing->cardForMatch->brand, $title);
+            }
+
+            if (isset($listing->cardForMatch->variation) && !empty($listing->cardForMatch->variation)) {
+                //Ignore Base variation
+                if ($listing->cardForMatch->variation == 'Base') {
+                    $count = $count + 1;
+                } else {
+                    $count = $count + $this->matchAndCountDbMatching($listing->cardForMatch->variation, $title);
+                }
+            }
+//need to compare by grade
+            if (isset($listing->cardForMatch->grade) && !empty($listing->cardForMatch->grade)) {
+                $names = explode(' ', $listing->cardForMatch->grade);
+                if (isset($names[0]) && !empty($names[0]) && Str::contains($title, strToLower($names[0]))) {
+                    $count = $count + 1;
+                } else if (isset($names[1]) && !empty($names[1]) && Str::contains($title, ' ' . strToLower($names[1]))) {
+                    $count = $count + 1;
+                }
+
+                // $count = $count + $this->matchAndCountDbMatching($listing->cardForMatch->grade, $title);
+            }
+
+            $percentage = ($count * 100) / $total;
+        }
+
+        return $percentage;
+    }
+
+    protected function compareByImageText($scrap_response, $listing) {
+        $total = 4;
+        $count = 0;
+        $scrap_response = strToLower($scrap_response);
+
+        if (!empty($scrap_response)) {
+            if (!empty($listing->cardForMatch->player)) {
+                $count = $count + $this->matchAndCountDbMatching($listing->cardForMatch->player, $scrap_response);
+            }
+            if (!empty($listing->cardForMatch->year)) {
+                $count = $count + $this->matchAndCountDbMatching($listing->cardForMatch->year, $scrap_response);
+            }
+
+            if (isset($listing->cardForMatch->brand) && !empty($listing->cardForMatch->brand)) {
+                $count = $count + $this->matchAndCountDbMatching($listing->cardForMatch->brand, $scrap_response);
+            }
+
+            if (isset($listing->cardForMatch->grade) && !empty($listing->cardForMatch->grade)) {
+                $names = explode(' ', $listing->cardForMatch->grade);
+                if (isset($name[0]) && !empty($name[0]) && Str::contains($title, $name[0])) {
+                    $count = $count + 1;
+                } else if (isset($name[1]) && !empty($name[1]) && Str::contains($title, ' ' . $name[1])) {
+                    $count = $count + 1;
+                }
+                // $count = $count + $this->matchAndCountDbMatching($listing->cardForMatch->grade, $scrap_response);
+            }
+        }
+
+        $percentage = ($count * 100) / $total;
+
+        return $percentage;
+    }
+
+    public function compareImages() {
+        Log::info('compareImages START');
+        $allListing = RequestListing::where('approved', 0)->with("cardForMatch", "ebayShortItem")->take(5)->latest()->get();
+        // $allListing = RequestListing::whereId('74746')->with("cardForMatch", "ebayShortItem")->get();
+        $total = 5;
+        
+        //         $allListing = RequestListing::get();
+        //         foreach ($allListing as $listing) {
+            //             RequestListing::where('id',$listing->id)->update(["approved"=>0, 'comparison'=>NULL]);
+            //         }
+            // dump('done');
+        foreach ($allListing as $listing) {
+            $count = 0;
+            $weightedPercentageDb = 0; 
+            $weightedPercentageImage = 0;
+            $imagePercentage = 0;
+            $avgPercentage = 0;
+
+            if (!empty($listing->cardForMatch) && !empty($listing->ebayShortItem)) {
+                
+                $dbPercentage = $this->compareByDB($listing);
+
+                if(!empty($listing->ebayShortItem->image)){
+                    if ($dbPercentage >= 80) {
+                        $url1 = str_replace('300', '600', $listing->ebayShortItem->image);
+                        $contents = file_get_contents($url1);
+                        $name = substr($url1, strrpos($url1, '/') + 1);
+    
+                        if (!Storage::put($name, $contents)) {
+                            $url1 = str_replace('300', '500', $listing->ebayShortItem->image);
+                            $contents = file_get_contents($url1);
+                            $name = substr($url1, strrpos($url1, '/') + 1);
+    
+                            if (!Storage::put($name, $contents)) {
+                                $contents = file_get_contents($listing->ebayShortItem->image);
+                                $name = substr($url1, strrpos($url1, '/') + 1);
+                            }
+                        }
+    
+                        $imageUrl = storage_path('app/' . $name);
+                        $scrap_response = shell_exec("/home/" . env('SCRAP_USER') . "/ebay_image_compare/ebayFetch/bin/python3 /home/" . env('SCRAP_USER') . "/ebay_image_compare/textextract.py $imageUrl 2>&1");
+                        $scrap_response = substr($scrap_response, strrpos($scrap_response, '['));
+    
+                        $imagePercentage = $this->compareByImageText($scrap_response, $listing);
+
+                        $weightedPercentageImage = ($imagePercentage * 30) / 100;
+                        $weightedPercentageDb = ($dbPercentage * 70) / 100;
+                        $avgPercentage = ($weightedPercentageDb + $weightedPercentageImage);
+                    } else {
+                        RequestListing::where('id', $listing->id)->update(["approved" => -1]);
+                    }
+                } else {
+                    $avgPercentage = $dbPercentage;
+                }
+                
+                if ($avgPercentage >= 70) {
+                    //Approved
+                    // dump($avgPercentage.'Approved');
+                    RequestListing::where('id', $listing->id)->update(["approved" => 1, 'comparison' => $avgPercentage]);
+                } else if ($avgPercentage < 70 && $avgPercentage >= 30) {
+                    //manual
+                    // dump($avgPercentage.'manual');
+                    RequestListing::where('id', $listing->id)->update(["approved" => 2, 'comparison' => $avgPercentage]);
+                } else {
+                    //reject
+                    //dump($avgPercentage.'reject');
+                    RequestListing::where('id', $listing->id)->update(["approved" => -1, 'comparison' => $avgPercentage]);
+                }
+            }
+        }
+        Log::info('compareImages END');
+//        dd('Done');
+        // dd($allListing->toArray());
     }
 
 }
